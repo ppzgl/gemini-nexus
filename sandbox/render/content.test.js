@@ -8,6 +8,7 @@ vi.mock('./pipeline.js', () => ({
 }));
 
 vi.mock('./artifacts.js', () => ({
+    cleanupLiveArtifacts: vi.fn(),
     enhanceLiveArtifacts: vi.fn(),
 }));
 

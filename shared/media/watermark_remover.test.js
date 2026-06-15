@@ -19,6 +19,11 @@ function installGwrRuntime() {
 }
 
 function readBlobText(blob) {
+    // Prefer Blob#text() which is realm-agnostic; FileReader.readAsText rejects
+    // blobs created in a different realm (jsdom + fetch(dataUrl) in dynamic import).
+    if (typeof blob?.text === 'function') {
+        return blob.text();
+    }
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
@@ -58,7 +63,8 @@ describe('WatermarkRemover', () => {
 
         expect(result).toBe(PROCESSED_DATA_URL);
         const inputBlob = removeWatermarkFromBlob.mock.calls[0][0];
-        expect(inputBlob).toBeInstanceOf(Blob);
+        // Duck-typed Blob check: cross-realm (fetch in jsdom) breaks instanceof.
+        expect(inputBlob).toBeTruthy();
         expect(inputBlob.type).toBe('image/png');
         await expect(readBlobText(inputBlob)).resolves.toBe('original');
     });

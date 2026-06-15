@@ -424,14 +424,17 @@ export class StateManager {
             ? sessionBindings[this.currentTabId] || null
             : null;
         const tabMatchesCurrent = tab && tab.id === this.currentTabId;
+        // A tab that navigated to an extension host page is no longer webpage
+        // context; suppress its url/title so the sandbox keeps has-page-context off.
+        const contextTab = tabMatchesCurrent && !isExtensionHostPageTab(tab) ? tab : null;
 
         this.frame.postMessage({
             action: 'RESTORE_SIDE_PANEL_TAB_CONTEXT',
             payload: {
                 tabId: this.currentTabId,
                 sessionId: boundSessionId,
-                url: tabMatchesCurrent ? tab.url || '' : '',
-                title: tabMatchesCurrent ? tab.title || '' : '',
+                url: contextTab ? tab.url || '' : '',
+                title: contextTab ? tab.title || '' : '',
             },
         });
     }

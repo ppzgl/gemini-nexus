@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { readFile } from 'node:fs/promises';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import bridgeSource from './shortcut_frame_bridge.js?raw';
 
-const bridgeSourcePromise = readFile('content/shortcut_frame_bridge.js', 'utf8');
+const bridgeSourcePromise = Promise.resolve(bridgeSource);
 
 function createKeyboardEvent(frameWindow, key, modifiers = {}) {
     return new frameWindow.KeyboardEvent('keydown', {

@@ -1,5 +1,5 @@
 import { transformMarkdown } from './pipeline.js';
-import { enhanceLiveArtifacts } from './artifacts.js';
+import { cleanupLiveArtifacts, enhanceLiveArtifacts } from './artifacts.js';
 import { formatT, t } from '../core/i18n.js';
 import { TemplateIcons } from '../ui/templates/icons.js';
 import { createPrefixedId } from '../../shared/utils/index.js';
@@ -420,6 +420,10 @@ function createToolDisclosure(contentDiv, text, options = {}) {
 
 // Helper: Render Markdown/Math/Text into an element
 export function renderContent(contentDiv, text, role, options = {}) {
+    // Release message listeners / iframe resources from any prior Live Artifact
+    // previews before we overwrite innerHTML (streaming updates, rerenders, etc).
+    cleanupLiveArtifacts(contentDiv);
+
     if (role === 'tool-output' || role === 'tool-status') {
         createToolDisclosure(contentDiv, text, {
             ...options,

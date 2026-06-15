@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     buildArtifactSrcDoc,
+    cleanupLiveArtifacts,
     createLiveArtifactPreview,
     enhanceLiveArtifacts,
     getArtifactKind,
@@ -388,5 +389,47 @@ describe('Live Artifact previews', () => {
         } finally {
             globalThis.document = originalDocument;
         }
+    });
+
+    it('releases iframe message listeners when enhanced previews are cleaned up', () => {
+        const root = document.createElement('div');
+        const wrapper = createCodeBlock(
+            'amc-live-artifact-html',
+            '<section><button data-amc-followup="Continue">Continue</button></section>'
+        );
+        root.appendChild(wrapper);
+        document.body.appendChild(root);
+
+        const handleFollowUpEvent = vi.fn();
+        window.addEventListener(LIVE_ARTIFACT_FOLLOWUP_EVENT, handleFollowUpEvent);
+
+        enhanceLiveArtifacts(root);
+
+        const preview = root.querySelector('.live-artifact-preview');
+        expect(preview.dataset.liveArtifactEnhanced).toBe('true');
+
+        const frame = preview.querySelector('iframe.live-artifact-frame');
+        const source = frame.contentWindow || {};
+        const dispatchFollowup = () =>
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    source,
+                    data: {
+                        channel: 'amc-live-artifact-preview',
+                        event: 'followup',
+                        payload: { instruction: 'Continue' },
+                    },
+                })
+            );
+
+        dispatchFollowup();
+        expect(handleFollowUpEvent).toHaveBeenCalledTimes(1);
+
+        cleanupLiveArtifacts(root);
+
+        dispatchFollowup();
+        expect(handleFollowUpEvent).toHaveBeenCalledTimes(1);
+
+        window.removeEventListener(LIVE_ARTIFACT_FOLLOWUP_EVENT, handleFollowUpEvent);
     });
 });

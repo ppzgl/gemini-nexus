@@ -1,16 +1,13 @@
 // @vitest-environment jsdom
 
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { applyTranslations, formatT, setLanguagePreference, t } from './i18n.js';
+import translationsSource from './translations.js?raw';
 
 function getLocaleBlock(locale) {
-    const source = fs.readFileSync(
-        path.resolve(process.cwd(), 'sandbox/core/translations.js'),
-        'utf8'
+    const match = translationsSource.match(
+        new RegExp(`\\n    ${locale}: \\{([\\s\\S]*?)\\n    \\}`, 'm')
     );
-    const match = source.match(new RegExp(`\\n    ${locale}: \\{([\\s\\S]*?)\\n    \\}`, 'm'));
     return match ? match[1] : '';
 }
 

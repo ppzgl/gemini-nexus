@@ -676,7 +676,7 @@ export function createLiveArtifactPreview(kind, code, options = {}) {
 }
 
 function replaceCodeBlockWithPreview(wrapper, preview) {
-    wrapper.dataset.liveArtifactEnhanced = 'true';
+    preview.dataset.liveArtifactEnhanced = 'true';
 
     if (wrapper.parentNode) {
         wrapper.replaceWith(preview);
@@ -686,6 +686,18 @@ function replaceCodeBlockWithPreview(wrapper, preview) {
     wrapper.className = 'live-artifact-inline-wrapper';
     wrapper.innerHTML = '';
     wrapper.appendChild(preview);
+}
+
+export function cleanupLiveArtifacts(root) {
+    if (!root || typeof document === 'undefined') return;
+    const nodes = root.querySelectorAll?.('[data-live-artifact-enhanced="true"]');
+    if (!nodes) return;
+    nodes.forEach((node) => {
+        const preview = node.querySelector?.('.live-artifact-preview') || node;
+        if (typeof preview.__liveArtifactCleanup === 'function') {
+            preview.__liveArtifactCleanup();
+        }
+    });
 }
 
 export function enhanceLiveArtifacts(root, options = {}) {

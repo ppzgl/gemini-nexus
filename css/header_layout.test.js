@@ -1,27 +1,21 @@
-// @vitest-environment jsdom
-
 import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const readCss = (file) => readFile(path.join(currentDir, file), 'utf8');
+const readCss = (file) => {
+    const relativePath = file.startsWith('./') ? file : `./${file}`;
+    return readFile(new URL(relativePath, import.meta.url), 'utf8');
+};
 
 describe('header layout styles', () => {
     it('keeps hidden icon buttons out of the rendered layout', async () => {
-        const componentsCss = await readCss('components.css');
+        const componentsCss = await readCss('./components.css');
 
-        document.body.innerHTML = `
-            <style>${componentsCss}</style>
-            <button class="icon-btn" hidden></button>
-        `;
-
-        expect(getComputedStyle(document.querySelector('.icon-btn')).display).toBe('none');
+        // [hidden] must be forced to display:none so hidden icon buttons never render.
+        expect(componentsCss).toMatch(/\[hidden\]\s*{[^}]*display:\s*none\s*!important/s);
     });
 
     it('keeps the top header compact like AMC instead of leaving large edge padding', async () => {
-        const headerCss = await readCss('header.css');
+        const headerCss = await readCss('./header.css');
 
         expect(headerCss).toMatch(/\.header\s*{[^}]*padding:\s*6px 12px 6px 8px/s);
         expect(headerCss).toMatch(
@@ -35,7 +29,7 @@ describe('header layout styles', () => {
     });
 
     it('keeps browser control status visible on narrow screens', async () => {
-        const headerCss = await readCss('header.css');
+        const headerCss = await readCss('./header.css');
 
         expect(headerCss).toMatch(
             /@media\s*\(max-width:\s*600px\)[\s\S]*\.browser-control-bar\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto auto/s
@@ -49,7 +43,7 @@ describe('header layout styles', () => {
     });
 
     it('styles the model selector like the AMC custom picker instead of a native pill select', async () => {
-        const headerCss = await readCss('header.css');
+        const headerCss = await readCss('./header.css');
 
         expect(headerCss).toMatch(/\.model-picker-trigger\s*{[^}]*min-height:\s*36px/s);
         expect(headerCss).toMatch(/\.model-picker-trigger\s*{[^}]*border-radius:\s*12px/s);

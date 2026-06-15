@@ -543,6 +543,36 @@ describe('StateManager tab ownership', () => {
         });
     });
 
+    it('suppresses page context when the current tab navigates to an extension host page', () => {
+        const listeners = setupChrome(33);
+        const frame = createFrame();
+        const manager = new StateManager(frame);
+
+        manager.init();
+        manager.markUiReady();
+        frame.postMessage.mockClear();
+
+        listeners.updated(
+            33,
+            { url: 'chrome-extension://id/sidepanel/index.html' },
+            {
+                id: 33,
+                title: 'Gemini Nexus',
+                url: 'chrome-extension://id/sidepanel/index.html',
+            }
+        );
+
+        expect(frame.postMessage).toHaveBeenCalledWith({
+            action: 'RESTORE_SIDE_PANEL_TAB_CONTEXT',
+            payload: {
+                tabId: 33,
+                sessionId: null,
+                title: '',
+                url: '',
+            },
+        });
+    });
+
     it('forwards sidebar expanded storage changes to the sandbox after initialization', () => {
         const listeners = setupChromeWithLocalData({
             geminiSidebarExpanded: true,
