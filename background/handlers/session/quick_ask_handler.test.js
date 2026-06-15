@@ -190,7 +190,12 @@ describe('QuickAskHandler', () => {
 
             expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
                 action: 'GEMINI_STREAM_DONE',
-                result: { status: 'error', text: 'Prompt failed' },
+                result: {
+                    status: 'error',
+                    text: 'Prompt failed',
+                    errorKind: 'unknown',
+                    retryable: false,
+                },
                 source: 'toolbar',
                 requestId: 'quick-ask-1',
             });
@@ -218,7 +223,12 @@ describe('QuickAskHandler', () => {
         expect(sessionManager.handleSendPrompt).not.toHaveBeenCalled();
         expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
             action: 'GEMINI_STREAM_DONE',
-            result: { status: 'error', text: 'Failed to load image: not found' },
+            result: {
+                status: 'error',
+                text: 'Failed to load image: not found',
+                errorKind: 'unknown',
+                retryable: false,
+            },
         });
     });
 
@@ -250,7 +260,12 @@ describe('QuickAskHandler', () => {
             expect(sessionManager.handleSendPrompt).not.toHaveBeenCalled();
             expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
                 action: 'GEMINI_STREAM_DONE',
-                result: { status: 'error', text: 'Image fetch crashed' },
+                result: {
+                    status: 'error',
+                    text: 'Image fetch crashed',
+                    errorKind: 'unknown',
+                    retryable: false,
+                },
                 source: 'toolbar',
                 requestId: 'image-quick-ask-1',
             });

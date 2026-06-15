@@ -331,6 +331,8 @@ describe('PromptHandler concurrency', () => {
                 sessionId: 'session-1',
                 text: 'Error: Could not save edited session before sending prompt.',
                 status: 'error',
+                errorKind: 'unknown',
+                retryable: false,
             });
         } finally {
             errorSpy.mockRestore();

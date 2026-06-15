@@ -1,18 +1,9 @@
 import { AuthManager } from './auth_manager.js';
 import { getConnectionSettings } from './session/settings_store.js';
 import { RequestDispatcher } from './session/request_dispatcher.js';
+import { classifyProviderError, isUnavailableWebAuthError } from './session/error_classifier.js';
 
 const REQUEST_CANCELLED_TEXT = 'Request cancelled.';
-
-function isUnavailableWebAuthError(message = '') {
-    return (
-        message.includes('未登录') ||
-        message.includes('Not logged in') ||
-        message.includes('Sign in') ||
-        message.includes('Missing Gemini Web auth token: blValue') ||
-        message.includes('Missing Gemini Web auth token: fSid')
-    );
-}
 
 function createGeminiAuthLink(accountIndex) {
     const href = `https://gemini.google.com/u/${accountIndex}/`;
@@ -124,11 +115,15 @@ export class GeminiSessionManager {
                     : 'Too many requests, please try again later (429)';
             }
 
+            const { kind: errorKind, retryable } = classifyProviderError(errorMessage);
+
             return {
                 action: 'GEMINI_REPLY',
                 sessionId: request.sessionId || null,
                 text: 'Error: ' + errorMessage,
                 status: 'error',
+                errorKind,
+                retryable,
             };
         } finally {
             if (this.abortController === abortController) {

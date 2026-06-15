@@ -26,6 +26,11 @@ import {
 } from '../../../shared/settings/dedicated_providers.js';
 import { getHistory } from './history_store.js';
 import { prepareManagedContext } from './context_manager.js';
+import {
+    isRefreshableWebAuthError,
+    isUnavailableWebAuthError,
+    withProviderRetry,
+} from './error_classifier.js';
 
 const WEB_IMAGE_EDIT_MODES = new Set([
     'upscale',
@@ -315,24 +320,6 @@ function stripNativeWebContextIds(context = {}) {
     return authContext;
 }
 
-function isRefreshableWebAuthError(message = '') {
-    return (
-        message.includes('401') ||
-        message.includes('403') ||
-        message.includes('Missing Gemini Web upload tokens')
-    );
-}
-
-function isUnavailableWebAuthError(message = '') {
-    return (
-        message.includes('未登录') ||
-        message.includes('Not logged in') ||
-        message.includes('Sign in') ||
-        message.includes('Missing Gemini Web auth token: blValue') ||
-        message.includes('Missing Gemini Web auth token: fSid')
-    );
-}
-
 export class RequestDispatcher {
     constructor(authManager) {
         this.auth = authManager;
@@ -368,26 +355,30 @@ export class RequestDispatcher {
             createContextStatusSender(request, settings)
         );
 
-        const response = await sendOfficialMessage(
-            request.text,
-            context.systemInstruction,
-            context.history,
-            {
-                baseUrl: settings.officialBaseUrl,
-                apiKey: settings.apiKey,
-                model: selectConfiguredModel(
-                    request.model,
-                    settings.officialModel,
-                    DEFAULT_OFFICIAL_MODEL
+        const response = await withProviderRetry(
+            () =>
+                sendOfficialMessage(
+                    request.text,
+                    context.systemInstruction,
+                    context.history,
+                    {
+                        baseUrl: settings.officialBaseUrl,
+                        apiKey: settings.apiKey,
+                        model: selectConfiguredModel(
+                            request.model,
+                            settings.officialModel,
+                            DEFAULT_OFFICIAL_MODEL
+                        ),
+                        configuredModels: settings.officialModel,
+                        officialUserParts: request.officialUserParts,
+                    },
+                    settings.thinkingLevel,
+                    files,
+                    settings.officialWebSearch === true,
+                    signal,
+                    onUpdate
                 ),
-                configuredModels: settings.officialModel,
-                officialUserParts: request.officialUserParts,
-            },
-            settings.thinkingLevel,
-            files,
-            settings.officialWebSearch === true,
-            signal,
-            onUpdate
+            { signal }
         );
 
         return createSuccessReply(request, response, {
@@ -428,14 +419,18 @@ export class RequestDispatcher {
             createContextStatusSender(request, settings)
         );
 
-        const response = await sendOpenAIMessage(
-            request.text,
-            context.systemInstruction,
-            context.history,
-            config,
-            files,
-            signal,
-            onUpdate
+        const response = await withProviderRetry(
+            () =>
+                sendOpenAIMessage(
+                    request.text,
+                    context.systemInstruction,
+                    context.history,
+                    config,
+                    files,
+                    signal,
+                    onUpdate
+                ),
+            { signal }
         );
 
         return createSuccessReply(request, response, {
@@ -463,19 +458,23 @@ export class RequestDispatcher {
         );
 
         if (providerConfig?.transport === 'anthropic-messages') {
-            const response = await sendAnthropicMessage(
-                request.text,
-                context.systemInstruction,
-                context.history,
-                {
-                    baseUrl: providerSettings.baseUrl,
-                    apiKey: providerSettings.apiKey,
-                    model: targetModel,
-                    thinkingLevel: providerSettings.thinkingLevel,
-                },
-                files,
-                signal,
-                onUpdate
+            const response = await withProviderRetry(
+                () =>
+                    sendAnthropicMessage(
+                        request.text,
+                        context.systemInstruction,
+                        context.history,
+                        {
+                            baseUrl: providerSettings.baseUrl,
+                            apiKey: providerSettings.apiKey,
+                            model: targetModel,
+                            thinkingLevel: providerSettings.thinkingLevel,
+                        },
+                        files,
+                        signal,
+                        onUpdate
+                    ),
+                { signal }
             );
 
             return createSuccessReply(request, response, { context: null });
@@ -500,14 +499,18 @@ export class RequestDispatcher {
             assertOpenAIWebSearchSupported(config.model, config.reasoningEffort);
         }
 
-        const response = await sendOpenAIMessage(
-            request.text,
-            context.systemInstruction,
-            context.history,
-            config,
-            files,
-            signal,
-            onUpdate
+        const response = await withProviderRetry(
+            () =>
+                sendOpenAIMessage(
+                    request.text,
+                    context.systemInstruction,
+                    context.history,
+                    config,
+                    files,
+                    signal,
+                    onUpdate
+                ),
+            { signal }
         );
 
         return createSuccessReply(request, response, { context: null });

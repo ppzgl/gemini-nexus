@@ -11,6 +11,7 @@ import {
     updateBrowserControlFunctionResponses,
 } from './prompt/tool_loop.js';
 import { toControlTabSummary } from '../../control/tabs.js';
+import { classifyProviderError } from '../../managers/session/error_classifier.js';
 
 export { hasInlinePageSnapshot } from './prompt/tool_loop.js';
 
@@ -19,8 +20,13 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const REQUEST_CANCELLED_TEXT = 'Request cancelled.';
 
 async function getStoredProvider() {
-    const stored = await chrome.storage.local.get(['geminiProvider', 'geminiUseOfficialApi']);
-    return stored.geminiProvider || (stored.geminiUseOfficialApi === true ? 'official' : 'web');
+    try {
+        const stored = await chrome.storage.local.get(['geminiProvider', 'geminiUseOfficialApi']);
+        return stored.geminiProvider || (stored.geminiUseOfficialApi === true ? 'official' : 'web');
+    } catch (error) {
+        console.warn('Failed to read provider from chrome.storage:', error);
+        return 'web';
+    }
 }
 
 async function sendRuntimeMessage(message) {
@@ -266,12 +272,15 @@ export class PromptHandler {
             } catch (error) {
                 console.error('Prompt loop error:', error);
                 if (!this.isRunCancelled(run)) {
+                    const { kind: errorKind, retryable } = classifyProviderError(error);
                     chrome.runtime
                         .sendMessage({
                             action: 'GEMINI_REPLY',
                             sessionId: request.sessionId || null,
                             text: 'Error: ' + error.message,
                             status: 'error',
+                            errorKind,
+                            retryable,
                         })
                         .catch(() => {});
                 }

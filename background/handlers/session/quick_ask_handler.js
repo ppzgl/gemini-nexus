@@ -1,5 +1,6 @@
 import { appendTurnToHistory, saveToHistory } from '../../managers/history_manager.js';
 import { getActiveTabContent } from './active_tab_content.js';
+import { classifyProviderError } from '../../managers/session/error_classifier.js';
 
 const IMAGE_EDIT_MODES = new Set([
     'upscale',
@@ -15,9 +16,13 @@ function appendSystemInstruction(request, instruction) {
 }
 
 function createErrorResult(error) {
+    const message = error?.message || String(error);
+    const { kind: errorKind, retryable } = classifyProviderError(message);
     return {
         status: 'error',
-        text: error?.message || String(error),
+        text: message,
+        errorKind,
+        retryable,
     };
 }
 
@@ -115,11 +120,15 @@ export class QuickAskHandler {
             const imgRes = await this.imageHandler.fetchImage(request.url);
 
             if (imgRes.error) {
+                const imageErrorMessage = 'Failed to load image: ' + imgRes.error;
+                const { kind: errorKind, retryable } = classifyProviderError(imageErrorMessage);
                 this._sendStreamDone(
                     tabId,
                     {
                         status: 'error',
-                        text: 'Failed to load image: ' + imgRes.error,
+                        text: imageErrorMessage,
+                        errorKind,
+                        retryable,
                     },
                     undefined,
                     request

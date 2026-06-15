@@ -29,12 +29,18 @@ function normalizeProviderOverride(provider) {
 }
 
 export async function getConnectionSettings(options = {}) {
-    const stored = await chrome.storage.local.get([
-        ...CONNECTION_STORAGE_KEYS,
-        'geminiApiKeyPointer',
-        'geminiContextMode',
-        'geminiContextRecentTurns',
-    ]);
+    let stored;
+    try {
+        stored = await chrome.storage.local.get([
+            ...CONNECTION_STORAGE_KEYS,
+            'geminiApiKeyPointer',
+            'geminiContextMode',
+            'geminiContextRecentTurns',
+        ]);
+    } catch (error) {
+        console.warn('[Gemini Nexus] Failed to read connection settings:', error);
+        stored = {};
+    }
 
     const provider = normalizeProviderOverride(options.provider) || getConnectionProvider(stored);
 
@@ -85,9 +91,9 @@ export async function getConnectionSettings(options = {}) {
         officialModel: stored.geminiOfficialModel || DEFAULT_OFFICIAL_MODELS,
         thinkingLevel: stored.geminiThinkingLevel || DEFAULT_THINKING_LEVEL,
         officialWebSearch: stored.geminiOfficialWebSearch === true,
-        openaiBaseUrl: stored.geminiOpenaiBaseUrl,
-        openaiApiKey: stored.geminiOpenaiApiKey,
-        openaiModel: stored.geminiOpenaiModel,
+        openaiBaseUrl: stored.geminiOpenaiBaseUrl || '',
+        openaiApiKey: stored.geminiOpenaiApiKey || '',
+        openaiModel: stored.geminiOpenaiModel || '',
         openaiThinkingLevel: stored.geminiOpenaiThinkingLevel || DEFAULT_THINKING_LEVEL,
         openaiUseResponsesApi: openaiSettings.useResponsesApi,
         openaiWebSearch: openaiSettings.webSearch,

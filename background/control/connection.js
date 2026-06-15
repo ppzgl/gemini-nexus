@@ -13,6 +13,9 @@ export class BrowserConnection {
         this.currentDialog = null;
         this.lastAttachErrorMessage = '';
         this.lastDetachReason = '';
+        // Single-flight lock: serializes concurrent attach() calls so the detach
+        // window in attach() cannot interleave with another attach (TOCTOU race).
+        this._attachInFlight = null;
 
         // Global listener for CDP events
         chrome.debugger.onEvent.addListener(this._handleEvent.bind(this));
@@ -99,6 +102,19 @@ export class BrowserConnection {
     }
 
     async attach(tabId) {
+        // Single-flight: if another attach is in progress, wait for it, then
+        // re-evaluate against the (possibly changed) current state.
+        while (this._attachInFlight) {
+            await this._attachInFlight;
+        }
+
+        this._attachInFlight = this._doAttach(tabId).finally(() => {
+            this._attachInFlight = null;
+        });
+        return this._attachInFlight;
+    }
+
+    async _doAttach(tabId) {
         this.targetTabId = tabId; // Always store the intended tab
 
         // If already attached to the same tab, just ensure domains are enabled

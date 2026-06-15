@@ -151,4 +151,17 @@ describe('getConnectionSettings', () => {
             })
         );
     });
+
+    it('returns safe defaults and does not throw when storage rejects', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        chrome.storage.local.get.mockRejectedValue(new Error('storage quota exceeded'));
+
+        const settings = await getConnectionSettings();
+
+        expect(settings.provider).toBe('web');
+        expect(settings.openaiBaseUrl).toBe('');
+        expect(settings.openaiApiKey).toBe('');
+        expect(settings.openaiModel).toBe('');
+        expect(warnSpy).toHaveBeenCalled();
+    });
 });

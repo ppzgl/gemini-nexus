@@ -1477,4 +1477,60 @@ describe('RequestDispatcher response mapping', () => {
         expect(auth.forceContextRefresh).not.toHaveBeenCalled();
         expect(sendWebMessage).toHaveBeenCalledTimes(1);
     });
+
+    it('retries the Official provider on transient (429) errors and succeeds', async () => {
+        const successResponse = {
+            text: 'official text',
+            thoughts: null,
+            sources: [],
+            images: [],
+        };
+        sendOfficialMessage
+            .mockRejectedValueOnce(new Error('API Error (429): Too Many Requests'))
+            .mockResolvedValueOnce(successResponse);
+
+        const dispatcher = new RequestDispatcher({});
+        const result = await dispatcher.dispatch(
+            { text: 'hello', model: 'gemini-3-flash', sessionId: null },
+            {
+                provider: 'official',
+                apiKey: 'key',
+                officialBaseUrl: 'https://api.example.test',
+                officialModel: 'gemini-3-flash',
+            },
+            [],
+            vi.fn(),
+            null
+        );
+
+        expect(sendOfficialMessage).toHaveBeenCalledTimes(2);
+        expect(result).toMatchObject({
+            action: 'GEMINI_REPLY',
+            sessionId: null,
+            text: 'official text',
+            status: 'success',
+        });
+    });
+
+    it('does not retry the Official provider on non-retryable (400) errors', async () => {
+        sendOfficialMessage.mockRejectedValue(new Error('API Error (400): Bad Request'));
+
+        const dispatcher = new RequestDispatcher({});
+        await expect(
+            dispatcher.dispatch(
+                { text: 'hello', model: 'gemini-3-flash', sessionId: null },
+                {
+                    provider: 'official',
+                    apiKey: 'key',
+                    officialBaseUrl: 'https://api.example.test',
+                    officialModel: 'gemini-3-flash',
+                },
+                [],
+                vi.fn(),
+                null
+            )
+        ).rejects.toThrow('API Error (400): Bad Request');
+
+        expect(sendOfficialMessage).toHaveBeenCalledTimes(1);
+    });
 });
