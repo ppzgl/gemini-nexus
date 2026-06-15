@@ -56,11 +56,20 @@ export function disconnectMcpConnectionState(conn) {
     conn.transport = null;
 
     if (conn.ws) {
+        // Detach listeners first so the socket's late close/error events do
+        // not fire against the shared conn state after we reset it below.
+        if (conn._wsListeners) {
+            conn.ws.removeEventListener('open', conn._wsListeners.open);
+            conn.ws.removeEventListener('error', conn._wsListeners.error);
+            conn.ws.removeEventListener('close', conn._wsListeners.close);
+            conn.ws.removeEventListener('message', conn._wsListeners.message);
+        }
         try {
             conn.ws.close();
         } catch {}
     }
     conn.ws = null;
+    conn._wsListeners = null;
 
     if (conn.sseAbort) {
         try {

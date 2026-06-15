@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     appendAiMessageIfDisplayable,
     appendTurnToHistory,
+    appendUserMessage,
     replaceSessionSnapshot,
+    updateSessionContextSummary,
 } from './history_manager.js';
 
 describe('history_manager', () => {
@@ -278,5 +280,85 @@ describe('history_manager', () => {
                 }),
             ],
         });
+    });
+
+    it('serializes concurrent writes so neither clobbers the other', async () => {
+        // Two concurrent appends to the same session must both land. Without
+        // serialization, the second read would see the pre-first-write snapshot
+        // and overwrite the first append. The store reflects writes so the
+        // serialized second operation observes the first's changes.
+        const initialSessions = [
+            {
+                id: 'session-1',
+                title: 'Hello',
+                timestamp: 100,
+                messages: [{ role: 'user', text: 'Hello' }],
+                context: null,
+            },
+        ];
+        let store = { geminiSessions: structuredClone(initialSessions) };
+
+        const sendMessage = vi.fn(() => Promise.resolve());
+        globalThis.chrome = {
+            runtime: { sendMessage },
+            storage: {
+                local: {
+                    get: vi.fn(async () => structuredClone(store)),
+                    set: vi.fn(async (payload) => {
+                        store = structuredClone(payload);
+                    }),
+                },
+            },
+        };
+
+        await Promise.all([
+            appendUserMessage('session-1', 'message A'),
+            appendUserMessage('session-1', 'message B'),
+        ]);
+
+        // The persisted snapshot must contain BOTH appended messages.
+        const session = store.geminiSessions.find((s) => s.id === 'session-1');
+        const appendedTexts = session.messages
+            .filter((m) => m.text === 'message A' || m.text === 'message B')
+            .map((m) => m.text)
+            .sort();
+        expect(appendedTexts).toEqual(['message A', 'message B']);
+    });
+
+    it('broadcasts SESSIONS_UPDATED when updating a context summary', async () => {
+        const sessions = [{ id: 'session-1', title: 'T', messages: [], context: null }];
+        const sendMessage = vi.fn(() => Promise.resolve());
+        globalThis.chrome = {
+            runtime: { sendMessage },
+            storage: {
+                local: {
+                    get: vi.fn(async () => ({ geminiSessions: sessions })),
+                    set: vi.fn(async () => {}),
+                },
+            },
+        };
+
+        await updateSessionContextSummary('session-1', 'summary text');
+
+        expect(sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ action: 'SESSIONS_UPDATED' })
+        );
+    });
+
+    it('tolerates a malformed (null) geminiSessions without crashing', async () => {
+        const sendMessage = vi.fn(() => Promise.resolve());
+        globalThis.chrome = {
+            runtime: { sendMessage },
+            storage: {
+                local: {
+                    get: vi.fn(async () => ({ geminiSessions: null })),
+                    set: vi.fn(async () => {}),
+                },
+            },
+        };
+
+        await expect(
+            appendTurnToHistory('session-1', 'hi', { status: 'success', text: 'hi' })
+        ).resolves.toBeNull();
     });
 });

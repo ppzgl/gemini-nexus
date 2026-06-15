@@ -18,10 +18,15 @@ export class McpConnectionClient {
         this.clientVersion = clientVersion;
         this.connections = new Map();
         this.nextId = 1;
+        // Per-server single-flight: ensures concurrent ensureConnectedForServer
+        // calls for the same server reuse one connect attempt instead of racing
+        // (which would tear down the first socket mid-handshake).
+        this._connecting = new Map();
     }
 
     async disconnect(serverId) {
         if (serverId) {
+            this._connecting.delete(serverId);
             const conn = this.connections.get(serverId);
             if (conn) {
                 this._disconnectState(conn);
@@ -30,6 +35,7 @@ export class McpConnectionClient {
             return;
         }
 
+        this._connecting.clear();
         for (const conn of this.connections.values()) {
             this._disconnectState(conn);
         }
@@ -94,6 +100,19 @@ export class McpConnectionClient {
     }
 
     async ensureConnectedForServer(serverId, transport, url, headers = {}) {
+        // Serialize connection establishment per server so concurrent calls do
+        // not both observe initialized===false and tear each other down.
+        const inFlight = this._connecting.get(serverId);
+        if (inFlight) return inFlight;
+
+        const attempt = this._performConnect(serverId, transport, url, headers).finally(() => {
+            this._connecting.delete(serverId);
+        });
+        this._connecting.set(serverId, attempt);
+        return attempt;
+    }
+
+    async _performConnect(serverId, transport, url, headers = {}) {
         const conn = this._getOrCreateConnection(serverId);
         const transportLower = inferTransport(transport, url);
         const normalizedHeaders = normalizeHeaders(headers);

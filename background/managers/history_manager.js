@@ -15,6 +15,29 @@ async function saveSessionsAndNotify(geminiSessions) {
         .catch(() => {});
 }
 
+// Serialize all read-modify-write mutations so concurrent saves cannot
+// clobber each other (e.g. a streaming AI completion racing the next user
+// input would otherwise both read the same snapshot and the loser's write
+// silently drops the winner's changes).
+let writeQueue = Promise.resolve();
+function withSerializedWrite(operation) {
+    const run = writeQueue.then(operation, operation);
+    // Swallow rejection so a failed operation never poisons the chain; the
+    // operation itself is responsible for surfacing errors to its caller.
+    writeQueue = run.then(
+        () => undefined,
+        () => undefined
+    );
+    return run;
+}
+
+// Reads geminiSessions defensively: a malformed stored value (e.g. null)
+// does not satisfy the destructuring default, so coerce explicitly.
+async function readSessions() {
+    const { geminiSessions } = await chrome.storage.local.get(['geminiSessions']);
+    return Array.isArray(geminiSessions) ? geminiSessions : [];
+}
+
 async function moveSessionToTopAndSave(geminiSessions, sessionIndex, session) {
     geminiSessions.splice(sessionIndex, 1);
     geminiSessions.unshift(session);
@@ -69,42 +92,45 @@ function mergeCurrentSessionMetadata(currentSession, sessionSnapshot) {
  * @returns {object} The new session object or null on error.
  */
 export async function saveToHistory(text, result, filesObj = null) {
-    try {
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
+    return withSerializedWrite(async () => {
+        try {
+            const geminiSessions = await readSessions();
 
-        const sessionId = generateUUID();
-        const title = text.length > 30 ? text.substring(0, 30) + '...' : text;
+            const safeText = typeof text === 'string' ? text : String(text ?? '');
+            const sessionId = generateUUID();
+            const title = safeText.length > 30 ? safeText.substring(0, 30) + '...' : safeText;
 
-        const storedAttachments = normalizeStoredAttachments(filesObj);
-        const imageDataUrls = storedAttachments
-            ? getImageAttachmentDataUrls(storedAttachments)
-            : [];
-        const storedImages = imageDataUrls.length > 0 ? imageDataUrls : null;
+            const storedAttachments = normalizeStoredAttachments(filesObj);
+            const imageDataUrls = storedAttachments
+                ? getImageAttachmentDataUrls(storedAttachments)
+                : [];
+            const storedImages = imageDataUrls.length > 0 ? imageDataUrls : null;
 
-        const newSession = {
-            id: sessionId,
-            title: title || 'Quick Ask',
-            timestamp: Date.now(),
-            messages: [
-                {
-                    role: 'user',
-                    text,
-                    image: storedImages,
-                    attachments: storedAttachments,
-                },
-                createAiHistoryMessage(result),
-            ],
-            context: result.context,
-        };
+            const newSession = {
+                id: sessionId,
+                title: title || 'Quick Ask',
+                timestamp: Date.now(),
+                messages: [
+                    {
+                        role: 'user',
+                        text: safeText,
+                        image: storedImages,
+                        attachments: storedAttachments,
+                    },
+                    createAiHistoryMessage(result),
+                ],
+                context: result.context,
+            };
 
-        geminiSessions.unshift(newSession);
-        await saveSessionsAndNotify(geminiSessions);
+            geminiSessions.unshift(newSession);
+            await saveSessionsAndNotify(geminiSessions);
 
-        return newSession;
-    } catch (error) {
-        console.error('Error saving history:', error);
-        return null;
-    }
+            return newSession;
+        } catch (error) {
+            console.error('Error saving history:', error);
+            return null;
+        }
+    });
 }
 
 /**
@@ -114,88 +140,94 @@ export async function saveToHistory(text, result, filesObj = null) {
  * @param {object} result
  */
 export async function appendAiMessage(sessionId, result) {
-    try {
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionId
-        );
+    return withSerializedWrite(async () => {
+        try {
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
 
-        if (sessionIndex !== -1) {
+            if (sessionIndex !== -1) {
+                const session = geminiSessions[sessionIndex];
+
+                session.messages.push(createAiHistoryMessage(result));
+                session.context = result.context;
+                session.timestamp = Date.now();
+
+                await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error appending history:', error);
+            return false;
+        }
+    });
+}
+
+export async function appendTurnToHistory(sessionId, text, result, filesObj = null) {
+    return withSerializedWrite(async () => {
+        try {
+            if (!sessionId || !result || result.status !== 'success') return null;
+
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
+            if (sessionIndex === -1) return null;
+
             const session = geminiSessions[sessionIndex];
-
+            const attachments = normalizeStoredAttachments(filesObj);
+            const imageDataUrls = attachments ? getImageAttachmentDataUrls(attachments) : [];
+            session.messages.push({
+                role: 'user',
+                text,
+                image: imageDataUrls.length > 0 ? imageDataUrls : null,
+                attachments,
+            });
             session.messages.push(createAiHistoryMessage(result));
             session.context = result.context;
             session.timestamp = Date.now();
 
             await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
 
-            return true;
+            return session;
+        } catch (error) {
+            console.error('Error appending turn history:', error);
+            return null;
         }
-        return false;
-    } catch (error) {
-        console.error('Error appending history:', error);
-        return false;
-    }
-}
-
-export async function appendTurnToHistory(sessionId, text, result, filesObj = null) {
-    try {
-        if (!sessionId || !result || result.status !== 'success') return null;
-
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionId
-        );
-        if (sessionIndex === -1) return null;
-
-        const session = geminiSessions[sessionIndex];
-        const attachments = normalizeStoredAttachments(filesObj);
-        const imageDataUrls = attachments ? getImageAttachmentDataUrls(attachments) : [];
-        session.messages.push({
-            role: 'user',
-            text,
-            image: imageDataUrls.length > 0 ? imageDataUrls : null,
-            attachments,
-        });
-        session.messages.push(createAiHistoryMessage(result));
-        session.context = result.context;
-        session.timestamp = Date.now();
-
-        await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
-
-        return session;
-    } catch (error) {
-        console.error('Error appending turn history:', error);
-        return null;
-    }
+    });
 }
 
 export async function appendRawMessages(sessionId, messages) {
-    try {
-        if (!sessionId || !Array.isArray(messages) || messages.length === 0) return false;
+    return withSerializedWrite(async () => {
+        try {
+            if (!sessionId || !Array.isArray(messages) || messages.length === 0) return false;
 
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionId
-        );
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
 
-        if (sessionIndex === -1) return false;
+            if (sessionIndex === -1) return false;
 
-        const session = geminiSessions[sessionIndex];
-        messages.forEach((message) => {
-            if (message && typeof message === 'object') {
-                session.messages.push(message);
-            }
-        });
-        session.timestamp = Date.now();
+            const session = geminiSessions[sessionIndex];
+            messages.forEach((message) => {
+                if (message && typeof message === 'object') {
+                    session.messages.push(message);
+                }
+            });
+            session.timestamp = Date.now();
 
-        await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
+            await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
 
-        return true;
-    } catch (error) {
-        console.error('Error appending raw history messages:', error);
-        return false;
-    }
+            return true;
+        } catch (error) {
+            console.error('Error appending raw history messages:', error);
+            return false;
+        }
+    });
 }
 
 export async function appendAiMessageIfDisplayable(sessionId, result) {
@@ -228,45 +260,47 @@ export async function appendAiMessageIfDisplayable(sessionId, result) {
  * @param {object} metadata - Optional structured metadata for non-chat UI rows.
  */
 export async function appendUserMessage(sessionId, text, images = null, metadata = null) {
-    try {
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionId
-        );
+    return withSerializedWrite(async () => {
+        try {
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
 
-        if (sessionIndex !== -1) {
-            const session = geminiSessions[sessionIndex];
+            if (sessionIndex !== -1) {
+                const session = geminiSessions[sessionIndex];
 
-            const attachments = normalizeUserAttachments(images);
-            const message = {
-                role: 'user',
-                text,
-                image: images,
-            };
-            if (attachments.length > 0) {
-                message.attachments = attachments;
+                const attachments = normalizeUserAttachments(images);
+                const message = {
+                    role: 'user',
+                    text,
+                    image: images,
+                };
+                if (attachments.length > 0) {
+                    message.attachments = attachments;
+                }
+
+                if (metadata && typeof metadata === 'object') {
+                    Object.entries(metadata).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                            message[key] = value;
+                        }
+                    });
+                }
+
+                session.messages.push(message);
+                session.timestamp = Date.now();
+
+                await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
+
+                return true;
             }
-
-            if (metadata && typeof metadata === 'object') {
-                Object.entries(metadata).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        message[key] = value;
-                    }
-                });
-            }
-
-            session.messages.push(message);
-            session.timestamp = Date.now();
-
-            await moveSessionToTopAndSave(geminiSessions, sessionIndex, session);
-
-            return true;
+            return false;
+        } catch (error) {
+            console.error('Error appending user message:', error);
+            return false;
         }
-        return false;
-    } catch (error) {
-        console.error('Error appending user message:', error);
-        return false;
-    }
+    });
 }
 
 /**
@@ -275,53 +309,58 @@ export async function appendUserMessage(sessionId, text, images = null, metadata
  * @param {object} sessionSnapshot
  */
 export async function replaceSessionSnapshot(sessionSnapshot) {
-    try {
-        if (!sessionSnapshot || !sessionSnapshot.id || !Array.isArray(sessionSnapshot.messages)) {
+    return withSerializedWrite(async () => {
+        try {
+            if (
+                !sessionSnapshot ||
+                !sessionSnapshot.id ||
+                !Array.isArray(sessionSnapshot.messages)
+            ) {
+                return false;
+            }
+
+            const { geminiSessions: storedSessions, geminiDeletedSessionIds } =
+                await chrome.storage.local.get(['geminiSessions', 'geminiDeletedSessionIds']);
+            const geminiSessions = Array.isArray(storedSessions) ? storedSessions : [];
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionSnapshot.id
+            );
+            if (
+                sessionIndex === -1 &&
+                isDeletedSessionId(
+                    sessionSnapshot.id,
+                    normalizeDeletedSessionIds(geminiDeletedSessionIds)
+                )
+            ) {
+                return false;
+            }
+
+            const currentSession = sessionIndex !== -1 ? geminiSessions[sessionIndex] : null;
+            const nextSession = {
+                ...mergeCurrentSessionMetadata(currentSession, sessionSnapshot),
+                timestamp: sessionSnapshot.timestamp || Date.now(),
+            };
+
+            if (sessionIndex !== -1) {
+                geminiSessions.splice(sessionIndex, 1);
+            }
+
+            geminiSessions.unshift(nextSession);
+            await saveSessionsAndNotify(geminiSessions);
+
+            return true;
+        } catch (error) {
+            console.error('Error replacing session snapshot:', error);
             return false;
         }
-
-        const { geminiSessions = [], geminiDeletedSessionIds } = await chrome.storage.local.get([
-            'geminiSessions',
-            'geminiDeletedSessionIds',
-        ]);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionSnapshot.id
-        );
-        if (
-            sessionIndex === -1 &&
-            isDeletedSessionId(
-                sessionSnapshot.id,
-                normalizeDeletedSessionIds(geminiDeletedSessionIds)
-            )
-        ) {
-            return false;
-        }
-
-        const currentSession = sessionIndex !== -1 ? geminiSessions[sessionIndex] : null;
-        const nextSession = {
-            ...mergeCurrentSessionMetadata(currentSession, sessionSnapshot),
-            timestamp: sessionSnapshot.timestamp || Date.now(),
-        };
-
-        if (sessionIndex !== -1) {
-            geminiSessions.splice(sessionIndex, 1);
-        }
-
-        geminiSessions.unshift(nextSession);
-        await saveSessionsAndNotify(geminiSessions);
-
-        return true;
-    } catch (error) {
-        console.error('Error replacing session snapshot:', error);
-        return false;
-    }
+    });
 }
 
 export async function getSessionContextSummary(sessionId) {
     if (!sessionId) return null;
 
     try {
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
+        const geminiSessions = await readSessions();
         const session = geminiSessions.find((storedSession) => storedSession.id === sessionId);
         return session?.contextSummary || null;
     } catch (error) {
@@ -333,18 +372,20 @@ export async function getSessionContextSummary(sessionId) {
 export async function updateSessionContextSummary(sessionId, contextSummary) {
     if (!sessionId || !contextSummary) return false;
 
-    try {
-        const { geminiSessions = [] } = await chrome.storage.local.get(['geminiSessions']);
-        const sessionIndex = geminiSessions.findIndex(
-            (storedSession) => storedSession.id === sessionId
-        );
-        if (sessionIndex === -1) return false;
+    return withSerializedWrite(async () => {
+        try {
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
+            if (sessionIndex === -1) return false;
 
-        geminiSessions[sessionIndex].contextSummary = contextSummary;
-        await chrome.storage.local.set({ geminiSessions });
-        return true;
-    } catch (error) {
-        console.error('Error updating context summary:', error);
-        return false;
-    }
+            geminiSessions[sessionIndex].contextSummary = contextSummary;
+            await saveSessionsAndNotify(geminiSessions);
+            return true;
+        } catch (error) {
+            console.error('Error updating context summary:', error);
+            return false;
+        }
+    });
 }
