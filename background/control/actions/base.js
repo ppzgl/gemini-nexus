@@ -1,4 +1,5 @@
 import { ActionWaiter } from '../action_waiter.js';
+import { cursorController } from '../cursor_controller.js';
 
 export class BaseActionHandler {
     constructor(connection, snapshotManager, waitHelper) {
@@ -63,6 +64,27 @@ export class BaseActionHandler {
             }, 1500);
         } catch {
             // Ignore highlight errors
+        }
+    }
+
+    async moveCursorToElement({ backendNodeId }) {
+        if (!backendNodeId) return;
+        try {
+            const { model } = await this.cmd('DOM.getBoxModel', { backendNodeId });
+            if (!model || !model.content) return;
+            const centerX = (model.content[0] + model.content[4]) / 2;
+            const centerY = (model.content[1] + model.content[5]) / 2;
+            await this.moveCursorToPoint(centerX, centerY);
+        } catch {
+            // Cursor is best-effort visual feedback; never block the action.
+        }
+    }
+
+    async moveCursorToPoint(x, y) {
+        try {
+            await cursorController.moveCursorTo(this.connection?.currentTabId, x, y);
+        } catch {
+            // Cursor is best-effort visual feedback; never block the action.
         }
     }
 }

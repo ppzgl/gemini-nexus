@@ -2,7 +2,7 @@
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CONTENT_SCRIPT_ORDER } from './content-script-order.mjs';
+import { CONTENT_SCRIPT_ORDER, YOUTUBE_SCRIPT_ORDER } from './content-script-order.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +65,11 @@ export function createPackagedManifest(manifest) {
             entry.js?.includes('content/gemini_watermark_bridge.js')
         ) {
             contentScripts.push(entry);
+            continue;
+        }
+
+        if (entry.js?.includes('content/youtube_summary.js')) {
+            contentScripts.push({ ...entry, js: ['content/youtube_summary_bundle.js'] });
             continue;
         }
 
@@ -238,6 +243,21 @@ async function writeContentBundle() {
     await writeFile(target, formatContentBundle(segments), 'utf8');
 }
 
+async function writeYouTubeBundle() {
+    /** @type {string[]} */
+    const youtubeScriptOrder = YOUTUBE_SCRIPT_ORDER;
+    const segments = await Promise.all(
+        youtubeScriptOrder.map(async (relativePath) => ({
+            relativePath,
+            source: await readFile(path.join(rootDir, relativePath), 'utf8'),
+        }))
+    );
+
+    const bundleTarget = path.join(packageDir, 'content/youtube_summary_bundle.js');
+    await mkdir(path.dirname(bundleTarget), { recursive: true });
+    await writeFile(bundleTarget, formatContentBundle(segments), 'utf8');
+}
+
 async function copyUnbundledContentScripts() {
     /** @type {{ content_scripts?: Array<{ world?: string, all_frames?: boolean, js?: string[] }> }} */
     const manifest = JSON.parse(await readFile(path.join(rootDir, 'manifest.json'), 'utf8'));
@@ -286,9 +306,12 @@ async function main() {
         writePackagedManifest(),
         copyIntoPackage('logo.png'),
         copyIntoPackage('assets/icons'),
+        copyIntoPackage('assets/cursors'),
         copyIntoPackage('background'),
         writeContentBundle(),
+        writeYouTubeBundle(),
         copyUnbundledContentScripts(),
+        copyIntoPackage('content/cursor'),
         copyIntoPackage('shared'),
         copyIntoPackage('services'),
         copyIntoPackage('vendor/gemini-watermark-remover'),

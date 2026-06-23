@@ -20,6 +20,8 @@ export class MouseActions extends BaseActionHandler {
         try {
             const { x, y } = await this._getElementCenter({ objectId, backendNodeId });
 
+            await this.moveCursorToPoint(x, y);
+
             await this.waitHelper.execute(async () => {
                 await this.cmd('Input.dispatchMouseEvent', {
                     type: 'mouseMoved',
@@ -67,6 +69,8 @@ export class MouseActions extends BaseActionHandler {
 
         try {
             const { x, y } = await this._getElementCenter({ objectId, backendNodeId });
+
+            await this.moveCursorToPoint(x, y);
 
             const hitTestResult = await this.cmd('Runtime.callFunctionOn', {
                 objectId,

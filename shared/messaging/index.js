@@ -1,247 +1,128 @@
+function post(action, payload) {
+    const message = payload === undefined ? { action } : { action, payload };
+    window.parent.postMessage(message, '*');
+}
+
 export function sendToBackground(payload) {
-    window.parent.postMessage(
-        {
-            action: 'FORWARD_TO_BACKGROUND',
-            payload,
-        },
-        '*'
-    );
+    post('FORWARD_TO_BACKGROUND', payload);
 }
 
 export function saveSessionsToStorage(sessions, mutation = null) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_SESSIONS',
-            payload: mutation ? { sessions, mutation } : sessions,
-        },
-        '*'
-    );
+    post('SAVE_SESSIONS', mutation ? { sessions, mutation } : sessions);
 }
 
 export function saveGroupsToStorage(groups) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_GROUPS',
-            payload: Array.isArray(groups) ? groups : [],
-        },
-        '*'
-    );
+    post('SAVE_GROUPS', Array.isArray(groups) ? groups : []);
 }
 
 export function downloadTextFile(text, filename, contentType = 'text/plain') {
-    window.parent.postMessage(
-        {
-            action: 'DOWNLOAD_TEXT',
-            payload: {
-                text,
-                filename,
-                contentType,
-            },
-        },
-        '*'
-    );
+    post('DOWNLOAD_TEXT', { text, filename, contentType });
 }
 
 export function exportHistoryData() {
-    window.parent.postMessage({ action: 'EXPORT_HISTORY_DATA' }, '*');
+    post('EXPORT_HISTORY_DATA');
 }
 
 export function importHistoryData(payload) {
-    window.parent.postMessage(
-        {
-            action: 'IMPORT_HISTORY_DATA',
-            payload,
-        },
-        '*'
-    );
+    post('IMPORT_HISTORY_DATA', payload);
 }
 
 export function exportSettingsData() {
-    window.parent.postMessage({ action: 'EXPORT_SETTINGS_DATA' }, '*');
+    post('EXPORT_SETTINGS_DATA');
 }
 
 export function importSettingsData(payload) {
-    window.parent.postMessage(
-        {
-            action: 'IMPORT_SETTINGS_DATA',
-            payload,
-        },
-        '*'
-    );
+    post('IMPORT_SETTINGS_DATA', payload);
 }
 
 export function saveShortcutsToStorage(shortcuts) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_SHORTCUTS',
-            payload: shortcuts,
-        },
-        '*'
-    );
+    post('SAVE_SHORTCUTS', shortcuts);
 }
 
 export function saveThemeToStorage(theme) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_THEME',
-            payload: theme,
-        },
-        '*'
-    );
+    post('SAVE_THEME', theme);
 }
 
 export function saveLanguageToStorage(lang) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_LANGUAGE',
-            payload: lang,
-        },
-        '*'
-    );
+    post('SAVE_LANGUAGE', lang);
 }
 
 export function requestTextSelectionFromStorage() {
-    window.parent.postMessage({ action: 'GET_TEXT_SELECTION' }, '*');
+    post('GET_TEXT_SELECTION');
 }
 
 export function saveTextSelectionToStorage(enabled) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_TEXT_SELECTION',
-            payload: enabled,
-        },
-        '*'
-    );
+    post('SAVE_TEXT_SELECTION', enabled);
 }
 
 export function requestTextSelectionBlacklistFromStorage() {
-    window.parent.postMessage({ action: 'GET_TEXT_SELECTION_BLACKLIST' }, '*');
+    post('GET_TEXT_SELECTION_BLACKLIST');
 }
 
 export function saveTextSelectionBlacklistToStorage(value) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_TEXT_SELECTION_BLACKLIST',
-            payload: value,
-        },
-        '*'
-    );
+    post('SAVE_TEXT_SELECTION_BLACKLIST', value);
 }
 
 export function requestCustomSelectionToolsFromStorage() {
-    window.parent.postMessage({ action: 'GET_CUSTOM_SELECTION_TOOLS' }, '*');
+    post('GET_CUSTOM_SELECTION_TOOLS');
 }
 
 export function saveCustomSelectionToolsToStorage(tools) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_CUSTOM_SELECTION_TOOLS',
-            payload: Array.isArray(tools) ? tools : [],
-        },
-        '*'
-    );
+    post('SAVE_CUSTOM_SELECTION_TOOLS', Array.isArray(tools) ? tools : []);
 }
 
 export function requestImageToolsFromStorage() {
-    window.parent.postMessage({ action: 'GET_IMAGE_TOOLS' }, '*');
+    post('GET_IMAGE_TOOLS');
 }
 
 export function saveImageToolsToStorage(enabled) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_IMAGE_TOOLS',
-            payload: enabled,
-        },
-        '*'
-    );
+    post('SAVE_IMAGE_TOOLS', enabled);
 }
 
 export function requestGeneratedImageWatermarkRemovalFromStorage() {
-    window.parent.postMessage({ action: 'GET_GENERATED_IMAGE_WATERMARK_REMOVAL' }, '*');
+    post('GET_GENERATED_IMAGE_WATERMARK_REMOVAL');
 }
 
 export function saveGeneratedImageWatermarkRemovalToStorage(enabled) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL',
-            payload: enabled,
-        },
-        '*'
-    );
+    post('SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL', enabled);
 }
 
 export function saveSidebarBehaviorToStorage(behavior) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_SIDEBAR_BEHAVIOR',
-            payload: behavior,
-        },
-        '*'
-    );
+    post('SAVE_SIDEBAR_BEHAVIOR', behavior);
 }
 
 export function requestSidebarExpandedFromStorage() {
-    window.parent.postMessage({ action: 'GET_SIDEBAR_EXPANDED' }, '*');
+    post('GET_SIDEBAR_EXPANDED');
 }
 
 export function saveSidebarExpandedToStorage(isExpanded) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_SIDEBAR_EXPANDED',
-            payload: Boolean(isExpanded),
-        },
-        '*'
-    );
+    post('SAVE_SIDEBAR_EXPANDED', Boolean(isExpanded));
 }
 
 export function saveSidePanelScopeToStorage(scope) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_SIDE_PANEL_SCOPE',
-            payload: scope,
-        },
-        '*'
-    );
+    post('SAVE_SIDE_PANEL_SCOPE', scope);
 }
 
 export function requestAccountIndicesFromStorage() {
-    window.parent.postMessage({ action: 'GET_ACCOUNT_INDICES' }, '*');
+    post('GET_ACCOUNT_INDICES');
 }
 
 export function saveAccountIndicesToStorage(indices) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_ACCOUNT_INDICES',
-            payload: indices,
-        },
-        '*'
-    );
+    post('SAVE_ACCOUNT_INDICES', indices);
 }
 
 export function requestContextSettingsFromStorage() {
-    window.parent.postMessage({ action: 'GET_CONTEXT_SETTINGS' }, '*');
+    post('GET_CONTEXT_SETTINGS');
 }
 
 export function saveContextSettingsToStorage(settings) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_CONTEXT_SETTINGS',
-            payload: settings,
-        },
-        '*'
-    );
+    post('SAVE_CONTEXT_SETTINGS', settings);
 }
 
 export function requestConnectionSettingsFromStorage() {
-    window.parent.postMessage({ action: 'GET_CONNECTION_SETTINGS' }, '*');
+    post('GET_CONNECTION_SETTINGS');
 }
 
 export function saveConnectionSettingsToStorage(connectionSettings) {
-    window.parent.postMessage(
-        {
-            action: 'SAVE_CONNECTION_SETTINGS',
-            payload: connectionSettings,
-        },
-        '*'
-    );
+    post('SAVE_CONNECTION_SETTINGS', connectionSettings);
 }

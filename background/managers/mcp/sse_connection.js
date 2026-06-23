@@ -7,13 +7,24 @@ export async function connectSse(conn, sseUrlStr, { onRpcMessage, clearPending }
     conn.sseAbort = abort;
     conn.ssePostUrl = null;
 
+    // Clear any handshake timer left over from a previous (e.g. abandoned)
+    // connect attempt so it can't reject a stale promise after we've moved on.
+    if (conn._sseEndpointTimer) {
+        clearTimeout(conn._sseEndpointTimer);
+        conn._sseEndpointTimer = null;
+    }
+
     const endpointPromise = new Promise((resolve, reject) => {
-        const timeout = setTimeout(
-            () => reject(new Error('MCP SSE endpoint handshake timeout')),
-            10000
-        );
+        const timeout = setTimeout(() => {
+            conn._sseEndpointTimer = null;
+            reject(new Error('MCP SSE endpoint handshake timeout'));
+        }, 10000);
+        conn._sseEndpointTimer = timeout;
         conn._resolveSseEndpoint = (url) => {
-            clearTimeout(timeout);
+            if (conn._sseEndpointTimer === timeout) {
+                clearTimeout(timeout);
+                conn._sseEndpointTimer = null;
+            }
             resolve(url);
         };
     });

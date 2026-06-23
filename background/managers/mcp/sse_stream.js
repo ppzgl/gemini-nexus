@@ -81,5 +81,12 @@ export async function readSseStream(
         conn.configKey = null;
         conn.sseAbort = null;
         conn.ssePostUrl = null;
+        // Tear down any pending endpoint-handshake timer/resolver so a stopped
+        // reader doesn't leave a dangling 10s timeout on the conn.
+        if (conn._sseEndpointTimer) {
+            clearTimeout(conn._sseEndpointTimer);
+            conn._sseEndpointTimer = null;
+        }
+        conn._resolveSseEndpoint = null;
     }
 }

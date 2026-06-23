@@ -15,8 +15,9 @@ function streamFromChunks(chunks) {
 
 describe('readSseStream', () => {
     it('resolves JSON endpoint events and RPC messages split across chunks', async () => {
+        const resolveSseEndpoint = vi.fn();
         const conn = {
-            _resolveSseEndpoint: vi.fn(),
+            _resolveSseEndpoint: resolveSseEndpoint,
             configKey: 'sse:key',
             initialized: true,
             sseAbort: {},
@@ -37,7 +38,9 @@ describe('readSseStream', () => {
             clearPending,
         });
 
-        expect(conn._resolveSseEndpoint).toHaveBeenCalledWith('http://localhost/messages');
+        // readSseStream nulls conn._resolveSseEndpoint in its finally cleanup,
+        // so assert against the captured spy reference rather than conn.
+        expect(resolveSseEndpoint).toHaveBeenCalledWith('http://localhost/messages');
         expect(resolvePendingRpcMessage).toHaveBeenCalledWith({
             jsonrpc: '2.0',
             id: 7,
@@ -47,5 +50,32 @@ describe('readSseStream', () => {
         expect(conn.initialized).toBe(false);
         expect(conn.transport).toBeNull();
         expect(conn.ssePostUrl).toBeNull();
+    });
+
+    it('clears the endpoint-handshake timer and resolver when the stream stops', async () => {
+        const fakeTimer = { id: 42 };
+        const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+        const conn = {
+            _resolveSseEndpoint: vi.fn(),
+            _sseEndpointTimer: fakeTimer,
+            configKey: 'sse:key',
+            initialized: true,
+            sseAbort: {},
+            ssePostUrl: null,
+            transport: 'sse',
+        };
+        const reader = streamFromChunks(['event: endpoint\ndata: "/messages"\n\n']).getReader();
+
+        await readSseStream(conn, reader, 'http://localhost/sse', {
+            resolvePendingRpcMessage: vi.fn(),
+            clearPending: vi.fn(),
+        });
+
+        // The 10s handshake timer must be cleared and the resolver nulled so a
+        // dangling timeout can't fire against a resurrected conn.
+        expect(clearTimeoutSpy).toHaveBeenCalledWith(fakeTimer);
+        expect(conn._sseEndpointTimer).toBeNull();
+        expect(conn._resolveSseEndpoint).toBeNull();
+        clearTimeoutSpy.mockRestore();
     });
 });

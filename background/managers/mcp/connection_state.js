@@ -15,6 +15,8 @@ export function createMcpConnectionState() {
         sseAbort: null,
         ssePostUrl: null,
         sseReaderTask: null,
+        _sseEndpointTimer: null,
+        _resolveSseEndpoint: null,
         httpPostUrl: null,
         headers: {},
         sessionId: null,
@@ -79,6 +81,14 @@ export function disconnectMcpConnectionState(conn) {
     conn.sseAbort = null;
     conn.ssePostUrl = null;
     conn.sseReaderTask = null;
+    // Clear any pending SSE endpoint-handshake timer so it can't reject (or
+    // resolve against a resurrected conn) after disconnect, and null the
+    // resolver so a late stream chunk can't resolve a stale handshake promise.
+    if (conn._sseEndpointTimer) {
+        clearTimeout(conn._sseEndpointTimer);
+        conn._sseEndpointTimer = null;
+    }
+    conn._resolveSseEndpoint = null;
     conn.httpPostUrl = null;
     conn.headers = {};
     conn.sessionId = null;

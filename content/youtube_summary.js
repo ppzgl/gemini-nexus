@@ -1,4 +1,6 @@
 (function () {
+    if (window.GeminiNexusYouTubeSummaryReady) return;
+    window.GeminiNexusYouTubeSummaryReady = true;
     if (window.GeminiNexusPageGuard?.isDisabled) return;
 
     const REQUEST_SOURCE = 'youtube-summary';

@@ -95,13 +95,21 @@ export function classifyProviderError(input) {
  * AbortError is never retried and propagates immediately so callers can
  * distinguish cancellation from real failures.
  *
+ * Auth errors (401/403, expired tokens) are only retryable when the caller
+ * can actually refresh credentials between attempts. The Web provider does
+ * this via account rotation + context refresh; dedicated API providers
+ * (Official/OpenAI/Anthropic) hold a static key, so a 401/403 is guaranteed
+ * to fail again and must NOT be retried. Callers opt into refresh-retries by
+ * passing `canRefreshAuth: true`.
+ *
  * @param {() => Promise<T>} fn - Operation to run.
- * @param {{ signal?: AbortSignal, maxAttempts?: number }} [options]
+ * @param {{ signal?: AbortSignal, maxAttempts?: number, canRefreshAuth?: boolean }} [options]
  * @returns {Promise<T>}
  * @template T
  */
 export async function withProviderRetry(fn, options = {}) {
     const maxAttempts = Number.isInteger(options.maxAttempts) ? options.maxAttempts : 3;
+    const canRefreshAuth = options.canRefreshAuth === true;
 
     let attempt = 0;
     // eslint-disable-next-line no-constant-condition
@@ -112,8 +120,11 @@ export async function withProviderRetry(fn, options = {}) {
         } catch (error) {
             if (error?.name === 'AbortError') throw error;
 
-            const { retryable } = classifyProviderError(error);
-            if (!retryable || attempt >= maxAttempts) throw error;
+            const { kind, retryable } = classifyProviderError(error);
+            // A static-key caller cannot fix an auth error by retrying, so
+            // never loop on it — surface it to the user immediately.
+            const shouldRetry = retryable && !(kind === 'auth' && !canRefreshAuth);
+            if (!shouldRetry || attempt >= maxAttempts) throw error;
 
             const baseDelay = Math.pow(2, attempt) * 1000;
             const jitter = Math.random() * 1000;

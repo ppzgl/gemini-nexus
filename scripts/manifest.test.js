@@ -172,12 +172,17 @@ describe('manifest content scripts', () => {
         const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
         const listedFiles = manifest.content_scripts.flatMap((entry) => entry.js ?? []);
         const uniqueListedFiles = [...new Set(listedFiles)].sort();
+        // Injected on demand via chrome.scripting.executeScript rather than
+        // declared statically in the manifest content_scripts.
+        const onDemandInjectedFiles = ['content/cursor/cursor_content.js'];
         const runtimeContentFiles = [
             ...(await listJavaScriptFiles('content')),
             ...classicContentSupportFiles,
             'vendor/gemini-watermark-remover/content_main.js',
             'vendor/gemini-watermark-remover/page_process_runtime.js',
-        ].sort();
+        ]
+            .filter((file) => !onDemandInjectedFiles.includes(file))
+            .sort();
 
         expect(listedFiles).toHaveLength(uniqueListedFiles.length);
         expect(uniqueListedFiles).toEqual(runtimeContentFiles);

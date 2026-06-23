@@ -4,6 +4,8 @@ export async function handleFillElement(handler, { uid, value }) {
     }
 
     const objectId = await handler.getObjectIdFromUid(uid);
+    const backendNodeId = handler.snapshotManager?.getBackendNodeId?.(uid);
+    await handler.moveCursorToElement?.({ backendNodeId });
 
     await handler.waitHelper.execute(async () => {
         // Focus first so browser-level input behavior matches user interaction.

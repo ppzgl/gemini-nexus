@@ -1,4 +1,5 @@
 import { createSettingsHelpButton } from './help_button.js';
+import { DEFAULT_MCP_HTTP_URL } from '../../../../shared/config/constants.js';
 
 export const ConnectionSettingsTemplate = `
     <div class="setting-group">
@@ -166,7 +167,7 @@ export const ConnectionSettingsTemplate = `
                 </div>
                 <div class="setting-field">
                     <span data-i18n="mcpServerUrl">URL</span>
-                    <input type="text" id="mcp-server-url" class="settings-input settings-full-input" placeholder="http://127.0.0.1:3006/mcp">
+                    <input type="text" id="mcp-server-url" class="settings-input settings-full-input" placeholder="${DEFAULT_MCP_HTTP_URL}">
                 </div>
                 <div class="setting-field">
                     <span class="setting-field-label"><span data-i18n="mcpHeaders">Request Headers (JSON)</span>${createSettingsHelpButton('mcpHeadersDesc')}</span>

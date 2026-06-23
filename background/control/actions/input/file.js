@@ -9,6 +9,8 @@ export class FileActions extends BaseActionHandler {
         const backendNodeId = this.snapshotManager.getBackendNodeId(uid);
         if (!backendNodeId) return `Error: UID ${uid} not found. Call take_snapshot first.`;
 
+        await this.moveCursorToElement({ backendNodeId });
+
         await this.cmd('DOM.enable');
 
         try {

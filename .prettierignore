@@ -4,3 +4,6 @@ artifacts/
 vendor/
 package-lock.json
 .superpowers/
+.trellis/
+docs/superpowers/
+test-pages/

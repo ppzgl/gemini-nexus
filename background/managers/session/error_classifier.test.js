@@ -141,4 +141,34 @@ describe('withProviderRetry', () => {
         await expect(withProviderRetry(fn, { maxAttempts: 2 })).rejects.toThrow('fetch failed');
         expect(fn).toHaveBeenCalledTimes(2);
     });
+
+    it('does NOT retry 401/403 auth errors by default (static-key providers)', async () => {
+        const fn = vi.fn().mockRejectedValue(new Error('API Error (401): Unauthorized'));
+        await expect(withProviderRetry(fn)).rejects.toThrow('API Error (401): Unauthorized');
+        expect(fn).toHaveBeenCalledTimes(1);
+
+        const fn403 = vi.fn().mockRejectedValue(new Error('API Error (403): Forbidden'));
+        await expect(withProviderRetry(fn403)).rejects.toThrow('API Error (403): Forbidden');
+        expect(fn403).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries 401/403 auth errors when canRefreshAuth is true (Web provider)', async () => {
+        const fn = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('API Error (401): Unauthorized'))
+            .mockResolvedValueOnce('recovered');
+
+        await expect(withProviderRetry(fn, { canRefreshAuth: true })).resolves.toBe('recovered');
+        expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it('still retries transient (non-auth) errors regardless of canRefreshAuth', async () => {
+        const fn = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('API Error (503): Service Unavailable'))
+            .mockResolvedValueOnce('recovered');
+
+        await expect(withProviderRetry(fn)).resolves.toBe('recovered');
+        expect(fn).toHaveBeenCalledTimes(2);
+    });
 });
