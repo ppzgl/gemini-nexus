@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { extensionIdFromKey, buildHostManifest, install, uninstall } from './install-native-logger.mjs';
@@ -68,6 +68,19 @@ describe('install / uninstall', () => {
         };
         install(opts);
         expect(() => install(opts)).not.toThrow();
+        rmSync(work, { recursive: true, force: true });
+    });
+
+    it('makes the host script executable so Chrome can exec it', () => {
+        const work = mkdtempSync(join(tmpdir(), 'gn-install-'));
+        const hostScriptPath = join(work, 'native-logger.js');
+        install({
+            extensionId: 'ccmbheekkhlgfggi',
+            hostScriptPath,
+            manifestDir: join(work, 'manifest'),
+            sourceHost: new URL('./native-logger/host.js', import.meta.url).pathname,
+        });
+        expect(statSync(hostScriptPath).mode & 0o111).toBeTruthy(); // any execute bit
         rmSync(work, { recursive: true, force: true });
     });
 });

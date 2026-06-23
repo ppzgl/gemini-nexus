@@ -39,13 +39,32 @@ export class NativeLoggerSink {
     }
 
     _serialize(entry) {
+        const data = this._safeData(entry.data);
         return {
             timestamp: entry.timestamp ?? Date.now(),
             level: entry.level || 'INFO',
             context: entry.context || 'System',
             message: entry.message ?? '',
-            ...(entry.data != null ? { data: entry.data } : {}),
+            ...(data !== undefined ? { data } : {}),
         };
+    }
+
+    // Coerce data into something chrome.runtime Port.postMessage can structure-clone:
+    // drop functions/symbols, and fall back to a placeholder for circular/BigInt values
+    // (JSON.stringify throws on those) so a bad entry never throws or sticks in the buffer.
+    _safeData(data) {
+        if (data == null) return undefined;
+        try {
+            return JSON.parse(
+                JSON.stringify(data, (_key, value) => {
+                    if (typeof value === 'function') return '[Function]';
+                    if (typeof value === 'symbol') return '[Symbol]';
+                    return value;
+                })
+            );
+        } catch {
+            return { _unserializable: true };
+        }
     }
 
     _send(entry) {
@@ -97,11 +116,13 @@ export class NativeLoggerSink {
     _flushBuffer() {
         if (!this._port || this._buffer.length === 0) return;
         const pending = this._buffer.splice(0);
-        for (const entry of pending) {
+        for (let i = 0; i < pending.length; i++) {
             try {
-                this._port.postMessage(this._serialize(entry));
+                this._port.postMessage(this._serialize(pending[i]));
             } catch {
-                this._buffer.push(entry);
+                // Re-queue the failing entry AND everything after it, in order,
+                // so a single bad entry doesn't drop the tail of the backlog.
+                this._buffer.unshift(...pending.slice(i));
                 break;
             }
         }

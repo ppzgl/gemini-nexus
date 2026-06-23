@@ -5,7 +5,7 @@
 // to remove. Run from the project root so manifest.json's key can be read.
 
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +61,7 @@ export function install({
     }
     mkdirSync(dirname(hostScriptPath), { recursive: true });
     copyFileSync(sourceHost, hostScriptPath);
+    chmodSync(hostScriptPath, 0o755);
     mkdirSync(manifestDir, { recursive: true });
     const writtenPath = join(manifestDir, `${HOST_NAME}.json`);
     writeFileSync(writtenPath, `${JSON.stringify(buildHostManifest({ extensionId, hostScriptPath }), null, 2)}\n`, 'utf8');
@@ -91,5 +92,5 @@ function main() {
     console.log('  Log file:      ~/Library/Logs/gemini-nexus.log');
 }
 
-const invokedAsScript = import.meta.url === `file://${process.argv[1]}`;
+const invokedAsScript = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedAsScript) main();

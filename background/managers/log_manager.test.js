@@ -70,4 +70,18 @@ describe('LogManager sinks', () => {
         manager.add({ level: 'INFO', message: 'm' });
         expect(ok.log).toHaveBeenCalledTimes(1);
     });
+
+    it('guards against re-entry from a sink (no infinite recursion)', () => {
+        const manager = new LogManager();
+        manager._save = () => {};
+        let reentryCount = 0;
+        manager.sinks.push({
+            log: () => {
+                reentryCount++;
+                if (reentryCount < 5) manager.add({ level: 'INFO', message: 'reentry' });
+            },
+        });
+        expect(() => manager.add({ level: 'INFO', message: 'init' })).not.toThrow();
+        expect(reentryCount).toBe(1); // re-entrant add was dropped by the guard
+    });
 });

@@ -4,6 +4,7 @@ export class LogManager {
         this.MAX_LOGS = 5000; // Increased capacity for detailed debugging
         this.STORAGE_KEY = 'gemini_nexus_logs';
         this.sinks = Array.isArray(sinks) ? sinks : [];
+        this._inAdd = false;
         this.init();
     }
 
@@ -20,23 +21,31 @@ export class LogManager {
     }
 
     add(entry) {
-        if (!entry.timestamp) entry.timestamp = Date.now();
+        // Re-entry guard: a sink must never be allowed to call add() again
+        // (e.g. via console.* during native send) — that would recurse and blow the stack.
+        if (this._inAdd) return;
+        this._inAdd = true;
+        try {
+            if (!entry.timestamp) entry.timestamp = Date.now();
 
-        this.logs.push(entry);
+            this.logs.push(entry);
 
-        // Prune if too large
-        if (this.logs.length > this.MAX_LOGS) {
-            this.logs = this.logs.slice(-this.MAX_LOGS);
-        }
-
-        this._save();
-
-        for (const sink of this.sinks) {
-            try {
-                sink.log(entry);
-            } catch {
-                // a sink must never break logging
+            // Prune if too large
+            if (this.logs.length > this.MAX_LOGS) {
+                this.logs = this.logs.slice(-this.MAX_LOGS);
             }
+
+            this._save();
+
+            for (const sink of this.sinks) {
+                try {
+                    sink.log(entry);
+                } catch {
+                    // a sink must never break logging
+                }
+            }
+        } finally {
+            this._inAdd = false;
         }
     }
 

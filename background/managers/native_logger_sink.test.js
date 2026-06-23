@@ -99,4 +99,43 @@ describe('NativeLoggerSink', () => {
         sink.log({ level: 'info', message: 'y' });
         expect(port.postMessage).toHaveBeenCalledTimes(1); // only 'x'
     });
+
+    it('_serialize cleans circular/unclonable data so postMessage never throws', () => {
+        const sink = new NativeLoggerSink({ runtime: { connectNative: () => {} }, enabled: true });
+        const circular = { a: 1 };
+        circular.self = circular;
+        const fn = () => {};
+        const serialized = sink._serialize({ level: 'info', message: 'm', data: { circular, fn } });
+        // 模拟 postMessage 的结构化克隆:能 JSON round-trip 即可克隆
+        expect(() => JSON.parse(JSON.stringify(serialized))).not.toThrow();
+        expect(serialized.message).toBe('m');
+    });
+
+    it('flush re-queues the failing entry AND all later entries (none lost, order kept)', () => {
+        let connectOk = false;
+        const goodPort = {
+            postMessage: vi.fn((e) => {
+                if (e.message === 'fail') throw new Error('clone err');
+            }),
+            disconnect: vi.fn(),
+            onDisconnect: { addListener: () => {} },
+        };
+        const runtime = {
+            connectNative: vi.fn(() => {
+                if (!connectOk) throw new Error('down');
+                return goodPort;
+            }),
+        };
+        const sink = new NativeLoggerSink({ runtime, enabled: true });
+        sink.log({ level: 'info', message: 'a' });   // buffer (connect down)
+        sink.log({ level: 'info', message: 'fail' }); // buffer
+        sink.log({ level: 'info', message: 'b' });   // buffer
+        connectOk = true;
+        sink.log({ level: 'info', message: 'c' });   // connect ok → flush then send c
+
+        const sent = goodPort.postMessage.mock.calls.map((c) => c[0].message);
+        expect(sent).toEqual(['a', 'fail', 'c']); // a flushed ok; fail attempted but threw; c sent via _send
+        expect(sent).not.toContain('b'); // b never attempted — re-queued after the failing entry
+        expect(sink._buffer.map((e) => e.message)).toEqual(['fail', 'b']); // both re-queued in order
+    });
 });

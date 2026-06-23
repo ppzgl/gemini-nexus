@@ -7,6 +7,7 @@
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 export const DEFAULT_LOG_PATH = join(homedir(), 'Library', 'Logs', 'gemini-nexus.log');
 export const ROTATE_BYTES = 10 * 1024 * 1024;
@@ -74,7 +75,8 @@ export function main(logFilePath = DEFAULT_LOG_PATH) {
         for (const entry of messages) appendLogEntry(entry, logFilePath);
     });
     process.stdin.on('end', () => process.exit(0));
+    process.stdin.on('error', () => process.exit(1));
 }
 
-const invokedAsScript = import.meta.url === `file://${process.argv[1]}`;
+const invokedAsScript = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedAsScript) main();
