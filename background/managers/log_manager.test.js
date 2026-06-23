@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setupConsoleInterception } from './log_manager.js';
+import { setupConsoleInterception, LogManager } from './log_manager.js';
 
 describe('console log redaction', () => {
     let originalConsole;
@@ -42,5 +42,32 @@ describe('console log redaction', () => {
         expect(entry.message).not.toContain('query-token');
         expect(entry.message).not.toContain('private-cookie');
         expect(entry.message).not.toContain('refresh-secret');
+    });
+});
+
+describe('LogManager sinks', () => {
+    it('notifies registered sinks on add()', () => {
+        const sink = { log: vi.fn() };
+        const manager = new LogManager([sink]);
+        // avoid hitting real chrome.storage in unit test
+        manager._save = () => {};
+        manager.add({ level: 'INFO', context: 'X', message: 'm' });
+        expect(sink.log).toHaveBeenCalledTimes(1);
+        expect(sink.log.mock.calls[0][0]).toMatchObject({ level: 'INFO', context: 'X', message: 'm' });
+    });
+
+    it('works with no sinks (backward compatible)', () => {
+        const manager = new LogManager();
+        manager._save = () => {};
+        expect(() => manager.add({ level: 'INFO', message: 'm' })).not.toThrow();
+    });
+
+    it('keeps working if a sink throws', () => {
+        const broken = { log: () => { throw new Error('boom'); } };
+        const ok = { log: vi.fn() };
+        const manager = new LogManager([broken, ok]);
+        manager._save = () => {};
+        manager.add({ level: 'INFO', message: 'm' });
+        expect(ok.log).toHaveBeenCalledTimes(1);
     });
 });

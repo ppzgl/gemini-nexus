@@ -3,6 +3,7 @@ import { ImageManager } from './managers/image_manager.js';
 import { BrowserControlManager } from './managers/control_manager.js';
 import { McpRemoteManager } from './managers/mcp_remote_manager.js';
 import { LogManager, setupConsoleInterception } from './managers/log_manager.js';
+import { NativeLoggerSink } from './managers/native_logger_sink.js';
 import { SidePanelScopeManager } from './managers/sidepanel_scope_manager.js';
 import { setupContextMenus } from './menus.js';
 import { setupMessageListener } from './messages.js';
@@ -14,7 +15,22 @@ import {
     startAreaOcrForTab as startAreaOcrForTabWithManager,
 } from './page_shortcut_tab_actions.js';
 
-const logManager = new LogManager();
+const nativeLoggerSink = new NativeLoggerSink({ minLevel: 'info', enabled: false });
+const logManager = new LogManager([nativeLoggerSink]);
+
+chrome.storage.local.get(['geminiNativeLogEnabled', 'geminiNativeLogLevel'], (result) => {
+    nativeLoggerSink.setEnabled(result.geminiNativeLogEnabled === true);
+    if (result.geminiNativeLogLevel) nativeLoggerSink.setMinLevel(result.geminiNativeLogLevel);
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.geminiNativeLogEnabled) {
+        nativeLoggerSink.setEnabled(changes.geminiNativeLogEnabled.newValue === true);
+    }
+    if (changes.geminiNativeLogLevel) {
+        nativeLoggerSink.setMinLevel(changes.geminiNativeLogLevel.newValue);
+    }
+});
 
 setupConsoleInterception(logManager);
 

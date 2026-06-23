@@ -1,8 +1,9 @@
 export class LogManager {
-    constructor() {
+    constructor(sinks = []) {
         this.logs = [];
         this.MAX_LOGS = 5000; // Increased capacity for detailed debugging
         this.STORAGE_KEY = 'gemini_nexus_logs';
+        this.sinks = Array.isArray(sinks) ? sinks : [];
         this.init();
     }
 
@@ -29,6 +30,14 @@ export class LogManager {
         }
 
         this._save();
+
+        for (const sink of this.sinks) {
+            try {
+                sink.log(entry);
+            } catch {
+                // a sink must never break logging
+            }
+        }
     }
 
     _save() {
