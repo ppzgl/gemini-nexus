@@ -1100,6 +1100,18 @@ function cssText() {
                 });
                 sendResponse({ ok: true });
                 return true;
+            case 'CURSOR_THINK':
+                // Control session is active but the agent has no target coordinate
+                // yet — drive the overlay into its "thinking" wobble (cursor:null +
+                // a fresh turnId so thinkTurnKey changes and the wobble (re)starts).
+                overlay.setState({
+                    cursor: null,
+                    isVisible: true,
+                    sessionId: 'gn',
+                    turnId: String(message.turnId ?? ''),
+                });
+                sendResponse({ ok: true });
+                return true;
             default:
                 return false;
         }

@@ -29,6 +29,14 @@ class CursorController {
                 return false;
             });
 
+            chrome.debugger.onAttach.addListener((source) => {
+                const tabId = source?.tabId;
+                if (!Number.isInteger(tabId)) return;
+                // Control session starting: show the cursor in its "thinking"
+                // pose until the first action drives it to a target coordinate.
+                this.showThinking(tabId);
+            });
+
             chrome.debugger.onDetach.addListener((source) => {
                 const tabId = source?.tabId;
                 if (!Number.isInteger(tabId)) return;
@@ -38,12 +46,14 @@ class CursorController {
 
             chrome.tabs.onRemoved.addListener((tabId) => {
                 this.injectedTabs.delete(tabId);
+                this.hideCursor(tabId);
             });
 
             chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
                 // Navigation reloads the page and discards the injected overlay.
                 if (changeInfo.url || changeInfo.status === 'loading') {
                     this.injectedTabs.delete(tabId);
+                    this.hideCursor(tabId);
                 }
             });
         }
@@ -102,6 +112,18 @@ class CursorController {
             await this.sendTabMessage(tabId, { action: 'CURSOR_HIDE' });
         } catch {
             // Tab may already be gone; nothing to hide.
+        }
+    }
+
+    async showThinking(tabId) {
+        if (!Number.isInteger(tabId)) return;
+        const injected = await this.ensureInjected(tabId);
+        if (!injected) return;
+        this.thinkTurnId = (this.thinkTurnId ?? 0) + 1;
+        try {
+            await this.sendTabMessage(tabId, { action: 'CURSOR_THINK', turnId: this.thinkTurnId });
+        } catch {
+            // Best-effort: a subsequent CURSOR_MOVE will still drive the overlay.
         }
     }
 
