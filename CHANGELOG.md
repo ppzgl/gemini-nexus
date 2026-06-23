@@ -1,5 +1,16 @@
 # Changelog
 
+## v5.0.14 - 2026-06-23
+
+- 修复高刷新率（120Hz/144Hz）屏幕上 AI 光标动画偏快的问题：将帧步进对齐到 Browser Control Bridge 的真实 `elapsed` 逻辑（仅首帧补一个名义帧，其余按真实 delta 推进），使光标运动与墙钟时间同步，不再随刷新率成倍加快。
+- 经逐参数核对，光标的视觉外观与运动参数（尺寸、旋转、辉光、弹簧 response/damping、贝塞尔弧线、思考摆动等）已与 Browser Control Bridge 完全等价，本次仅修复移植时丢失的这一处帧步进分支。
+
+## v5.0.13 - 2026-06-17
+
+- 为浏览器控制的点击、悬停、填表、上传等交互操作新增 AI 光标可视化，移植自 Browser Control Bridge 的弹簧物理与贝塞尔弧线运动引擎，含蓝色辉光指针与到达后的“思考”摆动。
+- 光标覆盖层按需经 `chrome.scripting` 注入受控标签页，动画到达后回传并 fail-open 等待，detach、切换标签或页面导航时自动隐藏与清理，绝不阻塞实际操作。
+- 同步扩展打包流程与 manifest `web_accessible_resources` 以纳入光标脚本与图片资源，并为按需注入脚本补充 manifest 回归测试例外。
+
 ## v5.0.12 - 2026-06-07
 
 - 替换 Gemini 去水印实现，接入 `gemini-watermark-remover-extension` 的 GWR 主世界脚本与处理 runtime。
