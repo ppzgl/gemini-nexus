@@ -26,6 +26,7 @@ export class GeneralSection {
             textSelectionToggle: getSettingsElement(DOM_IDS.TEXT_SELECTION_TOGGLE),
             textSelectionBlacklistInput: getSettingsElement(DOM_IDS.TEXT_SELECTION_BLACKLIST),
             imageToolsToggle: getSettingsElement(DOM_IDS.IMAGE_TOOLS_TOGGLE),
+            imageToolsBlacklistInput: getSettingsElement(DOM_IDS.IMAGE_TOOLS_BLACKLIST),
             generatedImageWatermarkToggle: getSettingsElement(
                 DOM_IDS.GENERATED_IMAGE_WATERMARK_TOGGLE
             ),
@@ -60,6 +61,11 @@ export class GeneralSection {
             imageToolsToggle.addEventListener('change', (event) =>
                 this.fire('onImageToolsChange', event.target.checked)
             );
+        }
+        if (this.elements.imageToolsBlacklistInput) {
+            this.elements.imageToolsBlacklistInput.addEventListener('input', (event) => {
+                this.fire('onImageToolsBlacklistChange', event.target.value);
+            });
         }
         if (generatedImageWatermarkToggle) {
             generatedImageWatermarkToggle.addEventListener('change', (event) =>
@@ -120,13 +126,22 @@ export class GeneralSection {
         }
     }
 
-    setToggles(textSelection, imageTools, generatedImageWatermarkRemoval) {
+    setToggles(textSelection, imageTools, generatedImageWatermarkRemoval, imageToolsBlacklist) {
         if (this.elements.textSelectionToggle)
             this.elements.textSelectionToggle.checked = textSelection;
         if (this.elements.imageToolsToggle) this.elements.imageToolsToggle.checked = imageTools;
         if (this.elements.generatedImageWatermarkToggle) {
             this.elements.generatedImageWatermarkToggle.checked =
                 generatedImageWatermarkRemoval !== false;
+        }
+        if (this.elements.imageToolsBlacklistInput) {
+            this.elements.imageToolsBlacklistInput.value = String(imageToolsBlacklist || '');
+        }
+    }
+
+    setImageToolsBlacklist(value) {
+        if (this.elements.imageToolsBlacklistInput) {
+            this.elements.imageToolsBlacklistInput.value = value || '';
         }
     }
 

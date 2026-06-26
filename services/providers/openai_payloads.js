@@ -1,47 +1,10 @@
 import {
-    countUserAttachmentsByType,
     getImageAttachmentDataUrls,
     normalizeUserAttachments,
 } from '../../shared/attachments/index.js';
+import { getMessageAttachments, textWithUnsupportedFileNotice } from './shared/attachments.js';
 
-export function normalizeBaseUrl(baseUrl) {
-    return String(baseUrl || '').replace(/\/$/, '');
-}
-
-function getMessageAttachments(message) {
-    if (message?.role !== 'user') return [];
-    const attachments = normalizeUserAttachments(message?.attachments);
-    if (attachments.length > 0) return attachments;
-    return normalizeUserAttachments(message?.image);
-}
-
-function getUnsupportedFileAttachments(attachments) {
-    return normalizeUserAttachments(attachments).filter(
-        (attachment) => !attachment.type.startsWith('image/')
-    );
-}
-
-export function assertCurrentAttachmentsSupported(files) {
-    const counts = countUserAttachmentsByType(files);
-    if (counts.files === 0) return;
-
-    throw new Error(
-        'OpenAI Compatible API supports image attachments only. Remove non-image files or switch to Gemini Official/Web.'
-    );
-}
-
-function textWithUnsupportedFileNotice(text, attachments) {
-    const unsupported = getUnsupportedFileAttachments(attachments);
-    if (unsupported.length === 0) return text || '';
-
-    const names = unsupported
-        .map((attachment) => attachment.name)
-        .filter(Boolean)
-        .join(', ');
-    const suffix = names ? `: ${names}` : '';
-    const marker = `[${unsupported.length} unsupported file attachment(s) omitted${suffix}]`;
-    return [text, marker].filter(Boolean).join('\n');
-}
+export { normalizeBaseUrl } from './shared/urls.js';
 
 function buildOpenAIContent(text, images) {
     if (!images || images.length === 0) {

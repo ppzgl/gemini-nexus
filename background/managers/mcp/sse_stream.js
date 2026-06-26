@@ -25,7 +25,9 @@ export async function readSseStream(
                 if (parsed && typeof parsed === 'object' && typeof parsed.endpoint === 'string') {
                     endpoint = parsed.endpoint;
                 }
-            } catch {}
+            } catch {
+                // 静默降级:endpoint 不是合法 JSON 时回退到原始字符串
+            }
 
             try {
                 const url = new URL(endpoint, baseUrl).toString();
@@ -33,7 +35,9 @@ export async function readSseStream(
                     conn.ssePostUrl = url;
                     if (conn._resolveSseEndpoint) conn._resolveSseEndpoint(url);
                 }
-            } catch {}
+            } catch {
+                // 静默降级:URL 构造失败(endpoint 无效时)忽略该 endpoint 事件
+            }
             return;
         }
 
@@ -41,7 +45,9 @@ export async function readSseStream(
             try {
                 const rpcMessage = JSON.parse(payload);
                 resolvePendingRpcMessage(rpcMessage);
-            } catch {}
+            } catch {
+                // 静默降级:非 JSON 消息(如心跳/注释)无法解析为 RPC,直接丢弃
+            }
         }
     };
 
@@ -74,7 +80,9 @@ export async function readSseStream(
     } finally {
         try {
             reader.releaseLock();
-        } catch {}
+        } catch {
+            // 静默降级:reader 释放失败时流已结束或被其他代码释放,无需处理
+        }
         clearPending(new Error('MCP SSE stream closed'));
         conn.initialized = false;
         conn.transport = null;

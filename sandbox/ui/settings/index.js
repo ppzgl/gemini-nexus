@@ -6,6 +6,8 @@ import {
     requestTextSelectionFromStorage,
     saveTextSelectionBlacklistToStorage,
     requestTextSelectionBlacklistFromStorage,
+    saveImageToolsBlacklistToStorage,
+    requestImageToolsBlacklistFromStorage,
     saveCustomSelectionToolsToStorage,
     requestCustomSelectionToolsFromStorage,
     saveSidebarBehaviorToStorage,
@@ -65,6 +67,7 @@ export class SettingsController {
         this.textSelectionBlacklist = '';
         this.customSelectionTools = [];
         this.imageToolsEnabled = true;
+        this.imageToolsBlacklist = '';
         this.generatedImageWatermarkRemovalEnabled = true;
         this.accountIndices = '0';
         this.sidebarBehavior = 'auto';
@@ -163,7 +166,8 @@ export class SettingsController {
         this.view.setToggles(
             this.textSelectionEnabled,
             this.imageToolsEnabled,
-            this.generatedImageWatermarkRemovalEnabled
+            this.generatedImageWatermarkRemovalEnabled,
+            this.imageToolsBlacklist
         );
         this.view.setTextSelectionBlacklist(this.textSelectionBlacklist);
         this.view.setCustomSelectionTools(this.customSelectionTools);
@@ -177,6 +181,7 @@ export class SettingsController {
         requestTextSelectionBlacklistFromStorage();
         requestCustomSelectionToolsFromStorage();
         requestImageToolsFromStorage();
+        requestImageToolsBlacklistFromStorage();
         requestGeneratedImageWatermarkRemovalFromStorage();
         requestAccountIndicesFromStorage();
         requestContextSettingsFromStorage();
@@ -333,7 +338,8 @@ export class SettingsController {
         this.view.setToggles(
             this.textSelectionEnabled,
             this.imageToolsEnabled,
-            this.generatedImageWatermarkRemovalEnabled
+            this.generatedImageWatermarkRemovalEnabled,
+            this.imageToolsBlacklist
         );
     }
 
@@ -349,10 +355,24 @@ export class SettingsController {
 
     updateImageTools(enabled) {
         this.imageToolsEnabled = enabled;
+        chrome.storage.local.get(['geminiImageToolsBlacklist'], (items) => {
+            this.imageToolsBlacklist = items.geminiImageToolsBlacklist || '';
+            this.view.setToggles(
+                this.textSelectionEnabled,
+                this.imageToolsEnabled,
+                this.generatedImageWatermarkRemovalEnabled,
+                this.imageToolsBlacklist
+            );
+        });
+    }
+
+    updateImageToolsBlacklist(blacklist) {
+        this.imageToolsBlacklist = blacklist || '';
         this.view.setToggles(
             this.textSelectionEnabled,
             this.imageToolsEnabled,
-            this.generatedImageWatermarkRemovalEnabled
+            this.generatedImageWatermarkRemovalEnabled,
+            this.imageToolsBlacklist
         );
     }
 
@@ -361,7 +381,8 @@ export class SettingsController {
         this.view.setToggles(
             this.textSelectionEnabled,
             this.imageToolsEnabled,
-            this.generatedImageWatermarkRemovalEnabled
+            this.generatedImageWatermarkRemovalEnabled,
+            this.imageToolsBlacklist
         );
     }
 

@@ -1,3 +1,5 @@
+export { escapeHtml } from './escape.js';
+
 export function extractFromHTML(variableName, html) {
     const regex = new RegExp(`"${variableName}":"([^"]+)"`);
     const match = regex.exec(html);
@@ -26,10 +28,27 @@ export function createPrefixedId(prefix) {
 }
 
 export async function dataUrlToBlob(dataUrl) {
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+        throw new Error('Invalid data URL: must be a string starting with "data:"');
+    }
+
+    const commaIndex = dataUrl.indexOf(',');
+    if (commaIndex === -1) {
+        throw new Error('Invalid data URL: missing comma separator between header and data');
+    }
+
+    const header = dataUrl.slice(0, commaIndex);
+    const base64Data = dataUrl.slice(commaIndex + 1);
+
+    const mimeMatch = header.match(/:(.*?);/);
+    if (!mimeMatch || !mimeMatch[1]) {
+        throw new Error('Invalid data URL: could not extract MIME type from header');
+    }
+
+    const mimeType = mimeMatch[1];
+
     try {
-        const parts = dataUrl.split(',');
-        const mimeType = parts[0].match(/:(.*?);/)[1];
-        const binaryString = atob(parts[1]);
+        const binaryString = atob(base64Data);
         const bytes = new Uint8Array(binaryString.length);
 
         for (let index = 0; index < binaryString.length; index++) {
@@ -38,7 +57,7 @@ export async function dataUrlToBlob(dataUrl) {
 
         return new Blob([bytes], { type: mimeType });
     } catch (error) {
-        throw new Error('Failed to convert data URL to Blob: ' + error.message);
+        throw new Error('Failed to decode base64 data in data URL: ' + error.message);
     }
 }
 

@@ -434,6 +434,9 @@
 
         show(rect, mousePoint) {
             this.lastRect = rect;
+            // Expose the active selection rect so the toolbar's drag handler can
+            // remember placement relative to the selection.
+            this.ui.currentSelectionRect = rect;
             this.ui.show(rect, mousePoint);
             this.visible = true;
         }

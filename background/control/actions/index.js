@@ -59,6 +59,14 @@ export class BrowserActions {
         return this.input.attachFile(args);
     }
 
+    async dragElement(args) {
+        return this.input.dragElement(args);
+    }
+
+    async scrollElement(args) {
+        return this.input.scrollElement(args);
+    }
+
     async waitFor(args) {
         return this.observation.waitFor(args);
     }
@@ -69,5 +77,21 @@ export class BrowserActions {
 
     async handleDialog(args) {
         return this.observation.handleDialog(args);
+    }
+
+    async waitForUrl(args) {
+        return this.observation.waitForUrl(args);
+    }
+
+    async waitForLoadState(args) {
+        return this.observation.waitForLoadState(args);
+    }
+
+    async waitForTimeout(args) {
+        return this.observation.waitForTimeout(args);
+    }
+
+    async takeScreenshot(args) {
+        return this.observation.takeScreenshot(args);
     }
 }

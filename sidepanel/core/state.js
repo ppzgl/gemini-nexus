@@ -120,6 +120,7 @@ export class StateManager {
                 'geminiTextSelectionEnabled',
                 'geminiTextSelectionBlacklist',
                 'geminiImageToolsEnabled',
+                'geminiImageToolsBlacklist',
                 'geminiGeneratedImageWatermarkRemovalEnabled',
                 'geminiAccountIndices',
                 ...CONNECTION_STORAGE_KEYS,

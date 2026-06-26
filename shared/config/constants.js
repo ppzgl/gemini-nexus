@@ -1,9 +1,20 @@
+/**
+ * ES module wrapper for configuration constants
+ *
+ * Re-exports from globalThis.GeminiNexusConfig for use in ES module contexts:
+ * - Background service worker
+ * - Sidepanel and Settings pages
+ * - Sandbox iframe
+ *
+ * For content scripts, import constants_global.js in manifest.json instead.
+ */
 import './constants_global.js';
 
 const config = globalThis.GeminiNexusConfig;
 
 export const DEFAULT_SHORTCUTS = config.DEFAULT_SHORTCUTS;
 export const normalizeShortcutDefaults = config.normalizeShortcutDefaults;
+export const normalizeContextRecentTurns = config.normalizeContextRecentTurns;
 export const DEFAULT_PROVIDER = config.DEFAULT_PROVIDER;
 export const DEFAULT_STORED_GEMINI_MODEL = config.DEFAULT_STORED_GEMINI_MODEL;
 export const DEFAULT_OFFICIAL_MODEL = config.DEFAULT_OFFICIAL_MODEL;
@@ -21,13 +32,3 @@ export const DEFAULT_MCP_SSE_URL = config.DEFAULT_MCP_SSE_URL;
 export const DEFAULT_MCP_WS_URL = config.DEFAULT_MCP_WS_URL;
 export const DEDICATED_API_PROVIDERS = config.DEDICATED_API_PROVIDERS;
 export const DEDICATED_API_PROVIDER_IDS = config.DEDICATED_API_PROVIDER_IDS;
-
-export function normalizeContextRecentTurns(value) {
-    const parsed = Number.parseInt(value, 10);
-    if (!Number.isFinite(parsed)) return CONTEXT_RECENT_TURNS_LIMITS.DEFAULT;
-
-    return Math.min(
-        CONTEXT_RECENT_TURNS_LIMITS.MAX,
-        Math.max(CONTEXT_RECENT_TURNS_LIMITS.MIN, parsed)
-    );
-}

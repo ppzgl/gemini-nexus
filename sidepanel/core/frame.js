@@ -38,7 +38,14 @@ export class FrameManager {
 
     postMessage(message) {
         if (this.iframe.contentWindow) {
-            this.iframe.contentWindow.postMessage(message, '*');
+            // sandbox iframe 与 sidepanel 同源(chrome-extension://<id>),
+            // 使用具体 origin 替代 '*' 以避免向无关源泄漏消息。
+            const runtime = globalThis.chrome && globalThis.chrome.runtime;
+            const targetOrigin =
+                runtime && typeof runtime.getURL === 'function'
+                    ? runtime.getURL('')
+                    : window.location.origin;
+            this.iframe.contentWindow.postMessage(message, targetOrigin);
         }
     }
 

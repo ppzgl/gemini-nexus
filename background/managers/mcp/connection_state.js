@@ -68,7 +68,9 @@ export function disconnectMcpConnectionState(conn) {
         }
         try {
             conn.ws.close();
-        } catch {}
+        } catch {
+            // 静默降级:WebSocket 关闭失败时连接可能已断开,继续清理其余状态
+        }
     }
     conn.ws = null;
     conn._wsListeners = null;
@@ -76,7 +78,9 @@ export function disconnectMcpConnectionState(conn) {
     if (conn.sseAbort) {
         try {
             conn.sseAbort.abort();
-        } catch {}
+        } catch {
+            // 靜默降级:AbortController 中止失败时流可能已结束,无需处理
+        }
     }
     conn.sseAbort = null;
     conn.ssePostUrl = null;

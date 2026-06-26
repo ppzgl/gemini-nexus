@@ -6,6 +6,12 @@ import {
 import { debugLog } from '../../shared/logging/debug.js';
 import { readErrorMessage } from './openai_response_extractors.js';
 import { readSseJson } from './sse.js';
+import {
+    getMessageAttachments,
+    assertCurrentAttachmentsSupported,
+    textWithUnsupportedFileNotice,
+} from './shared/attachments.js';
+import { normalizeBaseUrl, getDataUrlPayload } from './shared/urls.js';
 
 const DEFAULT_MAX_TOKENS = 8192;
 const THINKING_BUDGET_BY_LEVEL = Object.freeze({
@@ -18,48 +24,6 @@ const ADAPTIVE_THINKING_MODEL_PATTERNS = Object.freeze([
     /^claude-mythos(?:-|$)/i,
     /^claude-opus-4-(?:[7-9]|\d{2,})(?:-|$)/i,
 ]);
-
-function normalizeBaseUrl(baseUrl) {
-    return String(baseUrl || '').replace(/\/$/, '');
-}
-
-function getDataUrlPayload(dataUrl) {
-    if (typeof dataUrl !== 'string') return '';
-    const commaIndex = dataUrl.indexOf(',');
-    return commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : '';
-}
-
-function assertCurrentAttachmentsSupported(files) {
-    const counts = countUserAttachmentsByType(files);
-    if (counts.files === 0) return;
-
-    throw new Error(
-        'Anthropic API supports image attachments only. Remove non-image files or switch to Gemini Official/Web.'
-    );
-}
-
-function textWithUnsupportedFileNotice(text, attachments) {
-    const unsupported = normalizeUserAttachments(attachments).filter(
-        (attachment) => !attachment.type.startsWith('image/')
-    );
-    if (unsupported.length === 0) return text || '';
-
-    const names = unsupported
-        .map((attachment) => attachment.name)
-        .filter(Boolean)
-        .join(', ');
-    const suffix = names ? `: ${names}` : '';
-    return [text, `[${unsupported.length} unsupported file attachment(s) omitted${suffix}]`]
-        .filter(Boolean)
-        .join('\n');
-}
-
-function getMessageAttachments(message) {
-    if (message?.role !== 'user') return [];
-    const attachments = normalizeUserAttachments(message?.attachments);
-    if (attachments.length > 0) return attachments;
-    return normalizeUserAttachments(message?.image);
-}
 
 function buildUserContent(text, attachments) {
     const normalized = normalizeUserAttachments(attachments);

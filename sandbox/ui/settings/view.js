@@ -232,8 +232,8 @@ export class SettingsView {
         this.appearance.applyVisualTheme(theme);
     }
 
-    setToggles(textSelection, imageTools, generatedImageWatermarkRemoval) {
-        this.general.setToggles(textSelection, imageTools, generatedImageWatermarkRemoval);
+    setToggles(textSelection, imageTools, generatedImageWatermarkRemoval, imageToolsBlacklist) {
+        this.general.setToggles(textSelection, imageTools, generatedImageWatermarkRemoval, imageToolsBlacklist);
     }
 
     setTextSelectionBlacklist(value) {

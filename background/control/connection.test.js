@@ -78,4 +78,47 @@ describe('BrowserConnection', () => {
         // Detach of the first tab happened exactly once (tab switch).
         expect(chrome.debugger.detach).toHaveBeenCalledTimes(1);
     });
+
+    it('fires onAttach callbacks with the tab id on a fresh attach', async () => {
+        const connection = new BrowserConnection();
+        const calls = [];
+        connection.onAttach((tabId) => calls.push(tabId));
+
+        await connection.attach(33);
+
+        expect(calls).toEqual([33]);
+    });
+
+    it('does not fire onAttach on the same-tab reattach fast path', async () => {
+        const connection = new BrowserConnection();
+        const calls = [];
+        connection.onAttach((tabId) => calls.push(tabId));
+
+        await connection.attach(33);
+        await connection.attach(33); // already-attached fast path, no new session
+
+        expect(calls).toEqual([33]);
+    });
+
+    it('fires onAttach again when switching to a different tab (new session)', async () => {
+        const connection = new BrowserConnection();
+        const calls = [];
+        connection.onAttach((tabId) => calls.push(tabId));
+
+        await connection.attach(11);
+        await connection.attach(22); // detaches 11, attaches 22 -> new session
+
+        expect(calls).toEqual([11, 22]);
+    });
+
+    it('does not fire onAttach when attach fails', async () => {
+        createChromeMock({ attachBehavior: 'error' });
+        const connection = new BrowserConnection();
+        const calls = [];
+        connection.onAttach((tabId) => calls.push(tabId));
+
+        await connection.attach(33);
+
+        expect(calls).toEqual([]);
+    });
 });

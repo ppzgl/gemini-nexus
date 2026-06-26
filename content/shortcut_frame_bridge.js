@@ -95,7 +95,9 @@
         try {
             const result = chrome.runtime.sendMessage(message);
             result?.catch?.(() => {});
-        } catch {}
+        } catch {
+            // 静默忽略:消息发送失败时接收方可能已销毁,无法记录
+        }
     }
 
     class ShortcutFrameBridge {

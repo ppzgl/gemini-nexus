@@ -66,10 +66,12 @@
     }
 
     class GeminiImageDetector {
-        constructor(callbacks) {
+        constructor(callbacks, options = {}) {
             this.callbacks = callbacks || {}; // { onShow, onHide }
+            this.showDelayMs = Number.isFinite(options.showDelayMs) ? options.showDelayMs : 600;
             this.hoveredImage = null;
             this.imageButtonTimeout = null;
+            this.showTimer = null;
             this.isEnabled = false;
 
             this.onImageHover = this.onImageHover.bind(this);
@@ -85,6 +87,7 @@
             } else {
                 document.removeEventListener('mouseover', this.onImageHover, true);
                 document.removeEventListener('mouseout', this.onImageHover, true);
+                this.cancelShow();
                 this.scheduleHide(0);
             }
         }
@@ -100,15 +103,35 @@
             if (!shouldShowImageTools(imageElement)) return;
 
             if (isEnter) {
-                if (this.imageButtonTimeout) clearTimeout(this.imageButtonTimeout);
-                this.hoveredImage = imageElement;
-                const imageRect = imageElement.getBoundingClientRect();
+                // Defer showing the button until the user lingers on the image,
+                // so quick mouse passes no longer trigger the floating button.
+                if (this.hoveredImage === imageElement && this.showTimer) return;
 
-                if (this.callbacks.onShow) {
-                    this.callbacks.onShow(imageRect);
+                if (this.hoveredImage !== imageElement) {
+                    this.cancelShow();
+                    this.hoveredImage = imageElement;
                 }
+
+                this.showTimer = setTimeout(() => {
+                    this.showTimer = null;
+                    if (!this.isEnabled || !this.hoveredImage) return;
+                    const imageRect = this.hoveredImage.getBoundingClientRect();
+                    if (this.callbacks.onShow) {
+                        this.callbacks.onShow(imageRect);
+                    }
+                }, this.showDelayMs);
             } else {
+                if (this.hoveredImage === imageElement) {
+                    this.cancelShow();
+                }
                 this.scheduleHide();
+            }
+        }
+
+        cancelShow() {
+            if (this.showTimer) {
+                clearTimeout(this.showTimer);
+                this.showTimer = null;
             }
         }
 

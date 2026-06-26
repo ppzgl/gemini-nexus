@@ -1,15 +1,9 @@
 import { generateUUID } from '../../shared/utils/index.js';
+import { WEB_CLIENT_CAPABILITIES, assertAuthToken } from './shared/web_auth.js';
 
-const WEB_CLIENT_CAPABILITIES = Object.freeze([4, 5, 6, 8]);
 const TTS_RPC_ID = 'XqA3Ic';
 const TTS_AUDIO_FORMAT_OGG = 2;
 const DEFAULT_TTS_LOCALE = 'en-US';
-
-function assertAuthToken(context, fieldName) {
-    if (!context?.[fieldName]) {
-        throw new Error(`Missing Gemini Web auth token: ${fieldName}`);
-    }
-}
 
 function normalizeText(text) {
     return String(text || '')
@@ -65,13 +59,29 @@ function parseTtsBatchResponse(responseText) {
     const jsonLine = getBatchJsonLine(responseText);
     if (!jsonLine) throw new Error('Gemini TTS response did not contain a batch payload.');
 
-    const rows = JSON.parse(jsonLine);
+    let rows;
+    try {
+        rows = JSON.parse(jsonLine);
+    } catch (parseError) {
+        throw new Error('Gemini TTS batch payload is not valid JSON: ' + parseError.message);
+    }
+
+    if (!Array.isArray(rows)) {
+        throw new Error('Gemini TTS batch payload is not an array.');
+    }
+
     const ttsRow = rows.find((row) => row?.[0] === 'wrb.fr' && row?.[1] === TTS_RPC_ID);
     if (!ttsRow || typeof ttsRow[2] !== 'string') {
         throw new Error('Gemini TTS response did not contain audio data.');
     }
 
-    const payload = JSON.parse(ttsRow[2]);
+    let payload;
+    try {
+        payload = JSON.parse(ttsRow[2]);
+    } catch (parseError) {
+        throw new Error('Gemini TTS audio payload is not valid JSON: ' + parseError.message);
+    }
+
     const audioBase64 = payload?.[0];
     if (!audioBase64) throw new Error('Gemini TTS returned empty audio data.');
     return audioBase64;

@@ -11,7 +11,12 @@
 
         showToolbar(rect, mousePoint) {
             if (!this.elements.toolbar) return;
-            Layout.positionElement(this.elements.toolbar, rect, false, mousePoint);
+            // Anchor to the selection (centered below, flipping above when tight)
+            // rather than to the mouse cursor, so the toolbar never covers the
+            // selected text and stays fully on-screen.
+            Layout.positionElement(this.elements.toolbar, rect, false, mousePoint, {
+                anchorMode: 'selection',
+            });
             this.elements.toolbar.classList.add('visible');
         }
 

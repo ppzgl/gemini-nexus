@@ -1,3 +1,15 @@
+/**
+ * Global configuration constants for Gemini Nexus
+ *
+ * WHY THIS FILE EXISTS:
+ * - Chrome Extension Manifest V3 content_scripts cannot use ES modules
+ * - This file must be loaded as a plain script before other _global.js files
+ * - Dependencies: web_model_catalog.js and web_thinking_global.js rely on globalThis.GeminiNexusConfig
+ *
+ * USAGE:
+ * - Content scripts: Access via globalThis.GeminiNexusConfig directly
+ * - Background/Sandbox/Settings/Panel: Import from './constants.js' (ES module wrapper)
+ */
 (function () {
     const DEFAULT_SHORTCUTS = Object.freeze({
         quickAsk: 'Alt+Q',
@@ -60,6 +72,16 @@
         MAX: 50,
         DEFAULT: 10,
     });
+
+    function normalizeContextRecentTurns(value) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isFinite(parsed)) return CONTEXT_RECENT_TURNS_LIMITS.DEFAULT;
+
+        return Math.min(
+            CONTEXT_RECENT_TURNS_LIMITS.MAX,
+            Math.max(CONTEXT_RECENT_TURNS_LIMITS.MIN, parsed)
+        );
+    }
 
     const DEDICATED_API_PROVIDERS = Object.freeze({
         openai_official: Object.freeze({
@@ -133,6 +155,7 @@
     globalThis.GeminiNexusConfig = Object.freeze({
         DEFAULT_SHORTCUTS,
         normalizeShortcutDefaults,
+        normalizeContextRecentTurns,
         DEFAULT_PROVIDER: 'web',
         DEFAULT_STORED_GEMINI_MODEL: '56fdd199312815e2',
         DEFAULT_OFFICIAL_MODEL: 'gemini-3-flash-preview',

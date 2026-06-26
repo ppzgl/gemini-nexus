@@ -1,5 +1,7 @@
 function post(action, payload) {
     const message = payload === undefined ? { action } : { action, payload };
+    // Chrome extension sandbox 环境限制:postMessage 必须使用 '*'
+    // sandbox page 的 origin 为 'null',对非 sandbox window 使用精确 origin 无效
     window.parent.postMessage(message, '*');
 }
 
@@ -77,6 +79,14 @@ export function requestImageToolsFromStorage() {
 
 export function saveImageToolsToStorage(enabled) {
     post('SAVE_IMAGE_TOOLS', enabled);
+}
+
+export function requestImageToolsBlacklistFromStorage() {
+    post('GET_IMAGE_TOOLS_BLACKLIST');
+}
+
+export function saveImageToolsBlacklistToStorage(value) {
+    post('SAVE_IMAGE_TOOLS_BLACKLIST', value);
 }
 
 export function requestGeneratedImageWatermarkRemovalFromStorage() {

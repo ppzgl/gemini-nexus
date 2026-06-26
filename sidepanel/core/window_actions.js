@@ -76,6 +76,9 @@ const WINDOW_MESSAGE_HANDLERS = {
     GET_IMAGE_TOOLS(payload, bridge) {
         restoreImageTools(bridge.frame);
     },
+    GET_IMAGE_TOOLS_BLACKLIST(payload, bridge) {
+        restoreImageToolsBlacklist(bridge.frame);
+    },
     GET_GENERATED_IMAGE_WATERMARK_REMOVAL(payload, bridge) {
         restoreGeneratedImageWatermarkRemoval(bridge.frame);
     },
@@ -126,6 +129,9 @@ const WINDOW_MESSAGE_HANDLERS = {
     },
     SAVE_IMAGE_TOOLS(payload, bridge) {
         bridge.state.save('geminiImageToolsEnabled', payload);
+    },
+    SAVE_IMAGE_TOOLS_BLACKLIST(payload, bridge) {
+        bridge.state.save('geminiImageToolsBlacklist', payload || '');
     },
     SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL(payload, bridge) {
         bridge.state.save('geminiGeneratedImageWatermarkRemovalEnabled', payload !== false);

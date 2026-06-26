@@ -28,7 +28,9 @@ export function terminateStreamableHttpSession(conn) {
     fetch(conn.httpPostUrl, {
         method: 'DELETE',
         headers: mergeHttpTransportHeaders(conn, { Accept: STREAMABLE_HTTP_ACCEPT }),
-    }).catch(() => {});
+    }).catch((error) => {
+        console.warn('[MCP] Failed to terminate streamable HTTP session:', error.message || error);
+    });
 }
 
 function handleServerMethod(conn, rpcMessage) {
@@ -79,7 +81,9 @@ function sendJsonRpcMessage(conn, rpcMessage) {
             method: 'POST',
             headers: mergeHeaders({ 'Content-Type': 'application/json' }, conn.headers),
             body: JSON.stringify(rpcMessage),
-        }).catch(() => {});
+        }).catch((error) => {
+            console.warn('[MCP SSE] Failed to send JSON-RPC message:', error.message || error);
+        });
         return;
     }
 
@@ -92,6 +96,11 @@ function sendJsonRpcMessage(conn, rpcMessage) {
                 Accept: STREAMABLE_HTTP_ACCEPT,
             }),
             body: JSON.stringify(rpcMessage),
-        }).catch(() => {});
+        }).catch((error) => {
+            console.warn(
+                '[MCP Streamable HTTP] Failed to send JSON-RPC message:',
+                error.message || error
+            );
+        });
     }
 }

@@ -4,6 +4,7 @@
         'geminiTextSelectionBlacklist',
         'geminiCustomSelectionTools',
         'geminiImageToolsEnabled',
+        'geminiImageToolsBlacklist',
         'geminiGeneratedImageWatermarkRemovalEnabled',
     ];
 
@@ -23,7 +24,11 @@
         const generatedImageWatermarkRemovalEnabled =
             result.geminiGeneratedImageWatermarkRemovalEnabled !== false;
 
-        toolbar?.setImageToolsEnabled?.(result.geminiImageToolsEnabled !== false);
+        const imageToolsEnabled = result.geminiImageToolsEnabled !== false;
+        const imageToolsBlacklist = result.geminiImageToolsBlacklist || '';
+        const isBlacklisted = isSelectionBlacklisted(imageToolsBlacklist);
+
+        toolbar?.setImageToolsEnabled?.(imageToolsEnabled && !isBlacklisted);
         toolbar?.setGeneratedImageWatermarkRemovalEnabled?.(generatedImageWatermarkRemovalEnabled);
         toolbar?.setCustomSelectionTools?.(
             Array.isArray(result.geminiCustomSelectionTools)
@@ -83,7 +88,20 @@
             }
 
             if (changes.geminiImageToolsEnabled) {
-                toolbar?.setImageToolsEnabled?.(changes.geminiImageToolsEnabled.newValue !== false);
+                const imageToolsEnabled = changes.geminiImageToolsEnabled.newValue !== false;
+                chrome.storage.local.get(['geminiImageToolsBlacklist'], (data) => {
+                    const isBlacklisted = isSelectionBlacklisted(data.geminiImageToolsBlacklist || '');
+                    toolbar?.setImageToolsEnabled?.(imageToolsEnabled && !isBlacklisted);
+                });
+            }
+
+            if (changes.geminiImageToolsBlacklist) {
+                const newBlacklist = changes.geminiImageToolsBlacklist.newValue || '';
+                chrome.storage.local.get(['geminiImageToolsEnabled'], (data) => {
+                    const imageToolsEnabled = data.geminiImageToolsEnabled !== false;
+                    const isBlacklisted = isSelectionBlacklisted(newBlacklist);
+                    toolbar?.setImageToolsEnabled?.(imageToolsEnabled && !isBlacklisted);
+                });
             }
 
             if (changes.geminiGeneratedImageWatermarkRemovalEnabled) {

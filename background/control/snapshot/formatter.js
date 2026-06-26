@@ -6,6 +6,8 @@ export class SnapshotFormatter {
         this.snapshotPrefix = options.snapshotPrefix || '1';
         this.selectedBackendNodeId = options.selectedBackendNodeId || null;
         this.nodeCounter = 0;
+        this.maxNodes = Number.isInteger(options.maxNodes) ? options.maxNodes : 4000;
+        this.truncated = false;
 
         // Mappings for boolean capabilities (property name) -> attribute name.
         // Keep these labels aligned with Chrome DevTools MCP snapshot output.
@@ -111,7 +113,14 @@ export class SnapshotFormatter {
 
         if (!root) return 'Error: Could not find root of A11y tree.';
 
-        return this._formatNode(root, nodeById, 0);
+        const output = this._formatNode(root, nodeById, 0);
+        if (this.truncated) {
+            return (
+                output +
+                `\n[Snapshot truncated at ${this.nodeCounter} nodes to stay within token limits. Scroll the page and call take_snapshot again to inspect remaining content.]`
+            );
+        }
+        return output;
     }
 
     _formatNode(node, nodeById, depth) {
@@ -123,6 +132,10 @@ export class SnapshotFormatter {
         let line = '';
 
         if (shouldPrint) {
+            if (this.nodeCounter >= this.maxNodes) {
+                this.truncated = true;
+                return '';
+            }
             this.nodeCounter++;
             const fallbackUid = `${this.snapshotPrefix}_${this.nodeCounter}`;
             const uid =

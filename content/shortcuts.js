@@ -245,6 +245,7 @@
         match(event, shortcutString) {
             if (!shortcutString || typeof shortcutString !== 'string') return false;
             if (!event || typeof event.key !== 'string') return false;
+            if (event.isComposing) return false;
 
             const parts = shortcutString.split('+').map((part) => part.trim().toLowerCase());
             const key = event.key.toLowerCase();

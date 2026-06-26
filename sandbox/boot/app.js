@@ -13,6 +13,8 @@ export function initAppMode() {
     // Apply translations before signaling readiness.
     applyTranslations();
 
+    // Chrome extension sandbox 环境限制:postMessage 必须使用 '*'
+    // sandbox page 的 origin 为 'null',对非 sandbox window 使用精确 origin 无效
     window.parent.postMessage({ action: 'UI_READY' }, '*');
 
     const bridge = new AppMessageBridge();

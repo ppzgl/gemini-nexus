@@ -53,7 +53,10 @@ export function getStreamableSessionId(response) {
 }
 
 export function isStreamableHttpFallbackError(error) {
-    return error && [400, 404, 405].includes(error.status);
+    // Per MCP spec, 404 indicates the server does not support streamable HTTP.
+    // 405 (Method Not Allowed) is also a compatibility signal used by some servers.
+    // 400 (Bad Request) is excluded as it likely indicates a genuine error.
+    return error && [404, 405].includes(error.status);
 }
 
 export async function readStreamableHttpError(response) {
@@ -94,7 +97,17 @@ export async function parseStreamableHttpResponse(response, requestId, onMessage
             return undefined;
         }
 
-        const message = JSON.parse(payload);
+        let message;
+        try {
+            message = JSON.parse(payload);
+        } catch (parseError) {
+            console.warn(
+                '[MCP Streamable HTTP] Failed to parse JSON payload:',
+                parseError.message,
+                payload
+            );
+            return undefined;
+        }
         onMessage(message);
         if (isResponseForRequest(message, requestId)) return extractJsonRpcResult(message);
         return undefined;
@@ -138,7 +151,9 @@ export async function parseStreamableHttpResponse(response, requestId, onMessage
     } finally {
         try {
             reader.releaseLock();
-        } catch {}
+        } catch {
+            // 静默降级:reader 释放失败时流已结束或被其他代码释放
+        }
     }
 
     throw createStreamEndedError(lastEventId);

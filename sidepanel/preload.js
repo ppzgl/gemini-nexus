@@ -5,5 +5,7 @@
         if (cachedTheme === 'dark' || (cachedTheme === 'system' && systemDark)) {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
-    } catch {}
+    } catch {
+        // 静默降级:localStorage 不可用时跳过主题预加载,由后续逻辑兜底
+    }
 })();

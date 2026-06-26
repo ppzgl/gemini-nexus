@@ -52,7 +52,21 @@
         }
 
         handleMessage(event) {
+            // Strict source check: only accept messages from the renderer iframe we created.
+            // event.origin is null for sandboxed iframes, so we rely on event.source identity.
             if (event.source !== this.iframe?.contentWindow) return;
+            // As an additional hardening step, verify the iframe's src is our extension's sandbox.
+            if (this.iframe && event.source === this.iframe.contentWindow) {
+                try {
+                    const expectedPrefix = chrome.runtime.getURL('sandbox/index.html');
+                    if (!this.iframe.src || !this.iframe.src.startsWith(expectedPrefix)) {
+                        return;
+                    }
+                } catch {
+                    // Chrome API may be unavailable in non-extension contexts; fail closed.
+                    return;
+                }
+            }
             if (!event.data || typeof event.data !== 'object') return;
 
             if (event.data.action === 'RENDER_RESULT') {

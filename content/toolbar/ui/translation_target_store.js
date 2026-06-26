@@ -48,7 +48,9 @@
                 this.targets = normalizeTranslationTargets(
                     stored?.[TRANSLATION_TARGET_STORAGE_KEY]
                 );
-            } catch {}
+            } catch {
+                // 静默降级:storage 读取失败时使用默认 targets
+            }
             return this.targets;
         }
     }

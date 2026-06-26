@@ -13,7 +13,9 @@ let currentLang = resolveLanguage(savedPreference);
 // Apply initial lang attribute for CSS/DOM consistency
 try {
     document.documentElement.lang = currentLang;
-} catch {}
+} catch {
+    // 静默降级:DOM 不可用时跳过初始语言属性设置
+}
 
 export function setLanguagePreference(pref) {
     savedPreference = pref;

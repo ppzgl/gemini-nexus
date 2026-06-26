@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BrowserControlManager, DEFAULT_BROWSER_CONTROL_START_URL } from './control_manager.js';
+import { cursorController } from '../control/cursor_controller.js';
+
+vi.mock('../control/cursor_controller.js', () => ({
+    cursorController: {
+        showThinking: vi.fn(() => Promise.resolve()),
+        moveCursorTo: vi.fn(() => Promise.resolve()),
+        hideCursor: vi.fn(() => Promise.resolve()),
+        ensureInjected: vi.fn(() => Promise.resolve(true)),
+    },
+}));
 
 function setupChrome() {
     globalThis.chrome = {
@@ -467,5 +477,26 @@ describe('BrowserControlManager native tab group indicator', () => {
         expect(enabledMethods).not.toContain('Network.enable');
         expect(enabledMethods).not.toContain('Log.enable');
         expect(enabledMethods).not.toContain('Audits.enable');
+    });
+
+    it('shows the thinking cursor when a fresh debugger attach succeeds', async () => {
+        const manager = new BrowserControlManager();
+        cursorController.showThinking.mockClear();
+
+        await manager.connection.attach(42);
+
+        expect(cursorController.showThinking).toHaveBeenCalledTimes(1);
+        expect(cursorController.showThinking).toHaveBeenCalledWith(42);
+    });
+
+    it('does not show thinking cursor on same-tab reattach fast path', async () => {
+        const manager = new BrowserControlManager();
+        manager.connection.attached = true;
+        manager.connection.currentTabId = 42;
+        cursorController.showThinking.mockClear();
+
+        await manager.connection.attach(42);
+
+        expect(cursorController.showThinking).not.toHaveBeenCalled();
     });
 });

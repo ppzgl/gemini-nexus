@@ -9,6 +9,10 @@ export class FileActions extends BaseActionHandler {
         const backendNodeId = this.snapshotManager.getBackendNodeId(uid);
         if (!backendNodeId) return `Error: UID ${uid} not found. Call take_snapshot first.`;
 
+        // Audit log: attach_file reads arbitrary local file paths, so record what
+        // the agent requested for traceability without blocking legitimate uploads.
+        console.warn(`[Browser Control] attach_file invoked by agent — uid=${uid}, paths=`, paths);
+
         await this.moveCursorToElement({ backendNodeId });
 
         await this.cmd('DOM.enable');

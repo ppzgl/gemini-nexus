@@ -11,6 +11,7 @@ vi.mock('../../../shared/messaging/index.js', () => ({
     requestContextSettingsFromStorage: vi.fn(),
     requestGeneratedImageWatermarkRemovalFromStorage: vi.fn(),
     requestImageToolsFromStorage: vi.fn(),
+    requestImageToolsBlacklistFromStorage: vi.fn(),
     requestTextSelectionBlacklistFromStorage: vi.fn(),
     requestTextSelectionFromStorage: vi.fn(),
     exportHistoryData: vi.fn(),

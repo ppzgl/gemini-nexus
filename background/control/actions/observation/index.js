@@ -2,6 +2,7 @@ import { BaseActionHandler } from '../base.js';
 import { ScriptEvaluationActions } from './script_evaluation.js';
 import { WaitActions } from './wait.js';
 import { DialogActions } from './dialog.js';
+import { ScreenshotActions } from './screenshot.js';
 
 export class ObservationActions extends BaseActionHandler {
     constructor(connection, snapshotManager, waitHelper) {
@@ -10,10 +11,27 @@ export class ObservationActions extends BaseActionHandler {
         this.script = new ScriptEvaluationActions(connection, snapshotManager, waitHelper);
         this.wait = new WaitActions(connection, snapshotManager, waitHelper);
         this.dialog = new DialogActions(connection, snapshotManager, waitHelper);
+        this.screenshot = new ScreenshotActions(connection, snapshotManager, waitHelper);
     }
 
     async waitFor(args) {
         return this.wait.waitFor(args);
+    }
+
+    async waitForUrl(args) {
+        return this.wait.waitForUrl(args);
+    }
+
+    async waitForLoadState(args) {
+        return this.wait.waitForLoadState(args);
+    }
+
+    async waitForTimeout(args) {
+        return this.wait.waitForTimeout(args);
+    }
+
+    async takeScreenshot(args) {
+        return this.screenshot.takeScreenshot(args);
     }
 
     async evaluateScript(args) {

@@ -78,6 +78,10 @@ export function createInitialRestoreMessages(localStorageData, { theme, language
                 payload: localStorageData.geminiImageToolsEnabled !== false,
             },
             {
+                action: 'RESTORE_IMAGE_TOOLS_BLACKLIST',
+                payload: localStorageData.geminiImageToolsBlacklist || '',
+            },
+            {
                 action: 'RESTORE_GENERATED_IMAGE_WATERMARK_REMOVAL',
                 payload: localStorageData.geminiGeneratedImageWatermarkRemovalEnabled !== false,
             },
@@ -189,6 +193,13 @@ export function createLocalStorageRestoreMessages(localStorageData, changedKeys)
         messages.push({
             action: 'RESTORE_IMAGE_TOOLS',
             payload: localStorageData.geminiImageToolsEnabled !== false,
+        });
+    }
+
+    if (hasChanged('geminiImageToolsBlacklist')) {
+        messages.push({
+            action: 'RESTORE_IMAGE_TOOLS_BLACKLIST',
+            payload: localStorageData.geminiImageToolsBlacklist || '',
         });
     }
 

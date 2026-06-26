@@ -9,6 +9,8 @@ import {
 } from '../../shared/attachments/index.js';
 import { debugLog } from '../../shared/logging/debug.js';
 import { readSseJson } from './sse.js';
+import { normalizeBaseUrl } from './shared/urls.js';
+import { normalizeOfficialModelId } from '../../shared/models/aliases.js';
 
 function extractGroundingSources(groundingMetadata) {
     if (!groundingMetadata || !Array.isArray(groundingMetadata.groundingChunks)) {
@@ -26,7 +28,9 @@ function extractGroundingSources(groundingMetadata) {
             if (!web.title) {
                 title = new URL(web.uri).hostname;
             }
-        } catch {}
+        } catch {
+            // 静默降级:URI 无效时直接使用原始值作为标题
+        }
 
         sources.push({
             title,
@@ -141,11 +145,7 @@ function buildMessageContent(historyMessage, targetModel) {
 }
 
 function normalizeOfficialModel(model) {
-    if (model === 'gemini-3-flash') return 'gemini-3-flash-preview';
-    if (model === 'gemini-3-flash-thinking') return 'gemini-3-flash-preview';
-    if (model === 'gemini-3-pro') return 'gemini-3.1-pro-preview';
-    if (model === 'gemini-3-pro-preview') return 'gemini-3.1-pro-preview';
-    return model;
+    return normalizeOfficialModelId(model);
 }
 
 function normalizeThinkingLevelForModel(targetModel, thinkingLevel) {
@@ -246,7 +246,7 @@ export async function sendOfficialMessage(
 
     debugLog(`[Gemini Official API] Requesting ${targetModel} (Original: ${modelName})...`);
 
-    const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
     const url = `${normalizedBaseUrl}/models/${targetModel}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
     const contents = [];

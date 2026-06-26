@@ -23,6 +23,7 @@ function createController() {
         updateTextSelectionBlacklist: vi.fn(),
         updateCustomSelectionTools: vi.fn(),
         updateImageTools: vi.fn(),
+        updateImageToolsBlacklist: vi.fn(),
         updateGeneratedImageWatermarkRemoval: vi.fn(),
         updateSidebarBehavior: vi.fn(),
         updateSidePanelScope: vi.fn(),

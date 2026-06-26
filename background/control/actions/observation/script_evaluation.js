@@ -1,5 +1,19 @@
 import { BaseActionHandler } from '../base.js';
 
+const MAX_SCRIPT_LENGTH = 10240;
+const EVALUATION_TIMEOUT_MS = 10000;
+
+function withEvaluationTimeout(promise, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(
+            () => reject(new Error(`Script evaluation timed out after ${ms}ms`)),
+            ms
+        );
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 function createFunctionDeclaration(script) {
     let functionDeclaration = script.trim();
 
@@ -54,6 +68,10 @@ export class ScriptEvaluationActions extends BaseActionHandler {
                 return "Error: 'script' must be a non-empty string.";
             }
 
+            if (script.length > MAX_SCRIPT_LENGTH) {
+                return `Error: Script exceeds the ${MAX_SCRIPT_LENGTH}-character safety limit (${script.length} chars).`;
+            }
+
             const callArguments = [];
             const primitiveArguments = [];
             let targetObjectId = null;
@@ -80,23 +98,29 @@ export class ScriptEvaluationActions extends BaseActionHandler {
             const functionDeclaration = createFunctionDeclaration(script);
 
             if (targetObjectId) {
-                const response = await this.cmd('Runtime.callFunctionOn', {
-                    objectId: targetObjectId,
-                    functionDeclaration,
-                    arguments: callArguments,
-                    returnByValue: true,
-                    awaitPromise: true,
-                    userGesture: true,
-                });
+                const response = await withEvaluationTimeout(
+                    this.cmd('Runtime.callFunctionOn', {
+                        objectId: targetObjectId,
+                        functionDeclaration,
+                        arguments: callArguments,
+                        returnByValue: true,
+                        awaitPromise: true,
+                        userGesture: true,
+                    }),
+                    EVALUATION_TIMEOUT_MS
+                );
                 return formatEvaluationResponse(response);
             }
 
-            const response = await this.cmd('Runtime.evaluate', {
-                expression: createEvaluateExpression(functionDeclaration, primitiveArguments),
-                returnByValue: true,
-                awaitPromise: true,
-                userGesture: true,
-            });
+            const response = await withEvaluationTimeout(
+                this.cmd('Runtime.evaluate', {
+                    expression: createEvaluateExpression(functionDeclaration, primitiveArguments),
+                    returnByValue: true,
+                    awaitPromise: true,
+                    userGesture: true,
+                }),
+                EVALUATION_TIMEOUT_MS
+            );
             return formatEvaluationResponse(response);
         } catch (error) {
             return `Error evaluating script: ${error.message}`;

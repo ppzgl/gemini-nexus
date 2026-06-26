@@ -66,6 +66,8 @@ export async function readErrorMessage(response) {
     try {
         const errJson = JSON.parse(errorText);
         if (errJson.error && errJson.error.message) errorText = errJson.error.message;
-    } catch {}
+    } catch {
+        // 静默降级:错误响应非 JSON 时直接返回原始文本
+    }
     return errorText;
 }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 async function installImageDetector() {
     await import('./image.js');
@@ -34,8 +34,13 @@ function createImage({
 describe('GeminiImageDetector', () => {
     beforeEach(async () => {
         vi.resetModules();
+        vi.useFakeTimers();
         document.body.innerHTML = '';
         await installImageDetector();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('shows image tools on captcha-sized images with captcha metadata', () => {
@@ -50,6 +55,9 @@ describe('GeminiImageDetector', () => {
 
         detector.setEnabled(true);
         image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        // Advance timers to trigger the delayed show callback
+        vi.advanceTimersByTime(600);
 
         expect(onShow).toHaveBeenCalledWith({
             left: 10,
@@ -74,6 +82,8 @@ describe('GeminiImageDetector', () => {
         detector.setEnabled(true);
         image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
 
+        vi.advanceTimersByTime(600);
+
         expect(onShow).toHaveBeenCalledTimes(1);
     });
 
@@ -89,6 +99,8 @@ describe('GeminiImageDetector', () => {
 
         detector.setEnabled(true);
         image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        vi.advanceTimersByTime(600);
 
         expect(onShow).not.toHaveBeenCalled();
         expect(detector.getCurrentImage()).toBeNull();

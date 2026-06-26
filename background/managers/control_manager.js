@@ -3,6 +3,7 @@ import { SnapshotManager } from '../control/snapshot/index.js';
 import { BrowserActions } from '../control/actions/index.js';
 import { ToolDispatcher } from '../control/dispatcher.js';
 import { getTabControlAvailability, getTabUrl, toControlTabSummary } from '../control/tabs.js';
+import { cursorController } from '../control/cursor_controller.js';
 import { debugLog } from '../../shared/logging/debug.js';
 
 export const DEFAULT_BROWSER_CONTROL_START_URL = 'https://www.google.com/search?q=';
@@ -30,8 +31,26 @@ export class BrowserControlManager {
         this.lastControlError = '';
         this.executionQueue = Promise.resolve();
 
+        // Restore persisted control state from storage.session (SW lifecycle persistence)
+        this._restoreControlState();
+
         this.connection.onDetach(() => {
-            this._broadcastCurrentLockState();
+            // When the debugger detaches (user cancel, tab crash, navigation),
+            // fully release the locked-tab state so the UI reflects reality.
+            // Previously this only re-broadcast the stale lock, leaving
+            // lockedTabId set while the debugger session was gone.
+            if (this.lockedTabId !== null) {
+                this.setTargetTab(null);
+            } else {
+                this._broadcastCurrentLockState();
+            }
+        });
+
+        // A fresh attach == a new control session starting. Mirror BCB's
+        // startSession -> publishTabState(cursor:null,visible:true): show the
+        // thinking wobble until the first CURSOR_MOVE arrives with a target.
+        this.connection.onAttach((tabId) => {
+            cursorController.showThinking(tabId).catch(() => {});
         });
 
         // Listen for updates to the locked tab (URL/Favicon changes)
@@ -61,6 +80,9 @@ export class BrowserControlManager {
             this.connection.clearDialog?.();
         }
         debugLog(`[ControlManager] Target tab locked to: ${tabId}`);
+
+        // Persist control state to storage.session so it survives SW termination
+        this._persistControlState();
 
         if (tabId) {
             const requestedTabId = tabId;
@@ -515,5 +537,60 @@ export class BrowserControlManager {
             console.error(`[MCP] Tool execution error:`, error);
             return `Error executing ${toolCall.name}: ${error.message}`;
         }
+    }
+
+    // --- SW Lifecycle Persistence ---
+
+    _persistControlState() {
+        if (typeof chrome?.storage?.session?.set !== 'function') return;
+
+        const state = {
+            lockedTabId: this.lockedTabId,
+            ownerSidePanelTabId: this.ownerSidePanelTabId,
+            controlWindowId: this.controlWindowId,
+            controlGroupId: this.controlGroupId,
+            controlGroupTabId: this.controlGroupTabId,
+        };
+
+        chrome.storage.session.set({ geminiControlState: state }).catch((error) => {
+            console.warn('[ControlManager] Failed to persist control state:', error.message);
+        });
+    }
+
+    _restoreControlState() {
+        if (typeof chrome?.storage?.session?.get !== 'function') return;
+
+        chrome.storage.session.get(['geminiControlState'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.warn(
+                    '[ControlManager] Failed to restore control state:',
+                    chrome.runtime.lastError.message
+                );
+                return;
+            }
+
+            const state = result?.geminiControlState;
+            if (!state) return;
+
+            // Restore in-memory state
+            if (Number.isInteger(state.lockedTabId) && state.lockedTabId > 0) {
+                this.lockedTabId = state.lockedTabId;
+                this.connection.targetTabId = state.lockedTabId;
+            }
+            if (Number.isInteger(state.ownerSidePanelTabId) && state.ownerSidePanelTabId > 0) {
+                this.ownerSidePanelTabId = state.ownerSidePanelTabId;
+            }
+            if (Number.isInteger(state.controlWindowId) && state.controlWindowId > 0) {
+                this.controlWindowId = state.controlWindowId;
+            }
+            if (Number.isInteger(state.controlGroupId) && state.controlGroupId >= 0) {
+                this.controlGroupId = state.controlGroupId;
+            }
+            if (Number.isInteger(state.controlGroupTabId) && state.controlGroupTabId > 0) {
+                this.controlGroupTabId = state.controlGroupTabId;
+            }
+
+            debugLog('[ControlManager] Restored control state from session storage:', state);
+        });
     }
 }

@@ -165,7 +165,9 @@ export async function injectBrowserControlSnapshot({
             try {
                 const tab = await chrome.tabs.get(targetTabId);
                 urlInfo = `[Current URL]: ${tab.url}\n`;
-            } catch {}
+            } catch {
+                // 静默降级:locked tab 已关闭时省略 URL 信息
+            }
         }
 
         const snapshot = await controlManager.getSnapshot();

@@ -13,6 +13,8 @@ describe('ToolDispatcher local tool registry', () => {
             'press_key',
             'type_text',
             'attach_file',
+            'drag',
+            'scroll',
             'navigate_page',
             'new_page',
             'close_page',
@@ -21,6 +23,10 @@ describe('ToolDispatcher local tool registry', () => {
             'wait_for',
             'handle_dialog',
             'evaluate_script',
+            'take_screenshot',
+            'wait_for_url',
+            'wait_for_load_state',
+            'wait_for_timeout',
         ];
 
         expect([...ToolDispatcher.LOCAL_TOOL_NAMES].sort()).toEqual(
@@ -60,7 +66,8 @@ describe('ToolDispatcher local tool registry', () => {
     });
 
     it('does not expose visual, debugging, or narrow interaction tools', () => {
-        const nonCoreTools = ['take_screenshot', 'resize_page', 'get_logs', 'drag_element'];
+        // take_screenshot is intentionally exposed now (aligned with BCB's tab_screenshot).
+        const nonCoreTools = ['resize_page', 'get_logs', 'drag_element'];
 
         for (const toolName of nonCoreTools) {
             expect(ToolDispatcher.isLocalTool(toolName)).toBe(false);

@@ -33,6 +33,11 @@ export const GeneralSettingsTemplate = `
             <input type="checkbox" id="image-tools-toggle" class="setting-toggle">
         </div>
 
+        <div class="settings-section-offset">
+            <label class="setting-label"><span data-i18n="imageToolsBlacklist">Image Tools Blacklist</span>${createSettingsHelpButton('imageToolsBlacklistDesc')}</label>
+            <textarea id="image-tools-blacklist" class="settings-input settings-full-input settings-monospace-textarea" data-i18n-placeholder="imageToolsBlacklistPlaceholder"></textarea>
+        </div>
+
         <div class="setting-panel setting-panel-row">
             <div class="setting-panel-header">
                 <h5><span data-i18n="generatedImageWatermarkToggle">Auto Clean Generated Image Watermark</span>${createSettingsHelpButton('generatedImageWatermarkToggleDesc')}</h5>

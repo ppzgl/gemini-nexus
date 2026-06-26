@@ -135,7 +135,9 @@
                     this.summaryCache.set(key, cached);
                     return cached;
                 }
-            } catch {}
+            } catch {
+                // 静默降级:sessionStorage 不可用或缓存损坏时返回 null
+            }
 
             return null;
         }
@@ -157,7 +159,9 @@
                     this.getStorageCacheKey(key),
                     JSON.stringify(cached)
                 );
-            } catch {}
+            } catch {
+                // 静默降级:sessionStorage 不可用或配额已满时仅保留内存缓存
+            }
 
             return cached;
         }

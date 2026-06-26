@@ -9,6 +9,10 @@ export class BrowserConnection {
         this.targetTabId = null; // Tracks the intended tab ID even if debugger is not attached
         this.attached = false;
         this.onDetachCallbacks = [];
+        // Pure-JS attach hook (NOT chrome.debugger.onAttach, which does not exist).
+        // Fires once per fresh successful attach so upper layers (cursor "think"
+        // state) can react to a new control session starting.
+        this.onAttachCallbacks = [];
         this.eventListeners = new Set();
         this.currentDialog = null;
         this.lastAttachErrorMessage = '';
@@ -77,6 +81,20 @@ export class BrowserConnection {
 
     onDetach(callback) {
         this.onDetachCallbacks.push(callback);
+    }
+
+    onAttach(callback) {
+        this.onAttachCallbacks.push(callback);
+    }
+
+    _notifyOnAttach(tabId) {
+        for (const callback of this.onAttachCallbacks) {
+            try {
+                callback(tabId);
+            } catch (error) {
+                debugLog('[BrowserConnection] Attach callback failed:', error);
+            }
+        }
     }
 
     getDialog() {
@@ -168,6 +186,7 @@ export class BrowserConnection {
                         return;
                     }
 
+                    this._notifyOnAttach(tabId);
                     resolve(true);
                 }
             });

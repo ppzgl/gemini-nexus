@@ -160,7 +160,25 @@
                 }
             );
 
-            new DragController(this.view.elements.toolbar, this.view.elements.toolbarDrag, {});
+            new DragController(this.view.elements.toolbar, this.view.elements.toolbarDrag, {
+                onDragEnd: () => {
+                    const rect = this.currentSelectionRect;
+                    if (!rect) return;
+                    const placed = this.view.elements.toolbar.getBoundingClientRect();
+                    window.GeminiViewLayout.rememberOffsetFromDrag(
+                        rect,
+                        placed.left,
+                        placed.top,
+                        placed.width
+                    );
+                },
+            });
+
+            // Double-click the drag handle to reset the toolbar to the default
+            // selection-anchored position.
+            this.view.elements.toolbarDrag?.addEventListener('dblclick', () => {
+                window.GeminiViewLayout.resetOffset();
+            });
 
             this.events = new Events(this);
             this.events.bind(this.view.elements, this.view.elements.askWindow);

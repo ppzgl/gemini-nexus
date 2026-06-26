@@ -1,10 +1,10 @@
 import { debugLog } from '../../shared/logging/debug.js';
+import { assertCurrentAttachmentsSupported } from './shared/attachments.js';
+import { normalizeBaseUrl } from './shared/urls.js';
 import {
-    assertCurrentAttachmentsSupported,
     buildChatMessages,
     buildResponsesInput,
     hasImageAttachmentsInRequest,
-    normalizeBaseUrl,
 } from './openai_payloads.js';
 import {
     extractReasoningSummaryFromCompletedResponse,

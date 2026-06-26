@@ -74,6 +74,7 @@ export function bindToolButtonEvents(app, ui) {
 
     document.getElementById('screen-capture-btn').addEventListener('click', () => {
         app.setCaptureMode('screen_capture');
+        // Chrome extension sandbox 环境限制:postMessage 必须使用 '*'
         window.parent.postMessage({ action: 'REQUEST_SCREEN_CAPTURE' }, '*');
         ui.updateStatus(t('selectScreenCapture'));
     });

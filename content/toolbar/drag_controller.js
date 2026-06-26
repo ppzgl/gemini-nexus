@@ -126,6 +126,10 @@
             document.removeEventListener('touchend', this.onDragEnd);
 
             this._checkDocking();
+
+            if (this.callbacks.onDragEnd) {
+                this.callbacks.onDragEnd();
+            }
         }
 
         _checkDocking() {

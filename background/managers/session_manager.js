@@ -2,6 +2,7 @@ import { AuthManager } from './auth_manager.js';
 import { getConnectionSettings } from './session/settings_store.js';
 import { RequestDispatcher } from './session/request_dispatcher.js';
 import { classifyProviderError, isUnavailableWebAuthError } from './session/error_classifier.js';
+import { keepAliveManager } from './keep_alive.js';
 
 const REQUEST_CANCELLED_TEXT = 'Request cancelled.';
 
@@ -39,6 +40,9 @@ export class GeminiSessionManager {
             }
             onUpdate(partialText, partialThoughts);
         };
+
+        // Trigger keepalive rotation during long-running requests to prevent SW termination
+        keepAliveManager.performRotation().catch(() => {});
 
         try {
             const settings = await getConnectionSettings({ provider: request.provider });

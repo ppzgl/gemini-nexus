@@ -11,6 +11,7 @@ export const DOM_IDS = {
     TEXT_SELECTION_TOGGLE: 'text-selection-toggle',
     TEXT_SELECTION_BLACKLIST: 'text-selection-blacklist',
     IMAGE_TOOLS_TOGGLE: 'image-tools-toggle',
+    IMAGE_TOOLS_BLACKLIST: 'image-tools-blacklist',
     GENERATED_IMAGE_WATERMARK_TOGGLE: 'generated-image-watermark-toggle',
     ACCOUNT_INDICES: 'account-indices-input',
     CONTEXT_MODE: 'context-mode-select',

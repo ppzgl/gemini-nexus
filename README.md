@@ -35,6 +35,16 @@
 
 **Gemini Nexus** gives your browser a native AI layer by combining Gemini Web, the Google Gemini API, OpenAI-compatible APIs, and dedicated third-party API providers in one Chrome extension. It is more than a side panel: the extension includes an injected floating toolbar, image and screenshot input, Chrome DevTools Protocol based browser-control tools, and optional external MCP tools for browser-native AI workflows.
 
+### Reverse Engineering & Data Flow Disclosure
+
+**Gemini Web Provider**: This extension accesses Google Gemini Web (gemini.google.com) by reverse-engineering internal RPC endpoints and extracting authentication tokens (`atValue`, `blValue`, `f.sid`) from the page HTML. These tokens are stored locally and used to mimic browser requests, enabling access without an official API key. **This approach likely violates Google's Terms of Service** and may be considered unauthorized access. Requests are sent to Google's servers (`gemini.google.com`, `push.clients6.google.com`) with your session credentials.
+
+**Watermark Removal**: For Gemini-generated images, the extension removes embedded watermarks (metadata markers) to enable direct download. This strips attribution/signature from AI-generated content. Users should be aware of copyright implications and Google's policies on generated content usage.
+
+**Data Flow**: User text, images, and uploaded files are sent to the configured provider's API endpoint. For Gemini Web, data flows to Google servers; for other providers, data flows to their respective endpoints (including user-configured MCP servers). API keys are stored locally in Chrome extension storage and are not transmitted to any third-party beyond the chosen provider.
+
+**Use at your own risk**: By using the Gemini Web or watermark removal features, you acknowledge potential ToS violations and assume responsibility for any consequences. The extension authors provide these features for research/experimental purposes and disclaim liability for misuse.
+
 ### Capability Overview
 
 Gemini Nexus currently focuses on these browser AI workflows:
@@ -123,7 +133,7 @@ Common proxy endpoints:
 
 ### Gemini Web Maintenance
 
-Gemini Web is reverse engineered and can change without notice. The current contract is documented in [`docs/gemini-web-reverse.md`](docs/gemini-web-reverse.md), including the verified tokens, RPC paths, upload flow, model hashes, temporary-chat markers, unsupported image-preview model routes, and the manual drift check command.
+Gemini Web is **reverse-engineered** and accesses Google's internal APIs without official authorization, which likely violates Google's Terms of Service. The contract can change without notice and is documented in [`docs/gemini-web-reverse.md`](docs/gemini-web-reverse.md), including the verified tokens, RPC paths, upload flow, model hashes, temporary-chat markers, unsupported image-preview model routes, and the manual drift check command.
 
 ### Quick Start
 

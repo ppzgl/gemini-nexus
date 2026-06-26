@@ -94,13 +94,17 @@
         video.currentTime = seconds;
         try {
             video.play?.()?.catch?.(() => {});
-        } catch {}
+        } catch {
+            // 静默降级:自动播放被浏览器阻止时不影响跳转
+        }
 
         try {
             const url = new URL(window.location.href);
             url.searchParams.set('t', formatTimeParam(seconds));
             window.history.replaceState(window.history.state, '', url);
-        } catch {}
+        } catch {
+            // 静默降级:URL 构造或 history 替换失败时不影响跳转
+        }
         return true;
     }
 

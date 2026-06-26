@@ -6,7 +6,9 @@ async function getRequestTab(context, request, sender) {
     if (Number.isInteger(targetTabId) && targetTabId > 0) {
         try {
             return await chrome.tabs.get(targetTabId);
-        } catch {}
+        } catch {
+            // 静默降级:目标 tab 已关闭时回退到 sender.tab 或活动 tab
+        }
     }
 
     if (sender.tab?.id) return sender.tab;

@@ -27,12 +27,18 @@ export class ToolDispatcher {
         'press_key',
         'type_text',
         'attach_file',
+        'drag',
+        'scroll',
 
         // Observation & Logic
         'take_snapshot',
         'wait_for',
         'handle_dialog',
         'evaluate_script',
+        'take_screenshot',
+        'wait_for_url',
+        'wait_for_load_state',
+        'wait_for_timeout',
     ]);
 
     static SNAPSHOT_OPTIONAL_TOOL_NAMES = new Set([
@@ -43,6 +49,8 @@ export class ToolDispatcher {
         'press_key',
         'type_text',
         'attach_file',
+        'drag',
+        'scroll',
     ]);
 
     static isLocalTool(name) {
@@ -140,6 +148,12 @@ export class ToolDispatcher {
             case 'attach_file':
                 result = await this.actions.attachFile(args);
                 break;
+            case 'drag':
+                result = await this.actions.dragElement(args);
+                break;
+            case 'scroll':
+                result = await this.actions.scrollElement(args);
+                break;
 
             // Observation & Logic
             case 'take_snapshot':
@@ -153,6 +167,18 @@ export class ToolDispatcher {
                 break;
             case 'evaluate_script':
                 result = await this.actions.evaluateScript(args);
+                break;
+            case 'take_screenshot':
+                result = await this.actions.takeScreenshot(args);
+                break;
+            case 'wait_for_url':
+                result = await this.actions.waitForUrl(args);
+                break;
+            case 'wait_for_load_state':
+                result = await this.actions.waitForLoadState(args);
+                break;
+            case 'wait_for_timeout':
+                result = await this.actions.waitForTimeout(args);
                 break;
 
             default:

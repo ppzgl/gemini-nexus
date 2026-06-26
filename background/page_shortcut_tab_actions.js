@@ -16,7 +16,9 @@ async function sendMessageWithContentRefresh(tab, message, expectedStatus) {
     try {
         const response = await chrome.tabs.sendMessage(tab.id, message);
         if (isExpectedResponse(response, expectedStatus)) return response;
-    } catch {}
+    } catch {
+        // 静默忽略:消息发送失败时下方会强制重新注入 content script 后重试
+    }
 
     await injectContentScriptsIntoTab(tab, { force: true });
     return chrome.tabs.sendMessage(tab.id, message);
@@ -34,7 +36,9 @@ async function notifyTabError(tab, message) {
             },
             'ok'
         );
-    } catch {}
+    } catch {
+        // 静默忽略:错误通知发送失败通常意味着 tab 已不可达,记录亦无法送达
+    }
 }
 
 export async function showQuickAskForTab(tab) {

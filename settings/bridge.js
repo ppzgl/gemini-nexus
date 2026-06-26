@@ -123,6 +123,9 @@ export class StandaloneSettingsBridge {
             localStorageData[CUSTOM_SELECTION_TOOLS_STORAGE_KEY] || []
         );
         this.controller.updateImageTools(localStorageData.geminiImageToolsEnabled !== false);
+        this.controller.updateImageToolsBlacklist(
+            localStorageData.geminiImageToolsBlacklist || ''
+        );
         this.controller.updateGeneratedImageWatermarkRemoval(
             localStorageData.geminiGeneratedImageWatermarkRemovalEnabled !== false
         );
@@ -146,7 +149,15 @@ export class StandaloneSettingsBridge {
     }
 
     handleWindowMessage(event) {
+        // Only accept messages from our own window (e.g., from the import script).
+        // For same-window postMessage, origin may be the window origin or "null",
+        // so we rely on event.source identity.
         if (event.source !== window) return;
+        if (event.origin && event.origin !== window.location.origin && event.origin !== 'null') {
+            // If origin is present and doesn't match, reject. This is belt-and-suspenders:
+            // same-window messages should have matching origin or opaque origin.
+            return;
+        }
 
         const { action, payload } = event.data || {};
         switch (action) {
@@ -177,6 +188,9 @@ export class StandaloneSettingsBridge {
                 return;
             case 'SAVE_IMAGE_TOOLS':
                 setLocalStorageData({ geminiImageToolsEnabled: payload !== false });
+                return;
+            case 'SAVE_IMAGE_TOOLS_BLACKLIST':
+                setLocalStorageData({ geminiImageToolsBlacklist: payload || '' });
                 return;
             case 'SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL':
                 setLocalStorageData({

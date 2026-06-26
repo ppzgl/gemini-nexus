@@ -2,8 +2,70 @@
     /**
      * Shared layout helpers for positioning toolbar elements.
      */
+    // User-adjusted offset from the computed position, remembered across selections
+    // within a session so the toolbar stays where the user dragged it.
+    let rememberedOffset = { dx: 0, dy: 0 };
+
+    function clamp(value, min, max) {
+        if (max < min) return min;
+        return Math.min(Math.max(value, min), max);
+    }
+
     window.GeminiViewLayout = {
-        positionElement: function (element, rect, isLargerWindow, mousePoint) {
+        /**
+         * Reset the remembered drag offset back to the default centered position.
+         */
+        resetOffset: function () {
+            rememberedOffset = { dx: 0, dy: 0 };
+        },
+
+        rememberOffsetFromDrag: function (selectionRect, placedLeft, placedTop, placedWidth) {
+            if (!selectionRect) return;
+            const base = this.computeSelectionPosition(selectionRect, {
+                width: placedWidth || 0,
+                height: 0,
+            });
+            rememberedOffset = {
+                dx: placedLeft - base.left,
+                dy: placedTop - base.top,
+            };
+        },
+
+        /**
+         * Compute the base (pre-offset) viewport-relative position for the
+         * "anchor to selection" mode: horizontally centered on the selection,
+         * vertically just below it (flipping above when space is tight).
+         */
+        computeSelectionPosition: function (rect, size) {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const edgePadding = 10;
+            const gap = 8;
+            const width = size.width || 0;
+            const height = size.height || 0;
+
+            const selectionCenterX = rect.left + rect.width / 2;
+            let left = selectionCenterX - width / 2;
+            left = clamp(left, edgePadding, viewportWidth - width - edgePadding);
+
+            let top = rect.bottom + gap;
+            let placement = 'bottom';
+            if (top + height > viewportHeight - edgePadding) {
+                const flippedTop = rect.top - height - gap;
+                if (flippedTop >= edgePadding) {
+                    top = flippedTop;
+                    placement = 'top';
+                } else {
+                    top = Math.max(edgePadding, viewportHeight - height - edgePadding);
+                    placement = 'bottom';
+                }
+            }
+
+            return { left, top, placement };
+        },
+
+        positionElement: function (element, rect, isLargerWindow, mousePoint, options) {
+            const anchorMode = options?.anchorMode || 'cursor';
             const scrollX = window.scrollX || window.pageXOffset;
             const scrollY = window.scrollY || window.pageYOffset;
             const viewportWidth = window.innerWidth;
@@ -20,6 +82,29 @@
 
             const edgePadding = 10;
             const cursorOffset = 12;
+
+            // Selection-anchored mode: center on the selection and flip vertically
+            // based on available space, then apply any remembered drag offset.
+            if (anchorMode === 'selection' && rect) {
+                const base = this.computeSelectionPosition(rect, { width, height });
+                let visualLeft = base.left + rememberedOffset.dx;
+                let visualTop = base.top + rememberedOffset.dy;
+
+                // The remembered offset must never push the toolbar off-screen.
+                visualLeft = clamp(visualLeft, edgePadding, viewportWidth - width - edgePadding);
+                visualTop = clamp(visualTop, edgePadding, viewportHeight - height - edgePadding);
+
+                if (!isLargerWindow) {
+                    element.classList.remove('placed-top', 'placed-bottom');
+                    element.classList.add(base.placement === 'top' ? 'placed-top' : 'placed-bottom');
+                    element.style.left = `${visualLeft + scrollX}px`;
+                    element.style.top = `${visualTop + scrollY}px`;
+                } else {
+                    element.style.left = `${visualLeft}px`;
+                    element.style.top = `${visualTop}px`;
+                }
+                return;
+            }
 
             let anchorX, anchorY;
 

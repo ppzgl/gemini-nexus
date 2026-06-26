@@ -1,19 +1,11 @@
 import { t } from '../core/i18n.js';
 import { TemplateIcons } from '../ui/templates/icons.js';
+import { escapeHtml } from '../../shared/utils/escape.js';
 
 export function configureMarkdown() {
     if (typeof marked === 'undefined') return;
 
     const renderer = new marked.Renderer();
-
-    const escapeHtml = (text) => {
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    };
 
     const normalizeCodeLanguage = (language) => {
         return String(language || '')

@@ -15,8 +15,7 @@ import {
     normalizeWebThinkingLevelForModel,
 } from '../../shared/models/web_thinking.js';
 import { debugLog } from '../../shared/logging/debug.js';
-
-const WEB_CLIENT_CAPABILITIES = Object.freeze([4, 5, 6, 8]);
+import { WEB_CLIENT_CAPABILITIES, assertAuthToken } from './shared/web_auth.js';
 
 async function handleFileUploads(files, signal, uploadContext) {
     const normalizedFiles = normalizeUserAttachments(files);
@@ -87,12 +86,6 @@ function buildModelHeader(model, requestId, thinkingLevel, { temporaryChat = fal
 function buildEndpoint(authUser, queryParams) {
     const accountPrefix = authUser && authUser !== '0' ? `/u/${authUser}` : '';
     return `https://gemini.google.com${accountPrefix}/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate?${queryParams.toString()}`;
-}
-
-function assertAuthToken(context, fieldName) {
-    if (!context?.[fieldName]) {
-        throw new Error(`Missing Gemini Web auth token: ${fieldName}`);
-    }
 }
 
 function assertRequiredAuthTokens(context) {

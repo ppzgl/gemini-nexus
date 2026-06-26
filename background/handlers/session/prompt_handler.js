@@ -32,7 +32,9 @@ async function getStoredProvider() {
 async function sendRuntimeMessage(message) {
     try {
         await chrome.runtime.sendMessage(message);
-    } catch {}
+    } catch {
+        // 静默忽略:消息发送失败时接收方可能已销毁,无法记录
+    }
 }
 
 function getBrowserControlTaskTitle(text) {
@@ -139,7 +141,9 @@ export class PromptHandler {
                                         tab: toControlTabSummary(tab),
                                     })
                                     .catch(() => {});
-                            } catch {}
+                            } catch {
+                                // 静默降级:locked tab 已关闭时跳过通知
+                            }
                         }
                     }
                 }

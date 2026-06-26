@@ -42,7 +42,9 @@ class KeepAliveManager {
             if (Number.isFinite(storedValue)) {
                 this.lastRotation = storedValue;
             }
-        } catch {}
+        } catch {
+            // 静默降级:storage 读取失败时使用内存中的 lastRotation 默认值
+        }
 
         return this.lastRotation;
     }
@@ -53,7 +55,9 @@ class KeepAliveManager {
             await chrome.storage?.local?.set?.({
                 [LAST_ROTATION_ATTEMPT_KEY]: timestamp,
             });
-        } catch {}
+        } catch {
+            // 静默降级:storage 写入失败时已更新内存状态,不影响当前轮转流程
+        }
     }
 
     async performRotation() {

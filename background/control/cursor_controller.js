@@ -5,7 +5,7 @@
 // unresponsive overlay never blocks the real CDP action.
 
 const CURSOR_SCRIPT_FILES = ['content/cursor/cursor_content.js'];
-const ARRIVAL_TIMEOUT_MS = 2500;
+const ARRIVAL_TIMEOUT_MS = 1500;
 const PING_TIMEOUT_MS = 200;
 
 class CursorController {
@@ -27,14 +27,6 @@ class CursorController {
                     }
                 }
                 return false;
-            });
-
-            chrome.debugger.onAttach.addListener((source) => {
-                const tabId = source?.tabId;
-                if (!Number.isInteger(tabId)) return;
-                // Control session starting: show the cursor in its "thinking"
-                // pose until the first action drives it to a target coordinate.
-                this.showThinking(tabId);
             });
 
             chrome.debugger.onDetach.addListener((source) => {

@@ -73,7 +73,9 @@ export async function ensureWebSocketConnected({
             if (conn.ws !== ws) return;
             try {
                 onRpcMessage(conn, JSON.parse(event.data));
-            } catch {}
+            } catch {
+                // 静默降级:非 JSON 或畸形消息无法解析为 RPC,丢弃
+            }
         };
 
         const listeners = { open: onOpen, error: onError, close: onClose, message: onMessage };

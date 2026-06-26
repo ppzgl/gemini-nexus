@@ -56,8 +56,18 @@ export class MessageBridge {
     }
 
     handleWindowMessage(event) {
-        // Security check: Only accept messages from our direct iframe
+        // Security check: Only accept messages from our direct sandbox iframe.
         if (!this.frame.isWindow(event.source)) return;
+        // Additional origin hardening: sandbox iframes have opaque origin ("null"),
+        // but a non-null, non-matching origin indicates a spoofed source.
+        if (event.origin && event.origin !== 'null') {
+            try {
+                const extensionOrigin = chrome.runtime.getURL('').replace(/\/$/, '');
+                if (event.origin !== extensionOrigin) return;
+            } catch {
+                // Chrome API unavailable; rely on event.source check alone.
+            }
+        }
 
         const { action, payload } = event.data || {};
         if (!action) return;
@@ -199,6 +209,36 @@ export class MessageBridge {
             return;
         }
 
+        const performWrite = () => this._performSessionWrite(sessions, mutation);
+
+        if (typeof chrome?.storage?.local?.getBytesInUse !== 'function') {
+            performWrite();
+            return;
+        }
+
+        chrome.storage.local.getBytesInUse((bytesUsed) => {
+            const quota = chrome.storage.local.QUOTA_BYTES;
+            if (!quota) {
+                performWrite();
+                return;
+            }
+            const ratio = bytesUsed / quota;
+            if (ratio > 0.95) {
+                console.warn(
+                    `[Gemini Nexus] Storage nearly full (${bytesUsed}/${quota} bytes); skipping session save to avoid a quota error. Delete old sessions to free space.`
+                );
+                return;
+            }
+            if (ratio > 0.8) {
+                console.warn(
+                    `[Gemini Nexus] Storage usage is high (${Math.round(ratio * 100)}%). Consider deleting old sessions.`
+                );
+            }
+            performWrite();
+        });
+    }
+
+    _performSessionWrite(sessions, mutation) {
         chrome.storage.local.get(['geminiSessions', 'geminiDeletedSessionIds'], (result) => {
             const readError = getRuntimeLastError();
             if (readError) {

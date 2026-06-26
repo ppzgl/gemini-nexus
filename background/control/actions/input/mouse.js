@@ -1,17 +1,5 @@
 import { BaseActionHandler } from '../base.js';
 
-const MAX_LAYOUT_RETRIES = 3;
-const LAYOUT_RETRY_DELAY_MS = 150;
-
-function isTransientLayoutError(error) {
-    const message = error?.message || '';
-    return message.includes('layout object') || message.includes('Node is detached');
-}
-
-function delay(delayMs) {
-    return new Promise((resolve) => setTimeout(resolve, delayMs));
-}
-
 export class MouseActions extends BaseActionHandler {
     async hoverElement({ uid }) {
         const objectId = await this.getObjectIdFromUid(uid);
@@ -20,6 +8,7 @@ export class MouseActions extends BaseActionHandler {
         try {
             const { x, y } = await this._getElementCenter({ objectId, backendNodeId });
 
+            await this.bringPageToFront();
             await this.moveCursorToPoint(x, y);
 
             await this.waitHelper.execute(async () => {
@@ -70,6 +59,7 @@ export class MouseActions extends BaseActionHandler {
         try {
             const { x, y } = await this._getElementCenter({ objectId, backendNodeId });
 
+            await this.bringPageToFront();
             await this.moveCursorToPoint(x, y);
 
             const hitTestResult = await this.cmd('Runtime.callFunctionOn', {
@@ -171,30 +161,5 @@ export class MouseActions extends BaseActionHandler {
 
             return `Clicked element ${uid} (${isOccluded ? 'Occluded, ' : ''}JS Fallback)`;
         }
-    }
-
-    async _getElementCenter({ objectId, backendNodeId }) {
-        for (let attempt = 0; attempt < MAX_LAYOUT_RETRIES; attempt++) {
-            try {
-                await this.cmd('DOM.scrollIntoViewIfNeeded', { objectId });
-
-                const { model } = await this.cmd('DOM.getBoxModel', { backendNodeId });
-                if (!model || !model.content) throw new Error('No box model');
-
-                return {
-                    x: (model.content[0] + model.content[4]) / 2,
-                    y: (model.content[1] + model.content[5]) / 2,
-                };
-            } catch (error) {
-                const hasRetryLeft = attempt < MAX_LAYOUT_RETRIES - 1;
-                if (isTransientLayoutError(error) && hasRetryLeft) {
-                    await delay(LAYOUT_RETRY_DELAY_MS);
-                    continue;
-                }
-                throw error;
-            }
-        }
-
-        throw new Error('Unable to resolve element center');
     }
 }

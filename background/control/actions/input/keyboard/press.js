@@ -164,6 +164,7 @@ export async function handlePressKey(handler, { key }) {
             throw new Error("'key' must be a non-empty string.");
         }
 
+        await handler.bringPageToFront().catch(() => {});
         await handler.waitHelper.execute(async () => {
             const tokens = parseKeyTokens(key);
             const mainKey = tokens[tokens.length - 1];

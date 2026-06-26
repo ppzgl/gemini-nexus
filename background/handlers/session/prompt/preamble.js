@@ -19,7 +19,7 @@ Operations may be throttled by the browser in background tabs.
    - If a tool reports stale UID, detached element, or UID not found, call \`take_snapshot\` before retrying; do not reuse the failed UID.
 3. **STATE VERIFICATION:** After navigation or a significant interaction, the page structure changes. You **MUST** get a new snapshot to interact with new elements.
 4. **SPEED & EFFICIENCY:** To complete tasks faster, frequently use **\`new_page\`** (to open relevant sites in new tabs) or **\`navigate_page\`** (to jump directly to URLs). Avoid clicking through navigation menus if you can go directly to the target page.
-5. **INLINE SNAPSHOTS:** Prefer includeSnapshot on supported interaction tools (\`click\`, \`hover\`, \`fill\`, \`fill_form\`, \`press_key\`, \`type_text\`, and \`attach_file\`) when you need the latest snapshot immediately after the action. This binds the action result and updated snapshot in one tool output.
+5. **INLINE SNAPSHOTS:** Prefer includeSnapshot on supported interaction tools (\`click\`, \`hover\`, \`fill\`, \`fill_form\`, \`press_key\`, \`type_text\`, \`attach_file\`, \`drag\`, and \`scroll\`) when you need the latest snapshot immediately after the action. This binds the action result and updated snapshot in one tool output.
    - If an interaction returns an Error, includeSnapshot will not provide a fresh snapshot; call \`take_snapshot\` if you need recovery context.
 6. **BATCH FORMS:** Prefer \`fill_form\` over multiple \`fill\` calls when you need to fill more than one field in the same form.
 7. **WAITING:** Use \`wait_for\` when a page is loading, searching, logging in, or waiting for text to appear.
@@ -38,6 +38,8 @@ Operations may be throttled by the browser in background tabs.
 - If a click, navigation, or form submit appears stuck because a JavaScript dialog is open, call handle_dialog before retrying other actions.
 - Use list_pages before select_page or close_page when you do not know the page index.
 - Use evaluate_script mainly for inspection, extraction, and calculations. Prefer click, fill, press_key, and type_text for user interactions.
+- Use drag to move an element onto another element (\`target_uid\`) or by a pixel offset (\`dx\`/\`dy\`); the starting point is always the uid element's center. Use \`"includeSnapshot": true\` to verify the drop result.
+- Use scroll (\`scroll_y\` positive = down, negative = up) to reveal off-screen content before interacting; follow with \`take_snapshot\` to get fresh UIDs for the newly visible elements.
 
 **Output Format:**
 To use a tool, output a **single** JSON block at the end of your response:
@@ -139,4 +141,36 @@ To use a tool, output a **single** JSON block at the end of your response:
 16. **select_page**: Switch control focus to a page by index (Background Mode: does not activate tab).
     - args: { "index": number }
     - Use the page index from the latest list_pages output.
+
+17. **drag**: Drag an element to a target position.
+    - args: { "uid": "string", "target_uid": "string", "includeSnapshot": boolean }
+    - args (offset form): { "uid": "string", "dx": number, "dy": number, "includeSnapshot": boolean }
+    - Use target_uid to drag onto another element's center, or dx/dy (CSS pixels) to drag by a relative offset.
+    - The starting point is always the center of the uid element.
+    - Optional: set "includeSnapshot": true to receive the latest snapshot after a successful drag.
+
+18. **scroll**: Scroll the page or a scrollable element.
+    - args: { "uid": "string"?, "scroll_x": number, "scroll_y": number, "includeSnapshot": boolean }
+    - uid targets a scrollable element (wheel lands on its center); omit uid to scroll the viewport center.
+    - scroll_y positive = down, negative = up; scroll_x positive = right, negative = left (CSS pixels).
+    - Optional: set "includeSnapshot": true to receive the latest snapshot after scrolling.
+
+19. **take_screenshot**: Capture a screenshot of the page.
+    - args: { "fullPage": boolean, "x": number, "y": number, "width": number, "height": number }
+    - By default captures the visible viewport. Set "fullPage": true for the whole page, or pass x/y/width/height (viewport CSS pixels) for a cropped region.
+    - Use this when the accessibility tree is insufficient and you need to see visual layout, canvas, image-only content, or spatial relationships.
+
+20. **wait_for_url**: Wait until the tab URL matches a glob pattern.
+    - args: { "url": "glob", "timeout": number }
+    - url is a glob where \`*\` matches anything (e.g. \`https://example.com/success*\`). Polls until matched or timeout.
+    - Use this after an action that triggers a redirect or client-side route change that does not change the DOM text that \`wait_for\` would catch.
+
+21. **wait_for_load_state**: Wait until the page reaches a load state.
+    - args: { "state": "load" | "domcontentloaded", "timeout": number }
+    - "load" waits for Page.loadEventFired; "domcontentloaded" waits for domContentEventFired.
+    - Use this after navigation or a heavy reload when you need the document fully parsed before interacting.
+
+22. **wait_for_timeout**: Wait a fixed number of milliseconds.
+    - args: { "timeout": number }
+    - Capped at 30000ms. Use sparingly, only when no content-based wait (\`wait_for\`, \`wait_for_url\`, \`wait_for_load_state\`) applies.
 \n`;

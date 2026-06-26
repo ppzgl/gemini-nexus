@@ -31,7 +31,9 @@ export class PromptBuilder {
                         try {
                             const tab = await chrome.tabs.get(targetTabId);
                             url = tab.url;
-                        } catch {}
+                        } catch {
+                            // 静默降级:locked tab 已关闭时回退到活动 tab
+                        }
                     }
 
                     // Fallback to active tab if no locked tab or lookup failed

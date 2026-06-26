@@ -33,7 +33,17 @@
 
 ### 项目简介
 
-**Gemini Nexus** 赋予浏览器原生 AI 灵魂，是一款集成 Gemini Web、Google Gemini API、OpenAI Compatible API 以及多个第三方专门 API 渠道的 Chrome 扩展程序。它不仅仅是一个侧边栏插件，而是通过注入式的**悬浮工具栏**、图像与截图输入、基于 Chrome DevTools Protocol 的**浏览器控制工具**以及可选的**外部 MCP 工具**，将 AI 的触角伸向网页浏览的每一个交互细节。
+**Gemini Nexus** 赋予浏览器原生 AI 灵魂,是一款集成 Gemini Web、Google Gemini API、OpenAI Compatible API 以及多个第三方专门 API 渠道的 Chrome 扩展程序。它不仅仅是一个侧边栏插件,而是通过注入式的**悬浮工具栏**、图像与截图输入、基于 Chrome DevTools Protocol 的**浏览器控制工具**以及可选的**外部 MCP 工具**,将 AI 的触角伸向网页浏览的每一个交互细节。
+
+### 逆向工程与数据流向披露
+
+**Gemini Web 渠道**: 本扩展通过逆向工程访问 Google Gemini Web (gemini.google.com),提取页面 HTML 中的认证 token (`atValue`、`blValue`、`f.sid`) 并模仿浏览器请求,从而无需官方 API key 即可使用 Gemini Web。**这种方式很可能违反 Google 服务条款**,可能构成未授权访问。请求会携带您的会话凭证发送至 Google 服务器 (`gemini.google.com`、`push.clients6.google.com`)。
+
+**水印移除功能**: 对于 Gemini 生成的图片,本扩展会移除嵌入的水印(元数据标记)以便直接下载。这会移除 AI 生成内容的署名/签名。用户需注意版权 implications 和 Google 关于生成内容使用的政策。
+
+**数据流向**: 用户文本、图片、上传文件会发送至所选 provider 的 API endpoint。Gemini Web 时数据流向 Google 服务器;其他 provider 时流向各自 endpoint(含用户配置的 MCP server)。API key 本地存储在 Chrome 扩展 storage,除所选 provider 外不传向任何第三方。
+
+**风险自负**: 使用 Gemini Web 或水印移除功能即意味着您承认潜在的服务条款违反,并承担相应后果。扩展作者提供这些功能仅用于研究/实验目的,不对滥用行为承担责任。
 
 ### 能力概览
 
@@ -123,7 +133,7 @@ Gemini Nexus 可以选择连接到一个或多个外部 MCP 服务器（通过 *
 
 ### Gemini Web 维护说明
 
-Gemini Web 依赖逆向协议，可能随网站更新而变化。当前契约记录在 [`docs/gemini-web-reverse.md`](docs/gemini-web-reverse.md)，包含已验证 token、RPC 路径、上传流程、模型 hash、临时对话标记、暂不支持的 image-preview 模型路由，以及手动漂移检查命令。
+Gemini Web **依赖逆向协议**,在无官方授权的情况下访问 Google 内部 API,这很可能违反 Google 服务条款。契约可能随网站更新而变化,当前状态记录在 [`docs/gemini-web-reverse.md`](docs/gemini-web-reverse.md),包含已验证 token、RPC 路径、上传流程、模型 hash、临时对话标记、暂不支持的 image-preview 模型路由,以及手动漂移检查命令。
 
 ### 快速开始
 

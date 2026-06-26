@@ -41,7 +41,9 @@ export function inferMcpTransport(transport, url) {
             if (parsed.protocol.startsWith('http') && !pathname.endsWith('/sse')) {
                 return 'streamable-http';
             }
-        } catch {}
+        } catch {
+            // 静默降级:URL 解析失败时不按路径推断传输类型,继续其他检测
+        }
     }
 
     return normalized;

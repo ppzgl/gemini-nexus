@@ -5,6 +5,19 @@ function getTabLabel(tab) {
     return tab?.title || getTabUrl(tab) || 'Untitled';
 }
 
+function assertSafeNavigationUrl(url, { allowAboutBlank = false } = {}) {
+    const trimmed = String(url || '').trim();
+    if (!trimmed) return 'URL must not be empty.';
+    if (allowAboutBlank && trimmed === 'about:blank') return null;
+    try {
+        const parsed = new URL(trimmed);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return null;
+        return `URL scheme '${parsed.protocol}' is not allowed; only http and https are permitted.`;
+    } catch {
+        return `Invalid URL: ${trimmed}`;
+    }
+}
+
 export class NavigationActions extends BaseActionHandler {
     constructor(connection, snapshotManager, waitHelper, groupContext = {}) {
         super(connection, snapshotManager, waitHelper);
@@ -55,6 +68,10 @@ export class NavigationActions extends BaseActionHandler {
         if (navigationType === 'url' && (typeof url !== 'string' || !url.trim())) {
             return "Error: 'url' is required when type is 'url'.";
         }
+        if (navigationType === 'url') {
+            const schemeError = assertSafeNavigationUrl(url);
+            if (schemeError) return `Error: ${schemeError}`;
+        }
 
         let action = '';
         const willNavigate = true;
@@ -89,6 +106,10 @@ export class NavigationActions extends BaseActionHandler {
 
     async newPage({ url, background = false }) {
         const targetUrl = url || 'about:blank';
+        if (url) {
+            const schemeError = assertSafeNavigationUrl(url, { allowAboutBlank: true });
+            if (schemeError) return `Error: ${schemeError}`;
+        }
         let tab;
 
         if (background) {

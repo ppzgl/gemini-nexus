@@ -4,6 +4,7 @@ import { handlePressKey } from './press.js';
 function createHandler() {
     return {
         cmd: vi.fn(() => Promise.resolve({})),
+        bringPageToFront: vi.fn(() => Promise.resolve()),
         waitHelper: {
             execute: vi.fn(async (fn) => fn()),
         },

@@ -54,6 +54,15 @@ export function restoreImageTools(frame) {
     });
 }
 
+export function restoreImageToolsBlacklist(frame) {
+    restorePreference(['geminiImageToolsBlacklist'], 'image tools blacklist', (result) => {
+        frame.postMessage({
+            action: 'RESTORE_IMAGE_TOOLS_BLACKLIST',
+            payload: result.geminiImageToolsBlacklist || '',
+        });
+    });
+}
+
 export function restoreGeneratedImageWatermarkRemoval(frame) {
     restorePreference(
         ['geminiGeneratedImageWatermarkRemovalEnabled'],
