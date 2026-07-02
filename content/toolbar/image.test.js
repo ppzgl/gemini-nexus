@@ -105,4 +105,58 @@ describe('GeminiImageDetector', () => {
         expect(onShow).not.toHaveBeenCalled();
         expect(detector.getCurrentImage()).toBeNull();
     });
+
+    it('keeps small button icons hidden from image tools', () => {
+        const onShow = vi.fn();
+        const detector = new window.GeminiImageDetector({ onShow });
+        // A small <img> living inside a <button> — a UI control icon, not
+        // content to analyze. It lacks icon/logo/button keywords, so without
+        // the interactive-element guard it would slip through the OCR filter.
+        const button = document.createElement('button');
+        button.className = 'action';
+        document.body.appendChild(button);
+        const image = createImage({ width: 48, height: 24, alt: 'edit' });
+        button.appendChild(image);
+
+        detector.setEnabled(true);
+        image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        vi.advanceTimersByTime(600);
+
+        expect(onShow).not.toHaveBeenCalled();
+        expect(detector.getCurrentImage()).toBeNull();
+    });
+
+    it('keeps small link icons hidden from image tools', () => {
+        const onShow = vi.fn();
+        const detector = new window.GeminiImageDetector({ onShow });
+        const link = document.createElement('a');
+        link.href = '#';
+        document.body.appendChild(link);
+        const image = createImage({ width: 44, height: 22, alt: 'open' });
+        link.appendChild(image);
+
+        detector.setEnabled(true);
+        image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        vi.advanceTimersByTime(600);
+
+        expect(onShow).not.toHaveBeenCalled();
+    });
+
+    it('still shows image tools for large images inside buttons', () => {
+        const onShow = vi.fn();
+        const detector = new window.GeminiImageDetector({ onShow });
+        const button = document.createElement('button');
+        document.body.appendChild(button);
+        const image = createImage({ width: 160, height: 120, alt: 'photo' });
+        button.appendChild(image);
+
+        detector.setEnabled(true);
+        image.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+        vi.advanceTimersByTime(600);
+
+        expect(onShow).toHaveBeenCalledTimes(1);
+    });
 });

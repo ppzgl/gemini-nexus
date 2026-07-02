@@ -55,12 +55,40 @@
         return true;
     }
 
+    function isInsideInteractiveElement(imageElement) {
+        let element = imageElement.parentElement;
+        while (element) {
+            const tagName = element.tagName;
+            const role = element.getAttribute && element.getAttribute('role');
+            const isInteractive =
+                tagName === 'BUTTON' ||
+                tagName === 'A' ||
+                role === 'button' ||
+                role === 'link' ||
+                role === 'menuitem' ||
+                role === 'menuitemcheckbox' ||
+                role === 'menuitemradio' ||
+                role === 'tab' ||
+                role === 'switch' ||
+                role === 'checkbox' ||
+                role === 'radio';
+            if (isInteractive) return true;
+            element = element.parentElement;
+        }
+        return false;
+    }
+
     function shouldShowImageTools(imageElement) {
         const { width, height } = getDisplayedImageSize(imageElement);
         if (width >= 100 && height >= 100) return true;
 
         const signals = getImageTextSignals(imageElement);
         if (CAPTCHA_KEYWORD_PATTERN.test(signals)) return true;
+
+        // A small image that lives inside a button/link/menu is a control
+        // icon (e.g. an "edit" glyph on a toolbar button), not content to
+        // analyze — never float the image-action button over it.
+        if (isInsideInteractiveElement(imageElement)) return false;
 
         return isSmallOcrCandidate(imageElement, width, height);
     }
