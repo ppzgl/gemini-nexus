@@ -4,6 +4,7 @@
         "sidepanel/index.html",
         "sidepanel/index.js",
         "sidepanel/preload.js",
+        "sidepanel/core/**/*.js",
         "sandbox/index.html",
         "sandbox/index.js",
         "settings/index.html",
