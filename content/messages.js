@@ -90,6 +90,16 @@
                 return true;
             }
 
+            if (request.action === 'HIDE_FOR_CAPTURE') {
+                // Pre-capture hide: toolbar host sits at z-index 2147483647 and would
+                // otherwise be baked into captureVisibleTab output.
+                if (this.toolbarController) {
+                    this.toolbarController.hideAll();
+                }
+                sendResponse({ status: 'hidden' });
+                return true;
+            }
+
             if (request.action === 'START_SELECTION') {
                 this.captureSource = request.source;
                 this.captureTargetSidePanelTabId = request.targetSidePanelTabId || null;

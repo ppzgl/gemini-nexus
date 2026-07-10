@@ -1,4 +1,8 @@
-import { appendAiMessage, replaceSessionSnapshot } from '../../managers/history_manager.js';
+import {
+    appendAiMessage,
+    invalidateSessionContextSummary,
+    replaceSessionSnapshot,
+} from '../../managers/history_manager.js';
 import { PromptBuilder } from './prompt/builder.js';
 import { ToolExecutor } from './prompt/tool_executor.js';
 import {
@@ -89,15 +93,25 @@ export class PromptHandler {
         const run = {
             request,
             cancelled: false,
+            id: `sidepanel_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
         };
         this.activeRun = run;
 
         (async () => {
             const onUpdate = (partialText, partialThoughts) => {
-                // Catch errors if receiver (UI) is closed/unavailable
+                // Catch errors if receiver (UI) is closed/unavailable.
+                // Tag with source='sidepanel' + a per-run requestId so the
+                // broadcast cannot be mistaken for a toolbar quick-ask stream
+                // by content/toolbar/stream.js (whose guard
+                // `if (request.source && request.source !== 'toolbar') return false`
+                // only rejects messages whose source is explicitly non-toolbar;
+                // an undefined source previously fell through and leaked
+                // sidepanel tokens into every open toolbar ask window).
                 chrome.runtime
                     .sendMessage({
                         action: 'GEMINI_STREAM_UPDATE',
+                        source: 'sidepanel',
+                        requestId: run.id,
                         sessionId: request.sessionId || null,
                         text: partialText,
                         thoughts: partialThoughts,
@@ -114,6 +128,15 @@ export class PromptHandler {
                     const snapshotSaved = await replaceSessionSnapshot(request.sessionSnapshot);
                     if (!snapshotSaved) {
                         throw new Error('Could not save edited session before sending prompt.');
+                    }
+                    // A history edit invalidates any previously-compressed
+                    // summary (it referenced message text/indices that were
+                    // just truncated). The snapshot already nulls the
+                    // in-memory field, but invalidate explicitly too so a
+                    // snapshot-write race cannot leave a stale persisted
+                    // summary that prepareManagedContext would later load.
+                    if (request.sessionSnapshot?.id) {
+                        await invalidateSessionContextSummary(request.sessionSnapshot.id);
                     }
                 }
 
@@ -158,9 +181,16 @@ export class PromptHandler {
                 let currentFiles = request.files;
 
                 let loopCount = 0;
-                // 0 means unlimited (Infinity). Default to 0 if undefined.
+                // maxLoops == 0 historically meant "unlimited" (Infinity). That is
+                // dangerous: a model stuck in a tool-calling loop (repeatedly
+                // retrying a failing action, or oscillating between take_snapshot
+                // and click) would run forever, consuming API quota and holding the
+                // debugger attached. We now cap the default at a generous bound so
+                // well-behaved agentic tasks still complete, but runaway loops stop.
+                // Callers can still request a higher explicit cap via request.maxLoops.
+                const DEFAULT_MAX_LOOPS = 30;
                 const reqLoops = request.maxLoops !== undefined ? request.maxLoops : 0;
-                const MAX_LOOPS = reqLoops === 0 ? Infinity : reqLoops;
+                const MAX_LOOPS = reqLoops === 0 ? DEFAULT_MAX_LOOPS : reqLoops;
 
                 let keepLooping = true;
 
@@ -272,6 +302,17 @@ export class PromptHandler {
                         chrome.runtime.sendMessage(result).catch(() => {});
                         keepLooping = false;
                     }
+                }
+
+                // If the loop exhausted the step cap without the model emitting a
+                // final (tool-free) answer, surface a clear error instead of
+                // silently finalizing with whatever the last intermediate state was.
+                if (keepLooping && loopCount >= MAX_LOOPS) {
+                    throw new Error(
+                        'Browser-control tool loop reached the maximum number of steps (' +
+                            MAX_LOOPS +
+                            ') without a final answer.'
+                    );
                 }
             } catch (error) {
                 console.error('Prompt loop error:', error);

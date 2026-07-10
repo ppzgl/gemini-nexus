@@ -123,7 +123,7 @@
 
             this.dispatcher = new window.GeminiToolbarDispatcher(this);
 
-            new window.GeminiSelectionObserver({
+            this.selectionObserver = new window.GeminiSelectionObserver({
                 onSelection: this.handleSelection.bind(this),
                 onClear: this.handleSelectionClear.bind(this),
                 onClick: this.handleClick.bind(this),
@@ -135,7 +135,11 @@
             this.lastMousePoint = null;
             this.lastSessionId = null;
             this.currentMode = 'ask';
-            this.isSelectionEnabled = true;
+            // Default off until settings_sync has read storage and confirmed
+            // this page isn't on the selection blacklist; otherwise a selection
+            // event during the async storage-read window would flash the toolbar
+            // once on blacklisted pages.
+            this.isSelectionEnabled = false;
 
             this.handleAction = this.handleAction.bind(this);
 
@@ -291,6 +295,14 @@
                     finalImage = await window.GeminiImageCropper.crop(request.image, request.area);
                 } catch (error) {
                     console.error('Crop failed in content script', error);
+                    // Surface the failure to the user (e.g. cross-origin canvas
+                    // taint) instead of silently falling back to the uncropped
+                    // image, which would send the whole screenshot for OCR/
+                    // translate and confuse the user about the selected region.
+                    this.ui?.showError?.(
+                        error?.message || 'Image crop failed. Try a different region or image.'
+                    );
+                    return;
                 }
             }
 
@@ -509,6 +521,19 @@
             this.ui.showAskWindow(rect, null, strings.error || 'Gemini Nexus');
             this.ui.showError(message || 'Could not open Gemini Nexus');
             this.visible = true;
+        }
+        destroy() {
+            // Tear down document-level listeners so a forced re-injection or
+            // language change does not stack duplicates.
+            if (this.selectionObserver && typeof this.selectionObserver.disconnect === 'function') {
+                this.selectionObserver.disconnect();
+            }
+            this.selectionObserver = null;
+
+            if (this.imageDetector && typeof this.imageDetector.setEnabled === 'function') {
+                this.imageDetector.setEnabled(false);
+            }
+            this.imageDetector = null;
         }
     }
 

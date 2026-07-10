@@ -226,6 +226,22 @@ export class SessionFlowController {
             sessionId,
         });
 
+        // If we deleted the session that is currently generating, drop the
+        // generating-session guard so the partial reply is not silently
+        // discarded by isGeneratingSessionMessage() — and any late stream
+        // update / GEMINI_REPLY for the deleted session is ignored cleanly
+        // rather than filtered into the void. We do NOT keep the partial
+        // streaming bubble (it belongs to a session that no longer exists),
+        // but we must not leave the UI pinned to a dead generatingSessionId.
+        if (this.app.generatingSessionId === sessionId) {
+            this.app.generatingSessionId = null;
+            if (this.app.isGenerating) {
+                this.app.isGenerating = false;
+                this.ui.setLoading(false);
+                this.app.messageHandler?.clearActiveStream?.();
+            }
+        }
+
         if (switchNeeded) {
             if (this.sessionManager.sessions.length > 0) {
                 this.switchToSession(this.sessionManager.currentSessionId);

@@ -5,7 +5,16 @@ const ROTATE_URL = 'https://accounts.google.com/RotateCookies';
 // Matches Python implementation (540s = 9 minutes)
 const INTERVAL_MINUTES = 9;
 const MIN_ROTATION_INTERVAL_MS = 60000;
+const BACKOFF_MAX_MS = 30 * 60 * 1000; // 30 minutes
 const LAST_ROTATION_ATTEMPT_KEY = 'geminiKeepAliveLastRotationAttempt';
+// A short-interval alarm that fires while a stream is active. MV3 terminates an
+// idle service worker after ~30s of inactivity; a reasoning/thinking model can
+// spend far longer than that emitting no tokens, which would kill the in-flight
+// stream and leave the UI stuck on a loading spinner forever. This alarm pokes
+// the worker every 25s while streaming so the idle timer resets. (chrome.alarms
+// has a 30s minimum granularity, which is just enough for MV3's 30s idle.)
+const STREAM_HEARTBEAT_ALARM = 'gemini_stream_heartbeat';
+const STREAM_HEARTBEAT_PERIOD_MIN = 0.5; // 30s, the MV3 minimum
 
 class KeepAliveManager {
     constructor() {
@@ -32,6 +41,36 @@ class KeepAliveManager {
     _onAlarm(alarm) {
         if (alarm.name === ALARM_NAME) {
             this.performRotation();
+            return;
+        }
+        // Stream heartbeat: just touching the SW resets the MV3 30s idle timer.
+        // No work to do — the alarm firing while a stream is active is enough to
+        // keep the worker alive through a long thinking/reasoning pause.
+        if (alarm.name === STREAM_HEARTBEAT_ALARM) {
+            debugLog('[Gemini Nexus] Keep-Alive: stream heartbeat');
+        }
+    }
+
+    // Called when a streaming request starts. Arms a short-interval alarm that
+    // resets the SW idle timer through reasoning/thinking pauses that emit no
+    // tokens for >30s. Must be balanced by endStreamHeartbeat() when the stream
+    // resolves or aborts, otherwise the alarm keeps firing indefinitely.
+    beginStreamHeartbeat() {
+        try {
+            chrome.alarms.create(STREAM_HEARTBEAT_ALARM, {
+                periodInMinutes: STREAM_HEARTBEAT_PERIOD_MIN,
+            });
+        } catch (error) {
+            // 静默降级:心跳失败时不影响主流程,SW 仍可能因 token 流存活
+            debugLog('[Gemini Nexus] Keep-Alive: failed to arm stream heartbeat', error);
+        }
+    }
+
+    endStreamHeartbeat() {
+        try {
+            chrome.alarms.clear(STREAM_HEARTBEAT_ALARM);
+        } catch {
+            // 静默忽略:清除失败无副作用
         }
     }
 
@@ -72,6 +111,20 @@ class KeepAliveManager {
             // (Matches Python logic to avoid 429 Too Many Requests)
             if (now - lastRotationAttempt < MIN_ROTATION_INTERVAL_MS) {
                 return;
+            }
+
+            // Back off after repeated failures so a dead network or expired
+            // session does not retry RotateCookies every interval — that also
+            // floods the console, which feeds the LogManager storage write path.
+            // Doubles per failure, capped at 30 minutes.
+            if (this.consecutiveErrors > 0) {
+                const backoffMs = Math.min(
+                    BACKOFF_MAX_MS,
+                    MIN_ROTATION_INTERVAL_MS * 2 ** this.consecutiveErrors
+                );
+                if (now - lastRotationAttempt < backoffMs) {
+                    return;
+                }
             }
 
             await this._setLastRotationAttempt(now);

@@ -159,14 +159,12 @@ function queueSidePanelFollowupMessages(request, sender) {
     const sendMessage = chrome.runtime?.sendMessage?.bind(chrome.runtime);
     if (!sendMessage) return;
 
+    // SWITCH_SESSION is intentionally NOT queued here: the side panel replays
+    // pendingSessionId from storage during its own initialization
+    // (state.js replayPendingSidePanelActions), so queuing a second SWITCH_SESSION
+    // 500ms later produced a duplicate switch. Only ACTIVATE_BROWSER_CONTROL
+    // lacks a pending-replay path, so it still needs the queued followup.
     setTimeout(() => {
-        if (request.sessionId) {
-            sendMessage({
-                action: 'SWITCH_SESSION',
-                tabId: sender.tab.id,
-                sessionId: request.sessionId,
-            }).catch(() => {});
-        }
         if (request.mode === 'browser_control') {
             sendMessage({
                 action: 'ACTIVATE_BROWSER_CONTROL',

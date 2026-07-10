@@ -1,10 +1,14 @@
 export class LogManager {
     constructor(sinks = []) {
         this.logs = [];
-        this.MAX_LOGS = 5000; // Increased capacity for detailed debugging
+        // 5000 stringified console entries can occupy a large slice of MV3's
+        // 10MB local-storage quota; 1000 is enough for debugging without
+        // crowding out session history.
+        this.MAX_LOGS = 1000;
         this.STORAGE_KEY = 'gemini_nexus_logs';
         this.sinks = Array.isArray(sinks) ? sinks : [];
         this._inAdd = false;
+        this._saveTimer = null;
         this.init();
     }
 
@@ -50,8 +54,15 @@ export class LogManager {
     }
 
     _save() {
-        // We rely on chrome.storage.local's efficiency
-        chrome.storage.local.set({ [this.STORAGE_KEY]: this.logs }).catch(() => {});
+        // Debounce: console interception (setupConsoleInterception) can call
+        // add() many times per second, and each call would rewrite the entire
+        // log array. Coalesce a burst into one storage write so logging does
+        // not dominate the local-storage quota.
+        if (this._saveTimer) return;
+        this._saveTimer = setTimeout(() => {
+            this._saveTimer = null;
+            chrome.storage.local.set({ [this.STORAGE_KEY]: this.logs }).catch(() => {});
+        }, 1000);
     }
 
     getLogs() {

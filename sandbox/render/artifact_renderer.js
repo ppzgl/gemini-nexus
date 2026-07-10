@@ -283,7 +283,16 @@ export function createLiveArtifactPreview(kind, code, options = {}) {
 
     if (kind === 'html') {
         const handleMessage = (event) => {
+            // Security: verify the message comes from the iframe we created.
+            // `event.source === frame.contentWindow` is an identity check — each
+            // window object is unique and cannot be spoofed by another frame.
+            // This is the correct gate for srcdoc iframes (which have a null
+            // opaque origin, so event.origin is 'null' and not useful for
+            // discrimination). The outbound `targetOrigin: '*'` in the bridge
+            // script is required because sandboxed iframes cannot specify a
+            // precise target origin; only this parent receives the message.
             if (event.source !== frame.contentWindow) return;
+
             const data = event.data || {};
             if (data.channel !== LIVE_ARTIFACT_MESSAGE_CHANNEL) return;
 

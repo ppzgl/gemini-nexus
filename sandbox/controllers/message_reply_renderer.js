@@ -55,28 +55,53 @@ export function renderGeminiReply(handler, session, request) {
         handler.sessionManager.updateContext(session.id, request.context);
     }
 
+    // Error and cancelled replies need the same streaming-bubble teardown
+    // as success, otherwise the partial streaming bubble is left dangling
+    // (visible ghost with stale content, no way to dismiss).
+    const isTerminal = request.status === 'success' || request.status === 'error' || request.status === 'cancelled';
+
     if (handler.streamingBubble) {
         if (handler.hasStorageRenderedAiReply(session, request)) {
             handler.resetStream({ remove: true });
             return;
         }
 
-        handler.streamingBubble.finalize(request.text, request.thoughts, {
-            thoughtsDurationSeconds: request.thoughtsDurationSeconds,
-        });
+        if (isTerminal) {
+            // Finalize the streaming bubble with the terminal text so the
+            // partial stream is replaced by the final (possibly error) text.
+            // For error/cancelled we still finalize — the bubble then shows
+            // the error message with the appropriate styling from the
+            // render layer.
+            handler.streamingBubble.finalize(request.text, request.thoughts, {
+                thoughtsDurationSeconds: request.thoughtsDurationSeconds,
+            });
 
-        if (request.images && request.images.length > 0) {
-            handler.streamingBubble.addImages(request.images);
+            if (request.status === 'success') {
+                if (request.images && request.images.length > 0) {
+                    handler.streamingBubble.addImages(request.images);
+                }
+
+                if (request.sources && request.sources.length > 0) {
+                    handler.streamingBubble.addSources(request.sources);
+                }
+            }
+
+            // For error replies, mark the bubble as an error so the render
+            // layer can style it differently (error color, retry button).
+            if (request.status === 'error' && typeof handler.streamingBubble.markError === 'function') {
+                handler.streamingBubble.markError(request.errorKind, request.retryable);
+            }
+
+            handler.streamingBubble = null;
+            return;
         }
 
-        if (request.sources && request.sources.length > 0) {
-            handler.streamingBubble.addSources(request.sources);
-        }
-
-        handler.streamingBubble = null;
+        // Non-terminal status (shouldn't happen, but be safe): keep streaming.
+        handler.streamingBubble.update(request.text || '', request.thoughts, { isStreaming: true });
         return;
     }
 
+    // No active streaming bubble — append a new message.
     if (handler.hasStorageRenderedAiReply(session, request)) {
         return;
     }
@@ -91,6 +116,9 @@ export function renderGeminiReply(handler, session, request) {
         {
             isFinal: true,
             thoughtsDurationSeconds: request.thoughtsDurationSeconds,
+            isError: request.status === 'error',
+            errorKind: request.status === 'error' ? request.errorKind : undefined,
+            retryable: request.status === 'error' ? request.retryable : undefined,
         }
     );
 }

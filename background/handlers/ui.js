@@ -9,7 +9,7 @@ import {
     handleFetchImage,
     handleGwrExtensionXhrRequest,
 } from './ui_image_fetching.js';
-import { handleMcpListTools, handleMcpTestConnection } from './ui_mcp_tools.js';
+import { handleMcpListTools, handleMcpTestConnection, handleMcpDisconnect } from './ui_mcp_tools.js';
 import { handleCheckPageContext, handleGetActiveSelection } from './ui_page_context.js';
 import { handleProviderModelList } from './ui_provider_models.js';
 import {
@@ -21,11 +21,12 @@ import { handleGetOpenTabs, handleSwitchTab } from './ui_tab_actions.js';
 import { createUiMessageContext } from './ui_context.js';
 
 export class UIMessageHandler {
-    constructor(imageHandler, controlManager, mcpManager, sidePanelScopeManager) {
+    constructor(imageHandler, controlManager, mcpManager, sidePanelScopeManager, sessionHandler) {
         this.imageHandler = imageHandler;
         this.controlManager = controlManager;
         this.mcpManager = mcpManager;
         this.sidePanelScopeManager = sidePanelScopeManager;
+        this.sessionHandler = sessionHandler;
     }
 
     handle(request, sender, sendResponse) {
@@ -58,6 +59,12 @@ export class UIMessageHandler {
 
         if (request.action === 'SIDE_PANEL_CLOSED') {
             this.sidePanelScopeManager?.markClosedForTab?.(request.tabId);
+            // Abort any in-flight side-panel run so the upstream provider fetch
+            // does not keep streaming into a closed panel (token/quota waste).
+            // pagehide does not fire on browser crash / force-close, but when it
+            // does fire this is the only signal we get — there is no long-lived
+            // Port disconnect because the extension uses broadcast sendMessage.
+            this.sessionHandler?.cancelSidePanelRun?.();
             sendResponse({ status: 'processed' });
             return false;
         }
@@ -99,6 +106,11 @@ export class UIMessageHandler {
 
         if (request.action === 'MCP_LIST_TOOLS') {
             handleMcpListTools(this.mcpManager, request, sendResponse);
+            return true;
+        }
+
+        if (request.action === 'MCP_DISCONNECT') {
+            handleMcpDisconnect(this.mcpManager, request, sendResponse);
             return true;
         }
 

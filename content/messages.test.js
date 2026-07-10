@@ -39,6 +39,18 @@ describe('GeminiMessageRouter capture routing', () => {
         delete window.GeminiMessageRouter;
     });
 
+    it('hides the floating toolbar before capture when asked by the background', async () => {
+        const router = await installMessageRouter();
+        const { overlay, toolbar } = createHarness();
+        router.init(toolbar, overlay);
+
+        const sendResponse = vi.fn();
+        router.handle({ action: 'HIDE_FOR_CAPTURE', source: 'sidepanel' }, {}, sendResponse);
+
+        expect(toolbar.hideAll).toHaveBeenCalledTimes(1);
+        expect(sendResponse).toHaveBeenCalledWith({ status: 'hidden' });
+    });
+
     it('forwards side panel crop failures back to the requesting side panel tab', async () => {
         const router = await installMessageRouter();
         const { overlay, toolbar } = createHarness();

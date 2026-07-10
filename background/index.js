@@ -90,3 +90,15 @@ setupMessageListener(
 );
 
 keepAliveManager.init();
+
+// Detach the debugger before the MV3 service worker is terminated so the
+// controlled tab is not left stuck on the "Started debugging" infobar with no
+// live SW to detach it. After restart, connection.attached is false and a
+// leaked attachment has no recovery path (the user had to close the tab).
+chrome.runtime.onSuspend?.(() => {
+    try {
+        controlManager.suspendCleanup();
+    } catch (error) {
+        console.warn('[Gemini Nexus] onSuspend cleanup failed:', error);
+    }
+});

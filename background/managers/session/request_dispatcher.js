@@ -282,6 +282,14 @@ function createSuccessReply(request, response, overrides = {}) {
     };
 }
 
+function isZhLocale() {
+    try {
+        return chrome.i18n.getUILanguage().startsWith('zh');
+    } catch {
+        return false;
+    }
+}
+
 function compactWebHistoryText(text) {
     return String(text || '').trim();
 }
@@ -564,6 +572,19 @@ export class RequestDispatcher {
                 ];
                 if (hasWebOptions) webMessageArgs.push(webOptions);
                 const response = await sendWebMessage(...webMessageArgs);
+
+                // A mid-stream network error after partial content produces a
+                // truncated reply (response.truncated === true, newContext ===
+                // null). Do NOT treat it as success: do not advance auth
+                // context, and surface an error so the UI shows the reply was
+                // cut off and offers a retry, rather than pinning conversation
+                // continuity to the stale pre-request context.
+                if (response?.truncated) {
+                    const truncationMessage = isZhLocale()
+                        ? '回复被截断（网络错误）。请重试。'
+                        : 'The response was truncated (network error). Please retry.';
+                    throw new Error(truncationMessage);
+                }
 
                 // Success! Update auth state
                 await this.auth.updateContext(response.newContext, request.model);

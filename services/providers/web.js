@@ -192,6 +192,12 @@ export async function sendWebMessage(
     let buffer = '';
     let finalResult = null;
     let isFirstChunk = true;
+    // True if the stream ended abnormally (reader error) AFTER at least one
+    // parsed result arrived. In that case we have a partial/truncated reply:
+    // we surface it as truncated rather than success so the UI does not treat
+    // a cut-off answer as complete, and the caller does not pin conversation
+    // continuity to the (stale) pre-request context.
+    let streamError = null;
 
     try {
         while (true) {
@@ -230,7 +236,11 @@ export async function sendWebMessage(
     } catch (error) {
         if (error.name === 'AbortError') throw error;
         if (error.message.includes('未登录')) throw error;
+        // Mid-stream network error after partial content: do NOT swallow as
+        // success. Record the error so the caller can surface a truncated
+        // reply instead of treating it as a complete one.
         console.error('Stream reading error:', error);
+        streamError = error;
     }
 
     if (buffer.length > 0) {
@@ -244,6 +254,27 @@ export async function sendWebMessage(
         }
         debugLog('Invalid response buffer sample:', buffer.substring(0, 200));
         throw new Error('No valid response found. Check network.');
+    }
+
+    // If the reader errored mid-stream, the reply is truncated. Surface a
+    // truncated-error result (preserving the partial text the UI already
+    // streamed) instead of returning success — otherwise the caller advances
+    // auth context to the stale pre-request value and the user sees a
+    // cut-off answer with no indication it was incomplete or any retry path.
+    if (streamError) {
+        return {
+            text: finalResult.text,
+            thoughts: finalResult.thoughts,
+            images: finalResult.images || [],
+            hasGeneratedImagePlaceholder: finalResult.hasGeneratedImagePlaceholder === true,
+            // Do not advance context on a truncated reply — the response RPC
+            // did not complete, so the server-side conversation pointer was
+            // not advanced either. Returning the stale context here would
+            // desync future turns in this conversation.
+            newContext: null,
+            truncated: true,
+            error: streamError,
+        };
     }
 
     debugLog('[Gemini Web] Request completed successfully');

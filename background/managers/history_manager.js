@@ -389,3 +389,30 @@ export async function updateSessionContextSummary(sessionId, contextSummary) {
         }
     });
 }
+
+// Invalidate any persisted compressed summary for a session. Called when the
+// user edits a historical message: editUserMessageAndTruncate clears the
+// in-memory `session.contextSummary`, but that change only reaches the
+// background via a full sessionSnapshot (replaceSessionSnapshot). If the
+// snapshot path is skipped or loses the race, prepareManagedContext would
+// later load the stale persisted summary that references messages that no
+// longer exist. This makes the invalidation explicit and direct.
+export async function invalidateSessionContextSummary(sessionId) {
+    if (!sessionId) return false;
+    return withSerializedWrite(async () => {
+        try {
+            const geminiSessions = await readSessions();
+            const sessionIndex = geminiSessions.findIndex(
+                (storedSession) => storedSession.id === sessionId
+            );
+            if (sessionIndex === -1) return false;
+            if (geminiSessions[sessionIndex].contextSummary == null) return false;
+            geminiSessions[sessionIndex].contextSummary = null;
+            await saveSessionsAndNotify(geminiSessions);
+            return true;
+        } catch (error) {
+            console.error('Error invalidating context summary:', error);
+            return false;
+        }
+    });
+}

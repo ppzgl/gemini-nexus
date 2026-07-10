@@ -178,6 +178,19 @@ export function bindInputEvents(app, ui, setResizeRef) {
             if (keyEvent.key === 'Enter' && !keyEvent.shiftKey) {
                 keyEvent.preventDefault();
                 sendBtn.click();
+                return;
+            }
+
+            // Shift+Enter inserts a newline so users can write multi-line
+            // prompts. The input is a <textarea> (footer template), which
+            // supports newlines natively; we just must NOT preventDefault on
+            // Shift+Enter (the earlier guard only handled plain Enter, so
+            // Shift+Enter already fell through to the browser's default — but
+            // only because there was no conflicting handler. Make the intent
+            // explicit so future handlers can't accidentally swallow it.
+            if (keyEvent.key === 'Enter' && keyEvent.shiftKey) {
+                // Let the browser insert the newline natively.
+                return;
             }
         };
 

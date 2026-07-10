@@ -11,11 +11,27 @@
             this.iframeLoaded = false;
             this.iframeReady = null;
             this.handleMessage = this.handleMessage.bind(this);
+            this._destroyed = false;
             this.init();
         }
 
         init() {
             window.addEventListener('message', this.handleMessage);
+        }
+
+        destroy() {
+            if (this._destroyed) return;
+            this._destroyed = true;
+            window.removeEventListener('message', this.handleMessage);
+            if (this.cleanupTimer) {
+                clearTimeout(this.cleanupTimer);
+                this.cleanupTimer = null;
+            }
+            this.iframe?.remove();
+            this.iframe = null;
+            this.iframeLoaded = false;
+            this.iframeReady = null;
+            this.callbacksByRequestId = {};
         }
 
         ensureIframe() {

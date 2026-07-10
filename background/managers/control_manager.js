@@ -572,7 +572,14 @@ export class BrowserControlManager {
             const state = result?.geminiControlState;
             if (!state) return;
 
-            // Restore in-memory state
+            // Restore in-memory state. NOTE: connection.attached and
+            // connection.currentTabId are deliberately NOT restored — after an
+            // SW restart the chrome.debugger session from the previous worker
+            // may still exist at the Chrome level (the "Started debugging"
+            // infobar persists), but the new worker has no handle to it. We
+            // treat a restarted worker as "not attached"; the onDetach listener
+            // (which also matches targetTabId) reconciles state when the user
+            // cancels the leaked infobar or the tab closes.
             if (Number.isInteger(state.lockedTabId) && state.lockedTabId > 0) {
                 this.lockedTabId = state.lockedTabId;
                 this.connection.targetTabId = state.lockedTabId;
@@ -592,5 +599,23 @@ export class BrowserControlManager {
 
             debugLog('[ControlManager] Restored control state from session storage:', state);
         });
+    }
+
+    // Best-effort cleanup invoked from chrome.runtime.onSuspend before the SW
+    // is terminated. Detaches the debugger so Chrome does not leave the tab in
+    // a "Started debugging" state that the next SW instance cannot recover
+    // from (its connection.attached is false after restart, so disableControl's
+    // detach would no-op). Errors are swallowed — there is nothing to do if
+    // the tab was already closed or the session already gone.
+    suspendCleanup() {
+        try {
+            if (this.connection?.attached && this.connection?.currentTabId) {
+                this.connection.detach().catch((error) => {
+                    debugLog('[ControlManager] Suspend detach failed:', error?.message || error);
+                });
+            }
+        } catch (error) {
+            debugLog('[ControlManager] Suspend cleanup error:', error?.message || error);
+        }
     }
 }

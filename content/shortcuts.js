@@ -130,6 +130,12 @@
     class ShortcutManager {
         constructor() {
             this.appShortcuts = {};
+            // Chrome-managed shortcut overrides (from chrome://extensions/shortcuts).
+            // These take precedence over our stored defaults because the user
+            // remapped them at the browser level. We can't read them
+            // synchronously, so the manager starts with defaults and refreshes
+            // async on init.
+            this.chromeCommandShortcuts = {};
             this.toolbarController = null;
             this.handleStorageChange = this.handleStorageChange.bind(this);
             this.handleDocumentKeydown = (event) => this.handleKeydown(event);
@@ -145,16 +151,53 @@
                 const errorMessage = getStorageReadError();
                 if (errorMessage) {
                     console.warn('Failed to load Gemini Nexus shortcuts:', errorMessage);
-                    return;
+                } else {
+                    this.appShortcuts = normalizeShortcuts(result?.geminiShortcuts);
+                    persistShortcutMigration(result?.geminiShortcuts, this.appShortcuts);
                 }
-
-                this.appShortcuts = normalizeShortcuts(result?.geminiShortcuts);
-                persistShortcutMigration(result?.geminiShortcuts, this.appShortcuts);
+                // Overlay the Chrome-managed command mappings (user remaps via
+                // chrome://extensions/shortcuts). Without this, a user who
+                // remaps "quick-ask" to e.g. Ctrl+Shift+A would still have to
+                // press Alt+Q in the page, because the content script only knew
+                // the manifest suggested_key.
+                this.refreshChromeCommandShortcuts();
             });
 
             chrome.storage.onChanged.addListener(this.handleStorageChange);
 
+            // Re-read Chrome command mappings if the user changes them in
+            // chrome://extensions/shortcuts (no direct change event exists,
+            // but the focus listener catches a return from that tab).
+            window.addEventListener('focus', this.refreshChromeCommandShortcuts.bind(this));
+
             document.addEventListener('keydown', this.handleDocumentKeydown, true);
+        }
+
+        async refreshChromeCommandShortcuts() {
+            try {
+                if (!chrome.commands?.getAll) return;
+                const commands = await chrome.commands.getAll();
+                const mapping = { quickAsk: null, openPanel: null, ocrCapture: null };
+                for (const command of commands) {
+                    const shortcut = command.shortcut; // e.g. "Alt+Q"
+                    if (!shortcut) continue;
+                    if (command.name === 'quick-ask') mapping.quickAsk = shortcut;
+                    else if (command.name === 'area-ocr') mapping.ocrCapture = shortcut;
+                    else if (command.name === '_execute_action') mapping.openPanel = shortcut;
+                }
+                this.chromeCommandShortcuts = mapping;
+            } catch (error) {
+                // 静默降级:chrome.commands 不可用时回退到存储的快捷键
+            }
+        }
+
+        // Resolve the effective shortcut string for a given action. A Chrome-
+        // managed remap (chrome://extensions/shortcuts) wins over our stored
+        // default so the user's browser-level choice is honored in-page too.
+        effectiveShortcut(action) {
+            const chromeManaged = this.chromeCommandShortcuts?.[action];
+            if (chromeManaged) return chromeManaged;
+            return this.appShortcuts[action];
         }
 
         handleStorageChange(changes, area) {
@@ -167,13 +210,14 @@
         destroy() {
             document.removeEventListener('keydown', this.handleDocumentKeydown, true);
             chrome.storage?.onChanged?.removeListener?.(this.handleStorageChange);
+            window.removeEventListener('focus', this.refreshChromeCommandShortcuts.bind(this));
             this.toolbarController = null;
         }
 
         handleKeydown(event) {
             const isEditableTarget = isEditableShortcutTarget(event.target);
 
-            if (this.match(event, this.appShortcuts.quickAsk)) {
+            if (this.match(event, this.effectiveShortcut('quickAsk'))) {
                 event.preventDefault();
                 event.stopPropagation();
                 if (this.toolbarController) {
@@ -184,7 +228,7 @@
                 return;
             }
 
-            if (this.match(event, this.appShortcuts.ocrCapture)) {
+            if (this.match(event, this.effectiveShortcut('ocrCapture'))) {
                 event.preventDefault();
                 event.stopPropagation();
                 sendRuntimeMessage(
@@ -203,7 +247,7 @@
 
             if (isEditableTarget) return;
 
-            if (this.match(event, this.appShortcuts.openPanel)) {
+            if (this.match(event, this.effectiveShortcut('openPanel'))) {
                 event.preventDefault();
                 event.stopPropagation();
                 Promise.resolve(chrome.runtime.sendMessage({ action: 'TOGGLE_SIDE_PANEL' }))
@@ -222,7 +266,7 @@
                 return;
             }
 
-            if (this.match(event, this.appShortcuts.browserControl)) {
+            if (this.match(event, this.effectiveShortcut('browserControl'))) {
                 event.preventDefault();
                 event.stopPropagation();
                 Promise.resolve(chrome.runtime.sendMessage({ action: 'TOGGLE_SIDE_PANEL_CONTROL' }))

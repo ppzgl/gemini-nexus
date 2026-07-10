@@ -165,6 +165,12 @@ export function appendMessage(
 
         contentDiv = document.createElement('div');
         contentDiv.className = 'msg-content';
+        // Error replies get a distinct class so CSS can style them (error
+        // tint, retry affordance) and screen readers can announce them.
+        if (options.isError) {
+            contentDiv.classList.add('msg-content-error');
+            messageElement.classList.add('msg-error');
+        }
         renderMessageContent();
         contentHost.appendChild(contentDiv);
 
@@ -316,6 +322,16 @@ export function appendMessage(
 
             sourcesDiv = builtSources;
             contentHost.appendChild(sourcesDiv);
+        },
+        // Mark an already-finalized bubble as an error so CSS can add an
+        // error tint and the UI can offer a retry affordance. Called by
+        // renderGeminiReply when a streaming bubble receives an error reply.
+        markError: (errorKind, retryable) => {
+            options.isError = true;
+            options.errorKind = errorKind;
+            options.retryable = retryable;
+            if (contentDiv) contentDiv.classList.add('msg-content-error');
+            if (messageElement) messageElement.classList.add('msg-error');
         },
     };
     messageElement.__messageController = controller;

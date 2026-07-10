@@ -43,6 +43,10 @@ export class GeminiSessionManager {
 
         // Trigger keepalive rotation during long-running requests to prevent SW termination
         keepAliveManager.performRotation().catch(() => {});
+        // Arm a short-interval heartbeat so a >30s thinking/reasoning pause
+        // (no tokens emitted) does not let MV3 idle-terminate the worker and
+        // leave the UI stuck on a loading spinner forever.
+        keepAliveManager.beginStreamHeartbeat();
 
         try {
             const settings = await getConnectionSettings({ provider: request.provider });
@@ -133,6 +137,9 @@ export class GeminiSessionManager {
             if (this.abortController === abortController) {
                 this.abortController = null;
             }
+            // Always disarm the heartbeat, whether the stream completed, was
+            // cancelled, or errored. Without this the alarm fires forever.
+            keepAliveManager.endStreamHeartbeat();
         }
     }
 

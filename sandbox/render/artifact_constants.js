@@ -32,6 +32,12 @@ const URI_ATTRS = new Set([
 
 // 嵌入到 live artifact iframe 中的脚本,负责尺寸上报与后续指令转发。
 // 注意:该脚本运行在 sandbox iframe 内,无法访问 chrome.* API。
+// 安全:postMessage 使用 targetOrigin:'*'。这是必要的——sandbox iframe
+// (sandbox="allow-scripts allow-forms",srcdoc)具有不透明的 null origin,
+// 无法指定精确的目标 origin。父端在 artifact_renderer.js 的 handleMessage 中
+// 通过 event.source === frame.contentWindow 身份校验(每个 window 对象唯一、
+// 不可伪造)来确保只接受我们自己创建的 iframe 发来的消息,channel 字段进一步
+// 过滤,因此通配 targetOrigin 不构成跨源指令注入风险。
 const ARTIFACT_BRIDGE_SCRIPT = `<script>
 (() => {
   const channel = ${JSON.stringify(LIVE_ARTIFACT_MESSAGE_CHANNEL)};

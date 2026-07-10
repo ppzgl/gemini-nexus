@@ -101,6 +101,9 @@ describe('MessageHandler.handleGeminiReply', () => {
             {
                 isFinal: true,
                 thoughtsDurationSeconds: 2,
+                isError: false,
+                errorKind: undefined,
+                retryable: undefined,
             }
         );
     });

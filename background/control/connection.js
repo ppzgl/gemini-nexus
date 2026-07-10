@@ -50,8 +50,18 @@ export class BrowserConnection {
     }
 
     _onDebuggerDetached(source, reason) {
-        // If the browser detached our current session, clean up state immediately
-        if (this.currentTabId === source.tabId) {
+        // If the browser detached our current session, clean up state immediately.
+        // After an SW restart, currentTabId is null (not restored), so we also
+        // handle the case where the detach matches the persisted targetTabId —
+        // this lets a user clicking "Cancel" on a leaked infobar clear stale
+        // lock state even when the freshly-restarted SW has no currentTabId.
+        const sourceTabId = source?.tabId;
+        const matchesCurrent = this.currentTabId !== null && this.currentTabId === sourceTabId;
+        const matchesTarget =
+            this.currentTabId === null &&
+            this.targetTabId !== null &&
+            this.targetTabId === sourceTabId;
+        if (matchesCurrent || matchesTarget) {
             debugLog('[BrowserConnection] Debugger detached by browser:', reason);
             this.lastDetachReason = reason || 'detached';
             this._cleanupState();

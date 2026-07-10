@@ -271,6 +271,15 @@ export class PromptController {
         this.ui.setLoading(false);
         this.app.sessionFlow.refreshHistoryUI();
         this.ui.updateStatus(t('cancelled'));
+        // Auto-dismiss the "Cancelled" status so it doesn't linger in the
+        // status bar until the next action overwrites it — every other
+        // transient status (capture error, page-read success, share-copied)
+        // schedules this clear; cancelled was the lone exception.
+        if (this._cancelledStatusTimer) clearTimeout(this._cancelledStatusTimer);
+        this._cancelledStatusTimer = setTimeout(() => {
+            this._cancelledStatusTimer = null;
+            this.ui.updateStatus('');
+        }, 2500);
     }
 
     isCancellationRecent() {

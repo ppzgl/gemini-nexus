@@ -101,6 +101,28 @@ function getRecentCutoff(messages, recentTurns) {
     return 0;
 }
 
+// If the recent-turn slice would START with a tool-output (or official
+// function-response) message, that message is an orphaned result: its
+// originating tool-call (the preceding AI message) was dropped by the trim,
+// so a provider that pairs functionCall/functionResponse (Gemini API) or
+// tool calls/results (OpenAI) would receive an invalid payload. Advance the
+// cutoff past those leading tool-outputs so the slice begins at a real turn.
+// (Tool-outputs whose originating call IS in the slice are unaffected, since
+// they are not at index 0 of the slice.)
+function snapCutoffToPreserveToolPairing(messages, cutoffIndex) {
+    if (!Array.isArray(messages)) return cutoffIndex;
+    let adjusted = cutoffIndex;
+    while (adjusted < messages.length) {
+        const leading = messages[adjusted];
+        if (isToolOutputMessage(leading) || isOfficialFunctionResponseMessage(leading)) {
+            adjusted += 1;
+            continue;
+        }
+        break;
+    }
+    return adjusted;
+}
+
 function countUserTurns(messages) {
     if (!Array.isArray(messages)) return 0;
     return messages.reduce(
@@ -132,6 +154,32 @@ function describeAttachments(message) {
     return markers.length > 0 ? ` ${markers.join(' ')}` : '';
 }
 
+// Approximate byte cost of a message's binary attachments (base64 length).
+// Summary compression previously dropped attachment payloads entirely,
+// keeping only a short "[3 image attachment(s)]" marker. That marker is ~30
+// chars, so it passed the transcript char budget while the real payload
+// (potentially megabytes of base64) was silently lost from the compressed
+// history. Counting the payload size lets the budget reflect true cost so a
+// single large attachment does not get elided as if it were free.
+function estimateAttachmentBytes(message) {
+    let total = 0;
+    const collect = (value) => {
+        if (typeof value === 'string' && value.length > 0) total += value.length;
+        else if (Array.isArray(value)) value.forEach(collect);
+        else if (value && typeof value === 'object') {
+            for (const key of Object.keys(value)) collect(value[key]);
+        }
+    };
+    collect(message?.attachments);
+    // Legacy single-image field
+    if (Array.isArray(message?.image)) {
+        message.image.forEach((entry) => collect(entry?.base64 || entry));
+    } else if (typeof message?.image === 'string') {
+        total += message.image.length;
+    }
+    return total;
+}
+
 function formatMessagesForSummary(messages) {
     const lines = [];
     let total = 0;
@@ -140,12 +188,18 @@ function formatMessagesForSummary(messages) {
         const role = message?.role === 'ai' ? 'Assistant' : 'User';
         const text = compactText(message?.text);
         const line = `${role}: ${text || '[empty]'}${describeAttachments(message)}`;
-        if (total + line.length > MAX_SUMMARY_TRANSCRIPT_CHARS) {
+        // Charge the budget for both the visible line and the attachment
+        // payload bytes, so a large image attachment is not elided as if it
+        // were free (the marker alone is ~30 chars). Without this, the char
+        // budget was satisfied while the actual base64 payload was dropped.
+        const attachmentBytes = estimateAttachmentBytes(message);
+        const cost = line.length + attachmentBytes;
+        if (total + cost > MAX_SUMMARY_TRANSCRIPT_CHARS) {
             lines.push('[Transcript truncated for summary budget]');
             break;
         }
         lines.push(line);
-        total += line.length;
+        total += cost;
     }
 
     return lines.join('\n\n');
@@ -159,12 +213,49 @@ function normalizeCompressedMessageText(text) {
     return value;
 }
 
-function buildHiddenCompressedMessage(text) {
+function buildHiddenCompressedMessage(text, preservedToolMetadata = {}) {
     const value = normalizeCompressedMessageText(text);
-    return {
+    const message = {
         role: HIDDEN_COMPRESSED_MESSAGE_ROLE,
         text: `${HIDDEN_COMPRESSED_MESSAGE_PREFIX}${value}`,
     };
+    // Carry over official function-response batch linkage when the compressed
+    // history covers a turn that produced tool output. Without this, the
+    // compressed wrapper is a plain user message and any later
+    // `request.officialUserParts` referencing the same batchId has no
+    // matching entry in the history the provider sees, breaking function-call
+    // pairing (Gemini API functionResponse must align with a prior
+    // functionCall in the same contents array).
+    if (preservedToolMetadata.officialFunctionResponseBatchId) {
+        message.officialFunctionResponseBatchId =
+            preservedToolMetadata.officialFunctionResponseBatchId;
+    }
+    if (
+        preservedToolMetadata.officialContent &&
+        preservedToolMetadata.officialContent.role === 'user' &&
+        Array.isArray(preservedToolMetadata.officialContent.parts)
+    ) {
+        message.officialContent = preservedToolMetadata.officialContent;
+    }
+    return message;
+}
+
+// Collect tool-response metadata from the messages being compressed so the
+// compressed wrapper can preserve batch linkage. Returns the metadata from the
+// last tool-output / function-response message in the range (the one closest
+// to the tail), since that is the linkage a subsequent request would resume.
+function collectPreservedToolMetadata(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return {};
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const message = messages[i];
+        if (isOfficialFunctionResponseMessage(message)) {
+            return {
+                officialFunctionResponseBatchId: message.officialFunctionResponseBatchId,
+                officialContent: message.officialContent,
+            };
+        }
+    }
+    return {};
 }
 
 function buildCompressionPrompt(messages) {
@@ -353,7 +444,11 @@ export async function prepareManagedContext(request, settings, history, signal, 
 
     if (mode === 'recent') {
         const cutoff = getRecentCutoff(sourceHistory, recentTurns);
-        const recentHistory = cutoff > 0 ? sourceHistory.slice(cutoff) : sourceHistory;
+        // Snap the cutoff left if it would split a tool-call/result pair, so
+        // a provider never receives an orphaned tool output (or an orphaned
+        // tool call) across the trim boundary.
+        const safeCutoff = snapCutoffToPreserveToolPairing(sourceHistory, cutoff);
+        const recentHistory = safeCutoff > 0 ? sourceHistory.slice(safeCutoff) : sourceHistory;
         return {
             history: recentHistory,
             systemInstruction: request.systemInstruction || '',
@@ -365,7 +460,16 @@ export async function prepareManagedContext(request, settings, history, signal, 
 
     if (existingBoundary > 0) {
         const tailHistory = sourceHistory.slice(existingBoundary);
-        const hiddenHistory = buildHiddenCompressedMessage(existingSummary.text);
+        // Preserve tool-response batch linkage from the tail so the compressed
+        // wrapper stays a valid function-response entry for providers that
+        // pair functionCall/functionResponse (Gemini API). Without this the
+        // wrapper is a plain user message and a subsequent request's
+        // officialUserParts referencing the batchId finds no match.
+        const tailToolMetadata = collectPreservedToolMetadata(tailHistory);
+        const hiddenHistory = buildHiddenCompressedMessage(
+            existingSummary.text,
+            tailToolMetadata
+        );
 
         if (!hasRecentTurnThreshold(tailHistory, recentTurns)) {
             return {
@@ -388,7 +492,7 @@ export async function prepareManagedContext(request, settings, history, signal, 
                 existingSummary
             );
             return {
-                history: [buildHiddenCompressedMessage(compressedText)],
+                history: [buildHiddenCompressedMessage(compressedText, tailToolMetadata)],
                 systemInstruction: request.systemInstruction || '',
             };
         } catch (error) {
@@ -413,6 +517,9 @@ export async function prepareManagedContext(request, settings, history, signal, 
         };
     }
 
+    // Capture tool-response linkage from the full history being compressed
+    // so the single compressed wrapper preserves batchId / officialContent.
+    const fullToolMetadata = collectPreservedToolMetadata(sourceHistory);
     try {
         const compressedText = await resolveCompressedMessage(
             request.sessionId,
@@ -426,7 +533,7 @@ export async function prepareManagedContext(request, settings, history, signal, 
             onStatus
         );
         return {
-            history: [buildHiddenCompressedMessage(compressedText)],
+            history: [buildHiddenCompressedMessage(compressedText, fullToolMetadata)],
             systemInstruction: request.systemInstruction || '',
         };
     } catch (error) {
@@ -437,7 +544,10 @@ export async function prepareManagedContext(request, settings, history, signal, 
         onStatus?.('compression_failed', {
             recentTurns,
         });
-        const cutoff = getRecentCutoff(sourceHistory, recentTurns);
+        const cutoff = snapCutoffToPreserveToolPairing(
+            sourceHistory,
+            getRecentCutoff(sourceHistory, recentTurns)
+        );
         const recentHistory = cutoff > 0 ? sourceHistory.slice(cutoff) : sourceHistory;
         return {
             history: recentHistory,

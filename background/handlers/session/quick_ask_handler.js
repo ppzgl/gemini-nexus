@@ -30,6 +30,24 @@ export class QuickAskHandler {
     constructor(sessionManager, imageHandler) {
         this.sessionManager = sessionManager;
         this.imageHandler = imageHandler;
+        // tabId of the content-script tab currently streaming a quick-ask run,
+        // so chrome.tabs.onRemoved can abort that run when the tab closes.
+        this.activeTabId = null;
+    }
+
+    trackActiveTab(sender) {
+        this.activeTabId = sender?.tab?.id ?? null;
+    }
+
+    clearActiveTab(sender) {
+        const tabId = sender?.tab?.id ?? null;
+        if (this.activeTabId === tabId) {
+            this.activeTabId = null;
+        }
+    }
+
+    isActiveTab(tabId) {
+        return this.activeTabId !== null && this.activeTabId === tabId;
     }
 
     _sendToTab(tabId, payload) {

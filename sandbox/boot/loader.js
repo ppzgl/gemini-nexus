@@ -1,5 +1,6 @@
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/atom-one-dark.css';
+import 'highlight.js/styles/atom-one-light.css';
 import { debugLog } from '../../shared/logging/debug.js';
 import { configureMarkdown } from '../render/config.js';
 

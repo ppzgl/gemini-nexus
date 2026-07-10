@@ -135,7 +135,50 @@
             this.callbacks = callbacks;
         }
 
+        _disposeRuntimeComponents() {
+            // Disconnect the previous Events instance (capture-phase keydown +
+            // ResizeObserver + submenu handlers) so rebuildForLanguageChange()
+            // does not stack a second set on document.
+            if (this.events && typeof this.events.disconnect === 'function') {
+                try {
+                    this.events.disconnect();
+                } catch (error) {
+                    console.warn('[Gemini Nexus] Failed to disconnect toolbar events:', error);
+                }
+            }
+            this.events = null;
+
+            // Tear down the previous image-preview controller's document-level
+            // pan/keydown listeners before a new WindowView recreates it.
+            const previousImagePreview = this.view?.imagePreview;
+            if (previousImagePreview && typeof previousImagePreview.destroy === 'function') {
+                try {
+                    previousImagePreview.destroy();
+                } catch (error) {
+                    console.warn('[Gemini Nexus] Failed to destroy image preview:', error);
+                }
+            }
+
+            // Destroy the previous renderer bridge so its window message
+            // listener is removed before a new one is created.
+            if (this.bridge && typeof this.bridge.destroy === 'function') {
+                try {
+                    this.bridge.destroy();
+                } catch (error) {
+                    console.warn('[Gemini Nexus] Failed to destroy renderer bridge:', error);
+                }
+            }
+            this.bridge = null;
+        }
+
         _initializeRuntimeComponents({ createBridge = false } = {}) {
+            // Tear down the previous runtime components before recreating them.
+            // rebuildForLanguageChange() calls this without first disposing the
+            // prior Events instance, which leaked a capture-phase document
+            // keydown listener + a ResizeObserver on every language switch.
+            // Same risk for the image-preview controller's document listeners.
+            this._disposeRuntimeComponents();
+
             this.view = new View(this.shadow);
             this.grammarManager = new GrammarManager(this.view);
 

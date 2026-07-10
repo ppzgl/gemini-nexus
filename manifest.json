@@ -171,7 +171,8 @@
                 "assets/cursors/cursor-chat.png",
                 "vendor/katex/katex.min.css",
                 "vendor/katex/fonts/*",
-                "vendor/highlight.js/atom-one-dark.min.css"
+                "vendor/highlight.js/atom-one-dark.min.css",
+                "vendor/highlight.js/atom-one-light.min.css"
             ],
             "matches": ["<all_urls>"]
         }

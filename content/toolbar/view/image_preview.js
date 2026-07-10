@@ -25,7 +25,7 @@
         bindResultImagePreview() {
             if (!this.resultText) return;
 
-            this.resultText.addEventListener('click', (event) => {
+            this._boundResultClick = (event) => {
                 const imageElement = event.target?.closest?.(
                     '.generated-image, .markdown-body img'
                 );
@@ -38,7 +38,8 @@
                 event.preventDefault();
                 event.stopPropagation();
                 this.open(src, imageElement.alt || 'Image');
-            });
+            };
+            this.resultText.addEventListener('click', this._boundResultClick);
         }
 
         ensurePreview() {
@@ -78,19 +79,57 @@
                 passive: false,
             });
             preview.addEventListener('mousedown', (event) => this.startPan(event));
-            document.addEventListener('mousemove', (event) => this.pan(event));
-            document.addEventListener('mouseup', () => this.endPan());
-            document.addEventListener('keydown', (event) => {
+
+            // Keep bound references so the document-level listeners added on
+            // first open can be removed again on destroy(). Previously these
+            // were anonymous and only ever added, never removed — every
+            // rebuild/language-change stacked another set on document.
+            this._boundPan = (event) => this.pan(event);
+            this._boundEndPan = () => this.endPan();
+            this._boundKeyDown = (event) => {
                 if (event.key === 'Escape' && preview.classList.contains('visible')) {
                     this.close();
                 }
-            });
+            };
+            document.addEventListener('mousemove', this._boundPan);
+            document.addEventListener('mouseup', this._boundEndPan);
+            document.addEventListener('keydown', this._boundKeyDown);
 
             const parent = this.askWindow?.parentNode || document.body;
             parent.appendChild(preview);
             this.imagePreview = preview;
             this.previewImage = image;
             return preview;
+        }
+
+        destroy() {
+            // Remove the document-level pan/keydown listeners that
+            // ensurePreview() attached, so rebuilding the toolbar (e.g. on a
+            // language change) does not leave orphaned listeners on document.
+            if (this._boundPan) {
+                document.removeEventListener('mousemove', this._boundPan);
+                this._boundPan = null;
+            }
+            if (this._boundEndPan) {
+                document.removeEventListener('mouseup', this._boundEndPan);
+                this._boundEndPan = null;
+            }
+            if (this._boundKeyDown) {
+                document.removeEventListener('keydown', this._boundKeyDown);
+                this._boundKeyDown = null;
+            }
+            // Remove the resultText click delegation if we can identify it.
+            if (this._boundResultClick && this.resultText) {
+                this.resultText.removeEventListener('click', this._boundResultClick);
+                this._boundResultClick = null;
+            }
+            // Drop the preview DOM so a stale element is not reused.
+            if (this.imagePreview && this.imagePreview.isConnected) {
+                this.imagePreview.remove();
+            }
+            this.imagePreview = null;
+            this.previewImage = null;
+            this.resetState();
         }
 
         open(src, alt) {

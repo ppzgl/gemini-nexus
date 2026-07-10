@@ -466,6 +466,20 @@ body.layout-wide .msg.ai {
     color: var(--text-primary);
 }
 
+/* Error replies: tint the bubble red and add a left border so users can
+ * visually distinguish a failed response from a normal one. The retry
+ * affordance is handled by the JS layer (markError sets options.retryable). */
+.msg.msg-error {
+    border-left: 3px solid var(--danger, #c62828);
+    padding-left: 12px;
+}
+
+.msg.msg-error .msg-content,
+.msg.msg-error .msg-content-error {
+    color: var(--danger, #c62828);
+    opacity: 0.95;
+}
+
 .msg.ai .message-content-container {
     width: 100%;
     padding: 0;

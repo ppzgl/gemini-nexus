@@ -50,6 +50,7 @@ describe('page shortcut tab actions', () => {
             ),
         };
         chrome.tabs.sendMessage
+            .mockResolvedValueOnce({ status: 'hidden' })
             .mockRejectedValueOnce(new Error('Receiving end does not exist'))
             .mockResolvedValueOnce({ status: 'selection_started' });
 
@@ -75,6 +76,7 @@ describe('page shortcut tab actions', () => {
             ),
         };
         chrome.tabs.sendMessage
+            .mockResolvedValueOnce({ status: 'hidden' })
             .mockRejectedValueOnce(new Error('Receiving end does not exist'))
             .mockRejectedValueOnce(new Error('Still unavailable'))
             .mockResolvedValueOnce({ status: 'ok' });

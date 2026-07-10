@@ -50,6 +50,13 @@ export async function showQuickAskForTab(tab) {
 export async function startAreaOcrForTab(tab, imageManager) {
     if (!isValidTab(tab)) return;
 
+    // Hide floating toolbar before capturing so it doesn't appear in the screenshot.
+    try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'HIDE_FOR_CAPTURE', source: 'local' });
+    } catch {
+        // 静默忽略:content script 未就绪时 START_SELECTION 流程仍会隐藏工具栏
+    }
+
     let capture = null;
     try {
         capture = await imageManager.captureScreenshot(tab.windowId);

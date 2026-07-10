@@ -28,8 +28,15 @@ export function setupMessageListener(
         imageHandler,
         controlManager,
         mcpManager,
-        sidePanelScopeManager
+        sidePanelScopeManager,
+        sessionHandler
     );
+
+    // Abort any in-flight quick-ask when its content-script tab is closed,
+    // so the upstream provider fetch does not keep streaming into a dead tab.
+    chrome.tabs.onRemoved.addListener((tabId) => {
+        sessionHandler.cancelQuickAskForTab(tabId);
+    });
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'GET_LOGS') {

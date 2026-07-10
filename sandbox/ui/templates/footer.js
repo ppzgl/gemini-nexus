@@ -42,22 +42,32 @@ export const FooterTemplate = `
                                 ${TemplateIcons.QUOTE}
                                 <span data-i18n="quote">Quote</span>
                             </button>
-                            <button id="ocr-btn" class="tool-btn context-aware" data-i18n-title="ocrTooltip" title="Capture area and extract text">
-                                ${TemplateIcons.OCR}
-                                <span data-i18n="ocr">OCR</span>
-                            </button>
-                            <button id="screenshot-translate-btn" class="tool-btn context-aware" data-i18n-title="screenshotTranslateTooltip" title="Capture area and translate text">
-                                ${TemplateIcons.TRANSLATE}
-                                <span data-i18n="screenshotTranslate">Translate</span>
-                            </button>
                             <button id="screen-capture-btn" class="tool-btn" data-i18n-title="screenCaptureTooltip" title="Capture another screen or app window">
                                 ${TemplateIcons.SCREEN_CAPTURE}
                                 <span data-i18n="screenCapture">Screen</span>
                             </button>
-                            <button id="snip-btn" class="tool-btn context-aware" data-i18n-title="snipTooltip" title="Capture area to input">
+                        </div>
+
+                        <div class="capture-dropdown" id="capture-dropdown">
+                            <button id="capture-menu-btn" class="tool-btn" data-i18n-title="captureMenuTooltip" title="Capture area of the page" aria-haspopup="menu" aria-expanded="false" aria-controls="capture-menu">
                                 ${TemplateIcons.SNIP}
-                                <span data-i18n="snip">Snip</span>
+                                <span data-i18n="captureMenu">Capture</span>
+                                ${TemplateIcons.CHEVRON_DOWN}
                             </button>
+                            <div id="capture-menu" class="capture-menu" role="menu" hidden>
+                                <button id="ocr-btn" class="capture-menu-item" role="menuitem" data-i18n-title="ocrTooltip" title="Capture area and extract text">
+                                    ${TemplateIcons.OCR}
+                                    <span data-i18n="ocrLabel">Extract text (OCR)</span>
+                                </button>
+                                <button id="screenshot-translate-btn" class="capture-menu-item" role="menuitem" data-i18n-title="screenshotTranslateTooltip" title="Capture area and translate text">
+                                    ${TemplateIcons.TRANSLATE}
+                                    <span data-i18n="screenshotTranslateLabel">Translate screenshot</span>
+                                </button>
+                                <button id="snip-btn" class="capture-menu-item" role="menuitem" data-i18n-title="snipTooltip" title="Capture area to input">
+                                    ${TemplateIcons.SNIP}
+                                    <span data-i18n="snipLabel">Capture as image</span>
+                                </button>
+                            </div>
                         </div>
 
                         <button id="tools-scroll-right" class="scroll-nav-btn right" aria-label="Scroll Right">

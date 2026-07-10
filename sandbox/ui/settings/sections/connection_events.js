@@ -87,6 +87,12 @@ export function bindConnectionSectionEvents(section) {
             const id = section.mcpActiveServerId;
             if (!id) return;
 
+            // Tear down the live transport + clear the cached tool list for the
+            // server being removed. Without this the SSE/WebSocket/streamable-
+            // HTTP connection stays open in the background's connection map and
+            // the UI keeps a stale tool entry for a server that no longer exists.
+            section.disconnectMcpServer(id);
+
             section.mcpServers = section.mcpServers.filter((server) => server.id !== id);
 
             if (section.mcpServers.length === 0) {

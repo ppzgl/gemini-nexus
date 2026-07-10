@@ -23,6 +23,10 @@ const localDependencyAssets = [
         source: 'node_modules/highlight.js/styles/atom-one-dark.min.css',
         target: 'vendor/highlight.js/atom-one-dark.min.css',
     },
+    {
+        source: 'node_modules/highlight.js/styles/atom-one-light.min.css',
+        target: 'vendor/highlight.js/atom-one-light.min.css',
+    },
 ];
 
 const requiredPaths = [

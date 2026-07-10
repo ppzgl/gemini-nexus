@@ -275,14 +275,80 @@ body.layout-wide .input-wrapper {
     color: var(--primary);
 }
 
-body:not(.has-page-context) .tool-btn.context-aware {
-    display: none;
-}
-
 .tool-btn svg {
     width: 14px;
     height: 14px;
     flex: 0 0 auto;
+}
+
+.capture-dropdown {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#capture-menu-btn .chevron-down,
+#capture-menu-btn svg:last-of-type {
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+    transition: transform 0.15s ease;
+}
+
+#capture-menu-btn[aria-expanded='true'] svg:last-of-type {
+    transform: rotate(180deg);
+}
+
+.capture-menu {
+    position: fixed;
+    bottom: auto;
+    left: auto;
+    min-width: 200px;
+    background: var(--bg-elevated, var(--bg-body));
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+    padding: 4px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.capture-menu[hidden] {
+    display: none;
+}
+
+.capture-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+    width: 100%;
+}
+
+.capture-menu-item:hover,
+.capture-menu-item:focus-visible {
+    background: var(--btn-hover);
+    color: var(--primary);
+    outline: none;
+}
+
+.capture-menu-item svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+}
+
+.capture-menu-item:hover svg {
+    color: var(--primary);
 }
 
 #upload-btn,
@@ -367,5 +433,10 @@ body:not(.has-page-context) .tool-btn.context-aware {
         width: 32px;
         justify-content: center;
         padding: 0;
+    }
+
+    /* Keep dropdown menu items labelled even on narrow screens. */
+    .capture-menu-item span {
+        display: inline;
     }
 }

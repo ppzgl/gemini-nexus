@@ -17,6 +17,7 @@ import {
 } from '../../../../shared/settings/dedicated_providers.js';
 import { formatMcpHeaders, parseMcpHeadersText } from './mcp_header_fields.js';
 import { bindConnectionSectionEvents } from './connection_events.js';
+import { sendToBackground } from '../../../../shared/messaging/index.js';
 import {
     loadDedicatedApiProviderIntoForm,
     saveDedicatedApiProviderEdits,
@@ -290,12 +291,33 @@ export class ConnectionSection {
         if (mcpServerEnabled) server.enabled = mcpServerEnabled.checked === true;
         if (mcpToolMode) server.toolMode = mcpToolMode.value === 'selected' ? 'selected' : 'all';
 
-        // If transport/url changed, invalidate cached tool list for this server.
+        // If the connection identity (transport/url/headers) changed, the
+        // previously-fetched tool list and live transport are stale. Disconnect
+        // the live connection so the next call reconnects with the new config,
+        // and drop the cached tool list. Disabling a server also tears down its
+        // transport so it stops consuming the connection / streaming in the
+        // background.
         const nextKey = this._serverKey(server);
-        if (prevKey !== nextKey) {
+        const becameDisabled = server.enabled === false;
+        if (prevKey !== nextKey || becameDisabled) {
+            this.disconnectMcpServer(server.id);
             this.mcpToolsCache.delete(server.id);
         }
         return true;
+    }
+
+    // Ask the background to close the live MCP transport for a server and
+    // clear its tool-list cache. Best-effort: failures (e.g. SW restarted,
+    // server never connected) are swallowed by the handler. This is the single
+    // chokepoint for #11 (remove), #12 (cache invalidation), and #13 (save /
+    // disable) — all three previously left the transport open.
+    disconnectMcpServer(serverId) {
+        if (!serverId) return;
+        try {
+            sendToBackground({ action: 'MCP_DISCONNECT', serverId });
+        } catch (error) {
+            console.warn('[MCP] Failed to request disconnect for server', serverId, error);
+        }
     }
 
     _loadActiveServerIntoForm() {

@@ -65,6 +65,16 @@ export function handleInitiateCapture(context, request, sender) {
         const tab = await getCaptureTargetTab(context, request, sender);
         if (!tab) return;
 
+        // Hide floating toolbar before capturing so it doesn't appear in the screenshot.
+        try {
+            await chrome.tabs.sendMessage(tab.id, {
+                action: 'HIDE_FOR_CAPTURE',
+                source: request.source,
+            });
+        } catch {
+            // Non-critical: content script may not be ready; START_SELECTION also hides.
+        }
+
         let capture = null;
         try {
             capture = await context.imageHandler.captureScreenshot(tab.windowId);

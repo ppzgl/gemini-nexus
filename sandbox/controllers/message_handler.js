@@ -194,7 +194,19 @@ export class MessageHandler {
     }
 
     handleGeminiReply(request) {
-        if (!this.isGeneratingSessionMessage(request)) return;
+        if (!this.isGeneratingSessionMessage(request)) {
+            // A late GEMINI_REPLY can arrive after cancel() has already cleared
+            // generatingSessionId. In that case the streaming bubble is still
+            // visible (clearActiveStream removed its content, but if the cancel
+            // path didn't call resetStream — e.g. a race where the reply
+            // arrived before clearActiveStream ran — the bubble is dangling).
+            // Clean it up so the user isn't stuck with a ghost bubble.
+            const replySessionId = request?.sessionId || null;
+            if (replySessionId && this.streamingBubble) {
+                this.resetStream({ remove: true });
+            }
+            return;
+        }
 
         this.app.isGenerating = false;
         this.app.generatingSessionId = null;
