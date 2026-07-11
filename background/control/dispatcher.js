@@ -39,6 +39,9 @@ export class ToolDispatcher {
         'wait_for_url',
         'wait_for_load_state',
         'wait_for_timeout',
+
+        // Composite
+        'run_steps',
     ]);
 
     static SNAPSHOT_OPTIONAL_TOOL_NAMES = new Set([
@@ -53,12 +56,56 @@ export class ToolDispatcher {
         'scroll',
     ]);
 
+    // Maps a local tool name to the BrowserActions method that implements it.
+    // Shared by ToolDispatcher.dispatch and CompositeActions.runSteps so the two
+    // paths can never drift apart on which method backs a given tool. The one
+    // entry without a `method` (`take_snapshot`) is served by the snapshot
+    // manager directly and is flagged `snapshot: true` so callers route it there.
+    static TOOL_METHOD_MAP = {
+        // Navigation
+        navigate_page: { method: 'navigatePage' },
+        new_page: { method: 'newPage' },
+        close_page: { method: 'closePage' },
+        list_pages: { method: 'listPages' },
+        select_page: { method: 'selectPage' },
+
+        // Interaction
+        click: { method: 'clickElement' },
+        hover: { method: 'hoverElement' },
+        fill: { method: 'fillElement' },
+        fill_form: { method: 'fillForm' },
+        press_key: { method: 'pressKey' },
+        type_text: { method: 'typeText' },
+        attach_file: { method: 'attachFile' },
+        drag: { method: 'dragElement' },
+        scroll: { method: 'scrollElement' },
+
+        // Observation & Logic
+        take_snapshot: { snapshot: true },
+        wait_for: { method: 'waitFor' },
+        handle_dialog: { method: 'handleDialog' },
+        evaluate_script: { method: 'evaluateScript' },
+        take_screenshot: { method: 'takeScreenshot' },
+        wait_for_url: { method: 'waitForUrl' },
+        wait_for_load_state: { method: 'waitForLoadState' },
+        wait_for_timeout: { method: 'waitForTimeout' },
+
+        // Composite
+        run_steps: { method: 'runSteps' },
+    };
+
     static isLocalTool(name) {
         return ToolDispatcher.LOCAL_TOOL_NAMES.has(name);
     }
 
     static requiresDebugger(name) {
         return !ToolDispatcher.DEBUGGER_OPTIONAL_TOOL_NAMES.has(name);
+    }
+
+    // Tools that switch the locked tab (new_page/close_page/select_page) and so
+    // can only be the FINAL step of a composite run — see CompositeActions.
+    static isTabSwitchingTool(name) {
+        return ToolDispatcher.DEBUGGER_OPTIONAL_TOOL_NAMES.has(name) && name !== 'navigate_page';
     }
 
     constructor(actions, snapshotManager, connection = null) {
@@ -108,81 +155,14 @@ export class ToolDispatcher {
 
     async dispatch(name, args) {
         let result;
-        switch (name) {
-            // Navigation
-            case 'navigate_page':
-                result = await this.actions.navigatePage(args);
-                break;
-            case 'new_page':
-                result = await this.actions.newPage(args);
-                break;
-            case 'close_page':
-                result = await this.actions.closePage(args);
-                break;
-            case 'list_pages':
-                result = await this.actions.listPages();
-                break;
-            case 'select_page':
-                result = await this.actions.selectPage(args);
-                break;
+        const entry = ToolDispatcher.TOOL_METHOD_MAP[name];
 
-            // Interaction
-            case 'click':
-                result = await this.actions.clickElement(args);
-                break;
-            case 'hover':
-                result = await this.actions.hoverElement(args);
-                break;
-            case 'fill':
-                result = await this.actions.fillElement(args);
-                break;
-            case 'fill_form':
-                result = await this.actions.fillForm(args);
-                break;
-            case 'press_key':
-                result = await this.actions.pressKey(args);
-                break;
-            case 'type_text':
-                result = await this.actions.typeText(args);
-                break;
-            case 'attach_file':
-                result = await this.actions.attachFile(args);
-                break;
-            case 'drag':
-                result = await this.actions.dragElement(args);
-                break;
-            case 'scroll':
-                result = await this.actions.scrollElement(args);
-                break;
-
-            // Observation & Logic
-            case 'take_snapshot':
-                result = await this.snapshotManager.takeSnapshot(args);
-                break;
-            case 'wait_for':
-                result = await this.actions.waitFor(args);
-                break;
-            case 'handle_dialog':
-                result = await this.actions.handleDialog(args);
-                break;
-            case 'evaluate_script':
-                result = await this.actions.evaluateScript(args);
-                break;
-            case 'take_screenshot':
-                result = await this.actions.takeScreenshot(args);
-                break;
-            case 'wait_for_url':
-                result = await this.actions.waitForUrl(args);
-                break;
-            case 'wait_for_load_state':
-                result = await this.actions.waitForLoadState(args);
-                break;
-            case 'wait_for_timeout':
-                result = await this.actions.waitForTimeout(args);
-                break;
-
-            default:
-                return `Error: Unknown tool '${name}'`;
+        if (entry?.snapshot) {
+            result = await this.snapshotManager.takeSnapshot(args);
+        } else if (entry?.method) {
+            result = await this.actions[entry.method](args);
+        } else {
+            return `Error: Unknown tool '${name}'`;
         }
 
         result = await this.maybeAppendSnapshot(name, args, result);

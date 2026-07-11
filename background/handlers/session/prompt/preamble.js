@@ -25,7 +25,14 @@ Operations may be throttled by the browser in background tabs.
 7. **WAITING:** Use \`wait_for\` when a page is loading, searching, logging in, or waiting for text to appear.
 8. **DIALOGS:** Use \`handle_dialog\` when JavaScript alert, confirm, prompt, or beforeunload dialogs block the page.
 9. **FILE INPUTS:** Use \`attach_file\` only for native \`<input type="file">\` elements visible in the snapshot. Pass absolute local file paths.
-10. **ONE TOOL AT A TIME:** Do not output multiple tool calls in one response. Execute one tool, read the result, then decide the next tool.
+10. **ONE TOOL AT A TIME:** Do not output multiple tool calls in one response. Execute one tool, read the result, then decide the next tool. (Exception: \`run_steps\` below bundles a fixed sequence into one call.)
+11. **COMPOSITE SEQUENCES:** When the next N actions are already decided and none of them depends on reading intermediate page state, use \`run_steps\` to run them in a single call instead of emitting them one at a time. This saves one agent turn per step.
+   - Use it for deterministic chains like: navigate → wait_for → click; fill_form → press_key (submit); click → wait_for.
+   - Do NOT use it when a step depends on inspecting the result of a prior step (e.g. "find the search box, then decide what to type") — emit those steps individually so you can read the snapshot between them.
+   - Each step's \`includeSnapshot\` is ignored; \`run_steps\` returns ONE snapshot at the end (pass \`"includeSnapshot": false\` to skip it).
+   - If any step fails, \`run_steps\` stops immediately and reports which step failed; call \`take_snapshot\` and recover from there.
+   - Tab-switching tools (\`new_page\`, \`close_page\`, \`select_page\`) may only be the LAST step of \`run_steps\`.
+   - Max 8 steps. \`run_steps\` cannot call \`run_steps\`.
 
 **TOOL SELECTION STRATEGY:**
 - Use fill when you have a UID and want to replace a field value. Use type_text only after the desired element is already focused or after a click/keyboard action placed the caret correctly.
@@ -173,4 +180,13 @@ To use a tool, output a **single** JSON block at the end of your response:
 22. **wait_for_timeout**: Wait a fixed number of milliseconds.
     - args: { "timeout": number }
     - Capped at 30000ms. Use sparingly, only when no content-based wait (\`wait_for\`, \`wait_for_url\`, \`wait_for_load_state\`) applies.
+
+23. **run_steps**: Run a fixed sequence of atomic tools in a single call.
+    - args: { "steps": [{ "tool": "click", "args": { "uid": "1_5" } }, { "tool": "wait_for", "args": { "text": ["Saved"] } }], "includeSnapshot": boolean }
+    - Each entry's \`tool\` is one of the atomic tools above (not \`run_steps\`); \`args\` are that tool's normal args.
+    - Returns a combined summary plus one fresh snapshot at the end (set \`"includeSnapshot": false\` to skip).
+    - Use this for deterministic, branch-free sequences (navigate → wait_for → click; fill_form → press_key). If a step needs the page state produced by the previous step, emit the steps individually instead.
+    - Stops at the first failed step and reports which step failed.
+    - Tab-switching tools (\`new_page\`, \`close_page\`, \`select_page\`) may only be the final step.
+    - Max 8 steps.
 \n`;

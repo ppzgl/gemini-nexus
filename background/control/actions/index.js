@@ -1,6 +1,7 @@
 import { NavigationActions } from './navigation.js';
 import { InputActions } from './input/index.js';
 import { ObservationActions } from './observation/index.js';
+import { CompositeActions } from './composite.js';
 import { ActionWaiter } from '../action_waiter.js';
 
 /**
@@ -19,6 +20,9 @@ export class BrowserActions {
         );
         this.input = new InputActions(connection, snapshotManager, this.waitHelper);
         this.observation = new ObservationActions(connection, snapshotManager, this.waitHelper);
+        // Composite receives `this` so run_steps can invoke the same atomic
+        // methods (and their CDP/wait behavior) the dispatcher uses.
+        this.composite = new CompositeActions(connection, snapshotManager, this.waitHelper, this);
     }
 
     async navigatePage(args) {
@@ -93,5 +97,9 @@ export class BrowserActions {
 
     async takeScreenshot(args) {
         return this.observation.takeScreenshot(args);
+    }
+
+    async runSteps(args) {
+        return this.composite.runSteps(args);
     }
 }

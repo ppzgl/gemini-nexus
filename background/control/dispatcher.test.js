@@ -27,11 +27,27 @@ describe('ToolDispatcher local tool registry', () => {
             'wait_for_url',
             'wait_for_load_state',
             'wait_for_timeout',
+            'run_steps',
         ];
 
         expect([...ToolDispatcher.LOCAL_TOOL_NAMES].sort()).toEqual(
             [...coreAutomationTools].sort()
         );
+    });
+
+    it('requires the debugger for run_steps (composite touches the page)', () => {
+        expect(ToolDispatcher.requiresDebugger('run_steps')).toBe(true);
+        expect(ToolDispatcher.isLocalTool('run_steps')).toBe(true);
+    });
+
+    it('classifies tab-switching tools so run_steps can restrict them to the final step', () => {
+        expect(ToolDispatcher.isTabSwitchingTool('new_page')).toBe(true);
+        expect(ToolDispatcher.isTabSwitchingTool('close_page')).toBe(true);
+        expect(ToolDispatcher.isTabSwitchingTool('select_page')).toBe(true);
+        // navigate_page stays on the same tab (just swaps the document), so it
+        // is allowed mid-sequence.
+        expect(ToolDispatcher.isTabSwitchingTool('navigate_page')).toBe(false);
+        expect(ToolDispatcher.isTabSwitchingTool('click')).toBe(false);
     });
 
     it('does not treat retired browser-control tools as local tools', () => {
@@ -155,6 +171,16 @@ describe('ToolDispatcher includeSnapshot responses', () => {
         );
         expect(BROWSER_CONTROL_PREAMBLE).toContain('fill_form fills fields sequentially');
         expect(BROWSER_CONTROL_PREAMBLE).toContain('do not return DOM nodes directly');
+    });
+
+    it('documents the run_steps composite tool and its constraints in the prompt', () => {
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('run_steps');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('branch-free sequences');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('Max 8 steps');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('cannot call `run_steps`');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('Tab-switching tools');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('may only be the final step');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('Stops at the first failed step');
     });
 
     it('appends a fresh snapshot after interaction tools request one', async () => {
@@ -369,5 +395,24 @@ describe('ToolDispatcher wait_for responses', () => {
             promptText: 'ok',
         });
         expect(result).toBe('Accepted dialog');
+    });
+});
+
+describe('ToolDispatcher run_steps routing', () => {
+    it('routes run_steps to the composite actions facade', async () => {
+        const actions = {
+            runSteps: vi.fn(() => Promise.resolve('Completed 2 steps.')),
+        };
+        const dispatcher = new ToolDispatcher(actions, {});
+
+        const steps = [
+            { tool: 'navigate_page', args: { url: 'https://example.test/' } },
+            { tool: 'wait_for', args: { text: ['Loaded'] } },
+        ];
+
+        const result = await dispatcher.dispatch('run_steps', { steps });
+
+        expect(actions.runSteps).toHaveBeenCalledWith({ steps });
+        expect(result).toBe('Completed 2 steps.');
     });
 });

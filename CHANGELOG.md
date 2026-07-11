@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.0.15 - 2026-07-11
+
+- 新增浏览器控制复合工具 `run_steps`：把确定的、无分支的多步操作序列（如 导航→等待→点击、填表→提交）压成一次工具调用，减少 agent 循环往返与 2–4 秒/轮的限流延迟。顺序复用已有 22 个原子动作（遮挡检测、JS 回退、导航等待全继承），≤8 步，任一步失败即停并报出失败步骤，末尾默认返回一次快照。
+- 安全约束：标签页切换工具（`new_page`/`close_page`/`select_page`）仅允许作为 `run_steps` 的最后一步（中间切标签页会让后续步骤静默打在旧标签页上）；`run_steps` 不可嵌套自身。
+- 抽取 `ToolDispatcher.TOOL_METHOD_MAP` 共享常量，`dispatch` 与 `run_steps` 复用同一张 tool→method 映射，避免两处路由漂移。
+- 修复 `chrome.runtime.onSuspend` 注册错误：原写法 `onSuspend?.(cb)` 把 Event 对象当函数调用，抛 `TypeError`，导致 SW 挂起前的 debugger 清理从未生效（受控标签页会卡在"正在调试"infobar 上，重启后无恢复路径）。改为 `onSuspend?.addListener?.(cb)`。
+
 ## v5.0.14 - 2026-06-23
 
 - 修复高刷新率（120Hz/144Hz）屏幕上 AI 光标动画偏快的问题：将帧步进对齐到 Browser Control Bridge 的真实 `elapsed` 逻辑（仅首帧补一个名义帧，其余按真实 delta 推进），使光标运动与墙钟时间同步，不再随刷新率成倍加快。

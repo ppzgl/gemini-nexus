@@ -95,7 +95,10 @@ keepAliveManager.init();
 // controlled tab is not left stuck on the "Started debugging" infobar with no
 // live SW to detach it. After restart, connection.attached is false and a
 // leaked attachment has no recovery path (the user had to close the tab).
-chrome.runtime.onSuspend?.(() => {
+// chrome.runtime.onSuspend is an Event object — register the callback with
+// addListener, not by calling onSuspend(cb) (the latter throws
+// "chrome.runtime.onSuspend is not a function").
+chrome.runtime.onSuspend?.addListener?.(() => {
     try {
         controlManager.suspendCleanup();
     } catch (error) {
