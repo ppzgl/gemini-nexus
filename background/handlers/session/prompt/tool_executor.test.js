@@ -136,6 +136,43 @@ describe('ToolExecutor routing', () => {
         );
     });
 
+    it('fails clearly when a multi-server plain tool belongs to a removed server', async () => {
+        const mcpManager = {
+            isEnabled: vi.fn(() => true),
+            listAllActiveTools: vi.fn(async () => [
+                { name: 'search', _serverId: 'gone-server', _toolId: 'gone-server__search' },
+            ]),
+            callToolById: vi.fn(async () => ({ text: 'should not run', files: [] })),
+        };
+        const executor = new ToolExecutor(null, mcpManager);
+
+        const result = await executor.executeCommand(
+            { name: 'search', args: {} },
+            {
+                sessionId: 'session-1',
+                enableMcpTools: true,
+                mcpServers: [
+                    {
+                        id: 'still-here',
+                        transport: 'sse',
+                        url: 'http://127.0.0.1:3006/sse',
+                        enabled: true,
+                    },
+                ],
+            },
+            '{"tool":"search","args":{}}'
+        );
+
+        expect(mcpManager.callToolById).not.toHaveBeenCalled();
+        expect(result).toEqual(
+            expect.objectContaining({
+                source: 'mcp_remote',
+                status: 'failed',
+                output: expect.stringContaining('no longer configured'),
+            })
+        );
+    });
+
     it('marks MCP tool-call results with isError as failed execution status', async () => {
         const mcpManager = {
             isEnabled: vi.fn(() => true),

@@ -103,6 +103,8 @@ export function createStreamingBubble(handler, state = {}) {
         thoughtsElapsedSeconds: state.thoughtsElapsedSeconds,
     });
     handler.streamingBubble = bubble;
+    handler.streamingBubbleSessionId =
+        state.sessionId || handler.app?.generatingSessionId || null;
 }
 
 export function finalizeActiveStream(handler, state = {}) {
@@ -132,6 +134,7 @@ export function finalizeActiveStream(handler, state = {}) {
             handler.streamingBubble.div.remove();
         }
         handler.streamingBubble = null;
+        handler.streamingBubbleSessionId = null;
         return;
     }
     if (typeof handler.streamingBubble.finalize === 'function') {
@@ -143,6 +146,7 @@ export function finalizeActiveStream(handler, state = {}) {
         handler.streamingBubble.dispose();
     }
     handler.streamingBubble = null;
+    handler.streamingBubbleSessionId = null;
 }
 
 export function resetStream(handler, options = {}) {
@@ -154,6 +158,7 @@ export function resetStream(handler, options = {}) {
             handler.streamingBubble.div.remove();
         }
         handler.streamingBubble = null;
+        handler.streamingBubbleSessionId = null;
     }
     if (handler.contextCompressionNotice && options.remove === true) {
         handler.contextCompressionNotice.dispose?.();

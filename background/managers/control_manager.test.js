@@ -17,10 +17,12 @@ function setupChrome() {
             onEvent: { addListener: vi.fn() },
             onDetach: { addListener: vi.fn() },
             attach: vi.fn((target, version, callback) => callback()),
+            detach: vi.fn((target, callback) => callback?.()),
             sendCommand: vi.fn((target, method, params, callback) => callback({})),
         },
         runtime: {
             sendMessage: vi.fn(() => Promise.resolve()),
+            lastError: null,
         },
         tabs: {
             get: vi.fn(() =>
@@ -498,5 +500,30 @@ describe('BrowserControlManager native tab group indicator', () => {
         await manager.connection.attach(42);
 
         expect(cursorController.showThinking).not.toHaveBeenCalled();
+    });
+
+    it('suspendCleanup detaches the controlled tab without awaiting a promise', () => {
+        const manager = new BrowserControlManager();
+        manager.connection.attached = true;
+        manager.connection.currentTabId = 42;
+        manager.connection.targetTabId = 42;
+        manager.lockedTabId = 42;
+
+        manager.suspendCleanup();
+
+        expect(chrome.debugger.detach).toHaveBeenCalledWith({ tabId: 42 }, expect.any(Function));
+        expect(manager.connection.attached).toBe(false);
+        expect(manager.connection.currentTabId).toBeNull();
+    });
+
+    it('suspendCleanup falls back to targetTabId when not marked attached', () => {
+        const manager = new BrowserControlManager();
+        manager.connection.attached = false;
+        manager.connection.currentTabId = null;
+        manager.connection.targetTabId = 99;
+
+        manager.suspendCleanup();
+
+        expect(chrome.debugger.detach).toHaveBeenCalledWith({ tabId: 99 }, expect.any(Function));
     });
 });

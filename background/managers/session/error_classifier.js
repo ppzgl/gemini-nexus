@@ -9,8 +9,9 @@ function isUnavailableWebAuthError(message = '') {
         message.includes('未登录') ||
         message.includes('Not logged in') ||
         message.includes('Sign in') ||
-        message.includes('Missing Gemini Web auth token: blValue') ||
-        message.includes('Missing Gemini Web auth token: fSid')
+        // Covers atValue / blValue / fSid and any future token field name.
+        message.includes('Missing Gemini Web auth token:') ||
+        message.includes('Gemini Web request tokens unavailable')
     );
 }
 

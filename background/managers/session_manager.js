@@ -159,4 +159,13 @@ export class GeminiSessionManager {
     async resetContext() {
         await this.auth.resetContext();
     }
+
+    async clearContext() {
+        if (typeof this.auth.clearContext === 'function') {
+            await this.auth.clearContext();
+            return;
+        }
+        // Fallback: clear memory only (older AuthManager without clearContext).
+        this.auth.forceContextRefresh?.();
+    }
 }

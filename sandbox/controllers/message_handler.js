@@ -27,6 +27,9 @@ export class MessageHandler {
         this.imageManager = imageManager;
         this.app = appController; // Reference back to app for state like captureMode
         this.streamingBubble = null;
+        // Session id that owns streamingBubble, so late replies for an old run
+        // cannot tear down a newer generation's bubble.
+        this.streamingBubbleSessionId = null;
         this.contextCompressionNotice = null;
         this.streamState = new MessageStreamState();
         this.replyRenderState = new MessageReplyRenderState();
@@ -196,13 +199,19 @@ export class MessageHandler {
     handleGeminiReply(request) {
         if (!this.isGeneratingSessionMessage(request)) {
             // A late GEMINI_REPLY can arrive after cancel() has already cleared
-            // generatingSessionId. In that case the streaming bubble is still
-            // visible (clearActiveStream removed its content, but if the cancel
-            // path didn't call resetStream — e.g. a race where the reply
+            // generatingSessionId. In that case the streaming bubble may still
+            // be visible (clearActiveStream removed its content, but if the
+            // cancel path didn't call resetStream — e.g. a race where the reply
             // arrived before clearActiveStream ran — the bubble is dangling).
-            // Clean it up so the user isn't stuck with a ghost bubble.
+            // Only remove a ghost bubble that belongs to THIS late reply, and
+            // never while a newer generation is in flight.
             const replySessionId = request?.sessionId || null;
-            if (replySessionId && this.streamingBubble) {
+            if (
+                replySessionId &&
+                this.streamingBubble &&
+                this.streamingBubbleSessionId === replySessionId &&
+                !this.app.isGenerating
+            ) {
                 this.resetStream({ remove: true });
             }
             return;

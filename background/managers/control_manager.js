@@ -583,6 +583,11 @@ export class BrowserControlManager {
             if (Number.isInteger(state.lockedTabId) && state.lockedTabId > 0) {
                 this.lockedTabId = state.lockedTabId;
                 this.connection.targetTabId = state.lockedTabId;
+                // Previous SW may have been killed before detach completed,
+                // leaving the tab on the "Started debugging" infobar with no
+                // live handle. Best-effort detach so the next control action
+                // starts clean (attach will re-attach if still needed).
+                this._detachDebuggerBestEffort(state.lockedTabId);
             }
             if (Number.isInteger(state.ownerSidePanelTabId) && state.ownerSidePanelTabId > 0) {
                 this.ownerSidePanelTabId = state.ownerSidePanelTabId;
@@ -601,6 +606,21 @@ export class BrowserControlManager {
         });
     }
 
+    _detachDebuggerBestEffort(tabId) {
+        if (!Number.isInteger(tabId) || tabId <= 0) return;
+        if (typeof chrome?.debugger?.detach !== 'function') return;
+        try {
+            // Fire the Chrome API immediately (callback form, not async await)
+            // so the detach request is queued even if the SW is about to die.
+            chrome.debugger.detach({ tabId }, () => {
+                // Consume lastError — tab may already be closed or not attached.
+                void chrome.runtime?.lastError;
+            });
+        } catch (error) {
+            debugLog('[ControlManager] Best-effort detach failed:', error?.message || error);
+        }
+    }
+
     // Best-effort cleanup invoked from chrome.runtime.onSuspend before the SW
     // is terminated. Detaches the debugger so Chrome does not leave the tab in
     // a "Started debugging" state that the next SW instance cannot recover
@@ -609,10 +629,21 @@ export class BrowserControlManager {
     // the tab was already closed or the session already gone.
     suspendCleanup() {
         try {
-            if (this.connection?.attached && this.connection?.currentTabId) {
-                this.connection.detach().catch((error) => {
-                    debugLog('[ControlManager] Suspend detach failed:', error?.message || error);
-                });
+            const tabId =
+                this.connection?.currentTabId ||
+                this.connection?.targetTabId ||
+                this.lockedTabId ||
+                null;
+            if (!tabId) return;
+
+            // Prefer the non-awaited Chrome callback path so detach starts
+            // before MV3 kills the worker. The Promise-based connection.detach
+            // is also fine for bookkeeping when we still believe we're attached.
+            this._detachDebuggerBestEffort(tabId);
+
+            if (this.connection) {
+                this.connection.attached = false;
+                this.connection.currentTabId = null;
             }
         } catch (error) {
             debugLog('[ControlManager] Suspend cleanup error:', error?.message || error);

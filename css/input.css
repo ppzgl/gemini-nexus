@@ -275,6 +275,10 @@ body.layout-wide .input-wrapper {
     color: var(--primary);
 }
 
+body:not(.has-page-context) .tool-btn.context-aware {
+    display: none;
+}
+
 .tool-btn svg {
     width: 14px;
     height: 14px;

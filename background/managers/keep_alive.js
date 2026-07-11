@@ -22,6 +22,14 @@ class KeepAliveManager {
         this.isRotating = false;
         this.consecutiveErrors = 0;
         this.boundOnAlarm = this._onAlarm.bind(this);
+        // Optional async () => void. When set (from background/index.js), 401/403
+        // clears both in-memory AuthManager state and storage. Without it we
+        // fall back to storage-only cleanup for standalone tests.
+        this.onSessionExpired = null;
+    }
+
+    setSessionExpiredHandler(handler) {
+        this.onSessionExpired = typeof handler === 'function' ? handler : null;
     }
 
     init() {
@@ -163,11 +171,17 @@ class KeepAliveManager {
         console.warn(`[Gemini Nexus] Keep-Alive: Rotation failed with status ${status}`);
 
         // If 401 Unauthorized or 403 Forbidden, session is likely dead.
-        // We clear the context so the next user action triggers a fresh auth check.
+        // Clear both memory and storage so the next request re-fetches tokens.
+        // Storage-only cleanup left AuthManager.currentContext serving stale
+        // tokens for the rest of the service-worker lifetime.
         if (status === 401 || status === 403) {
             debugLog('[Gemini Nexus] Session expired. Clearing local context.');
             try {
-                await chrome.storage.local.remove(['geminiContext']);
+                if (typeof this.onSessionExpired === 'function') {
+                    await this.onSessionExpired();
+                } else {
+                    await chrome.storage.local.remove(['geminiContext']);
+                }
             } catch (error) {
                 console.warn('[Gemini Nexus] Keep-Alive: Failed to clear expired context:', error);
             }

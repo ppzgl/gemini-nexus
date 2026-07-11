@@ -222,4 +222,27 @@ describe('AuthManager', () => {
             warnSpy.mockRestore();
         }
     });
+
+    it('clearContext drops memory and storage without rotating accounts', async () => {
+        const manager = new AuthManager();
+        manager.accountIndices = ['0', '1'];
+        manager.currentAccountPointer = 0;
+        manager.currentContext = {
+            atValue: 'at-token',
+            blValue: 'bl-token',
+            fSid: 'fsid-token',
+            locale: 'en-US',
+            authUser: '0',
+            uploadPushId: 'feeds/upload-dynamic',
+            uploadClientPctx: 'client-pctx-token',
+        };
+        const rotateSpy = vi.spyOn(manager, 'rotateAccount');
+
+        await manager.clearContext();
+
+        expect(manager.currentContext).toBeNull();
+        expect(chrome.storage.local.remove).toHaveBeenCalledWith(['geminiContext']);
+        expect(rotateSpy).not.toHaveBeenCalled();
+        expect(manager.currentAccountPointer).toBe(0);
+    });
 });

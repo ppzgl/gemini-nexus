@@ -177,7 +177,15 @@ export class PromptController {
             type: 'upsertSession',
             sessionId: currentId,
         });
-        this.app.sessionFlow.switchToSession(currentId);
+
+        // Stay on the current session without a full switchToSession remount.
+        // switchToSession re-renders the whole history and, when session.context
+        // is null (normal for Web + API providers), fires RESET_CONTEXT which
+        // clears AuthManager tokens and rotates multi-account pointers — that
+        // must not run on every send.
+        this.app.boundSessionId = currentId;
+        this.app.saveCurrentTabSessionBinding?.(currentId);
+        this.app.sessionFlow.refreshHistoryUI();
 
         if (session.context) {
             sendToBackground({

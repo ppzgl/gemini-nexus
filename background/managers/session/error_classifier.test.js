@@ -61,6 +61,15 @@ describe('classifyProviderError', () => {
             kind: 'auth',
             retryable: false,
         });
+        expect(classifyProviderError('Missing Gemini Web auth token: atValue')).toEqual({
+            kind: 'auth',
+            retryable: false,
+        });
+        expect(
+            classifyProviderError(
+                'Gemini Web request tokens unavailable for account 0: atValue, blValue'
+            )
+        ).toEqual({ kind: 'auth', retryable: false });
     });
 
     it('classifies 4xx (non-auth) validation errors as non-retryable', () => {
@@ -95,6 +104,11 @@ describe('shared auth classifiers', () => {
     it('isUnavailableWebAuthError detects login-required patterns', () => {
         expect(isUnavailableWebAuthError('Not logged in')).toBe(true);
         expect(isUnavailableWebAuthError('Missing Gemini Web auth token: blValue')).toBe(true);
+        expect(isUnavailableWebAuthError('Missing Gemini Web auth token: atValue')).toBe(true);
+        expect(isUnavailableWebAuthError('Missing Gemini Web auth token: fSid')).toBe(true);
+        expect(
+            isUnavailableWebAuthError('Gemini Web request tokens unavailable for account 1: fSid')
+        ).toBe(true);
         expect(isUnavailableWebAuthError('all good')).toBe(false);
     });
 

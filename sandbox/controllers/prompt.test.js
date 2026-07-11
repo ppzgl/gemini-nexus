@@ -42,8 +42,10 @@ function createPromptHarness({ text = 'Hello', files = [], liveArtifactsEnabled 
         hostIsTab: false,
         isGenerating: false,
         generatingSessionId: null,
+        boundSessionId: null,
         liveArtifactsEnabled,
         getSelectedModel: vi.fn(() => 'gemini-test'),
+        saveCurrentTabSessionBinding: vi.fn(),
         sessionFlow: {
             refreshHistoryUI: vi.fn(),
             switchToSession: vi.fn(),
@@ -82,7 +84,11 @@ describe('PromptController.send', () => {
             type: 'upsertSession',
             sessionId: session.id,
         });
-        expect(app.sessionFlow.switchToSession).toHaveBeenCalledWith(session.id);
+        // Sending must not remount via switchToSession (that path RESET_CONTEXT).
+        expect(app.sessionFlow.switchToSession).not.toHaveBeenCalled();
+        expect(app.sessionFlow.refreshHistoryUI).toHaveBeenCalled();
+        expect(app.boundSessionId).toBe(session.id);
+        expect(app.saveCurrentTabSessionBinding).toHaveBeenCalledWith(session.id);
         expect(app.isGenerating).toBe(true);
         expect(app.generatingSessionId).toBe(session.id);
         expect(sendToBackground).toHaveBeenLastCalledWith(
@@ -92,6 +98,24 @@ describe('PromptController.send', () => {
                 sessionId: session.id,
             })
         );
+        // No RESET_CONTEXT on ordinary send when session.context is null.
+        expect(sendToBackground).not.toHaveBeenCalledWith({ action: 'RESET_CONTEXT' });
+    });
+
+    it('sets background context when the session already has one, without resetting', async () => {
+        const { controller, sessionManager } = createPromptHarness();
+        sessionManager.createSession();
+        const session = sessionManager.getCurrentSession();
+        session.context = ['conversation', 'response', 'choice'];
+
+        await controller.send();
+
+        expect(sendToBackground).toHaveBeenCalledWith({
+            action: 'SET_CONTEXT',
+            context: ['conversation', 'response', 'choice'],
+            model: 'gemini-test',
+        });
+        expect(sendToBackground).not.toHaveBeenCalledWith({ action: 'RESET_CONTEXT' });
     });
 
     it('does not create a session for an empty draft send', async () => {

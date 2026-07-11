@@ -160,14 +160,28 @@ export class ToolExecutor {
                         const server = servers.find(
                             (serverConfig) => serverConfig.id === tool._serverId
                         );
-                        return this.isMcpToolEnabled(server, toolName);
+                        // Require a known server config — a missing server is not
+                        // "enabled"; treating !server as true previously let the
+                        // path fall through to matchingTool._toolId and throw.
+                        return Boolean(server) && this.isMcpToolEnabled(server, toolName);
                     });
 
                     if (!matchingTool) {
                         const firstServer = servers.find(
                             (serverConfig) => serverConfig.id === matchingTools[0]._serverId
                         );
+                        if (!firstServer) {
+                            throw new Error(
+                                `Tool '${toolName}' belongs to an MCP server that is no longer configured.`
+                            );
+                        }
                         this.assertMcpToolEnabled(firstServer, toolName);
+                        // assertMcpToolEnabled throws when disabled; if it
+                        // returned, the tool is enabled but still unmatched
+                        // (e.g. race). Fail with a clear message instead of NPE.
+                        throw new Error(
+                            `Tool '${toolName}' is not available on any enabled MCP server.`
+                        );
                     }
 
                     remote = await this.mcpManager.callToolById(
@@ -299,7 +313,10 @@ export class ToolExecutor {
     }
 
     isMcpToolEnabled(server, toolName) {
-        if (!server || server.toolMode !== 'selected') return true;
+        // Missing server config is never "enabled" — callers must handle this
+        // as a hard failure rather than treating it as an open allow.
+        if (!server) return false;
+        if (server.toolMode !== 'selected') return true;
 
         const enabled = Array.isArray(server.enabledTools)
             ? new Set(server.enabledTools)

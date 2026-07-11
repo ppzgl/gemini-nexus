@@ -111,7 +111,11 @@ describe('project code hygiene', () => {
         const controller = await readProjectFile('content/toolbar/controller.js');
 
         expect(toolbarUi).not.toContain('toolbarDragController');
-        expect(controller).not.toMatch(/\bthis\.(streamHandler|selectionObserver)\s*=/);
+        // streamHandler stays local (init-only). selectionObserver is retained
+        // on `this` so destroy() can disconnect document-level listeners.
+        expect(controller).not.toMatch(/\bthis\.streamHandler\s*=/);
+        expect(controller).toMatch(/\bthis\.selectionObserver\s*=/);
+        expect(controller).toMatch(/selectionObserver\.disconnect/);
     });
 
     it('does not keep CSS selectors with no runtime or template producer', async () => {

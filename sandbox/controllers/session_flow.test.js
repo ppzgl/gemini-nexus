@@ -153,6 +153,47 @@ describe('SessionFlowController', () => {
         expect(ui.resetInput).toHaveBeenCalled();
     });
 
+    it('does not RESET_CONTEXT when re-selecting the already-current session', () => {
+        const { controller, sessionManager } = createSessionFlowHarness();
+        sessionManager.setSessions([
+            realSession({
+                context: null,
+                messages: [{ role: 'user', text: 'Hello' }],
+            }),
+        ]);
+        sessionManager.setCurrentId('session-1');
+        sendToBackground.mockClear();
+
+        controller.switchToSession('session-1');
+
+        expect(sendToBackground).not.toHaveBeenCalledWith({ action: 'RESET_CONTEXT' });
+        expect(sendToBackground).not.toHaveBeenCalledWith(
+            expect.objectContaining({ action: 'SET_CONTEXT' })
+        );
+    });
+
+    it('RESET_CONTEXT when switching to a different session with no stored context', () => {
+        const { controller, sessionManager } = createSessionFlowHarness();
+        sessionManager.setSessions([
+            realSession({
+                id: 'session-1',
+                context: ['conversation', 'response', 'choice'],
+                messages: [{ role: 'user', text: 'A' }],
+            }),
+            realSession({
+                id: 'session-2',
+                context: null,
+                messages: [{ role: 'user', text: 'B' }],
+            }),
+        ]);
+        sessionManager.setCurrentId('session-1');
+        sendToBackground.mockClear();
+
+        controller.switchToSession('session-2');
+
+        expect(sendToBackground).toHaveBeenCalledWith({ action: 'RESET_CONTEXT' });
+    });
+
     it('passes suppressCopy when restoring intermediate AI tool-call messages', () => {
         const { controller, sessionManager, ui } = createSessionFlowHarness();
         sessionManager.setSessions([

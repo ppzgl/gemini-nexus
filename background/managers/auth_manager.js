@@ -158,6 +158,20 @@ export class AuthManager {
         }
     }
 
+    /**
+     * Clear in-memory and persisted Web auth tokens without rotating accounts.
+     * Used when a session is known-dead (e.g. keep-alive 401/403) so the next
+     * request re-fetches credentials for the same account pointer.
+     */
+    async clearContext() {
+        this.currentContext = null;
+        try {
+            await chrome.storage.local.remove(['geminiContext']);
+        } catch (error) {
+            console.warn('[Gemini Nexus] Failed to clear Web auth context:', error);
+        }
+    }
+
     forceContextRefresh() {
         this.currentContext = null;
     }

@@ -89,6 +89,9 @@ setupMessageListener(
     sidePanelScopeManager
 );
 
+// Keep-alive 401/403 must invalidate AuthManager memory as well as storage;
+// otherwise getOrFetchContext keeps serving the dead in-memory tokens.
+keepAliveManager.setSessionExpiredHandler(() => sessionManager.clearContext());
 keepAliveManager.init();
 
 // Detach the debugger before the MV3 service worker is terminated so the

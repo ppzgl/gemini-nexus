@@ -198,6 +198,51 @@ describe('MessageHandler.handleGeminiReply', () => {
 
         expect(appendMessage).not.toHaveBeenCalled();
     });
+
+    it('does not remove a newer streaming bubble when a late reply arrives for an old session', () => {
+        const { app, handler } = createMessageHandlerHarness();
+        app.isGenerating = true;
+        app.generatingSessionId = 'session-2';
+
+        const bubbleDiv = document.createElement('div');
+        const dispose = vi.fn();
+        handler.streamingBubble = { div: bubbleDiv, dispose };
+        handler.streamingBubbleSessionId = 'session-2';
+
+        handler.handleGeminiReply({
+            action: 'GEMINI_REPLY',
+            sessionId: 'session-1',
+            status: 'cancelled',
+            text: 'Old run cancelled',
+        });
+
+        expect(dispose).not.toHaveBeenCalled();
+        expect(handler.streamingBubble).not.toBeNull();
+        expect(handler.streamingBubbleSessionId).toBe('session-2');
+    });
+
+    it('removes a dangling bubble only for a late reply of the same idle session', () => {
+        const { app, handler, ui } = createMessageHandlerHarness();
+        app.isGenerating = false;
+        app.generatingSessionId = null;
+
+        const bubbleDiv = document.createElement('div');
+        ui.historyDiv.appendChild(bubbleDiv);
+        const dispose = vi.fn(() => bubbleDiv.remove());
+        handler.streamingBubble = { div: bubbleDiv, dispose };
+        handler.streamingBubbleSessionId = 'session-1';
+
+        handler.handleGeminiReply({
+            action: 'GEMINI_REPLY',
+            sessionId: 'session-1',
+            status: 'cancelled',
+            text: 'Cancelled',
+        });
+
+        expect(dispose).toHaveBeenCalled();
+        expect(handler.streamingBubble).toBeNull();
+        expect(handler.streamingBubbleSessionId).toBeNull();
+    });
 });
 
 describe('MessageHandler.handleStreamUpdate', () => {

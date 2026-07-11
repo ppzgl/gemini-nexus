@@ -38,6 +38,9 @@ export class SessionFlowController {
     }
 
     switchToSession(sessionId, options = {}) {
+        const previousSessionId = this.sessionManager.currentSessionId;
+        const isSameSession = previousSessionId === sessionId;
+
         this.app.messageHandler.resetStream();
         this.sessionManager.setCurrentId(sessionId);
 
@@ -98,14 +101,20 @@ export class SessionFlowController {
         this.app.boundSessionId = sessionId;
         this.app.saveCurrentTabSessionBinding(sessionId);
 
-        if (session.context) {
-            sendToBackground({
-                action: 'SET_CONTEXT',
-                context: session.context,
-                model: this.app.getSelectedModel(),
-            });
-        } else {
-            sendToBackground({ action: 'RESET_CONTEXT' });
+        // Only sync background auth context when actually changing sessions
+        // (or when forced). Re-selecting the current session must not fire
+        // RESET_CONTEXT — that clears live Web tokens and rotates multi-account
+        // pointers. New-chat still uses enterDraft() which always resets.
+        if (!isSameSession || options.forceContextSync === true) {
+            if (session.context) {
+                sendToBackground({
+                    action: 'SET_CONTEXT',
+                    context: session.context,
+                    model: this.app.getSelectedModel(),
+                });
+            } else {
+                sendToBackground({ action: 'RESET_CONTEXT' });
+            }
         }
 
         this.refreshHistoryUI();

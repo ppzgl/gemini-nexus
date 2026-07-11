@@ -74,6 +74,7 @@ describe('KeepAliveManager alarm listener', () => {
     });
 
     it('does not let expired context cleanup failures escape error handling', async () => {
+        keepAliveManager.setSessionExpiredHandler(null);
         const storageError = new Error('Session storage unavailable');
         chrome.storage.local.remove.mockRejectedValueOnce(storageError);
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -89,5 +90,16 @@ describe('KeepAliveManager alarm listener', () => {
         } finally {
             warnSpy.mockRestore();
         }
+    });
+
+    it('invokes the session-expired handler so in-memory auth is cleared too', async () => {
+        const onSessionExpired = vi.fn(async () => {});
+        keepAliveManager.setSessionExpiredHandler(onSessionExpired);
+
+        await keepAliveManager._handleError(403);
+
+        expect(onSessionExpired).toHaveBeenCalledTimes(1);
+        // Handler path must not also do a redundant storage-only remove.
+        expect(chrome.storage.local.remove).not.toHaveBeenCalled();
     });
 });
