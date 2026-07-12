@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.0.16 - 2026-07-13
+
+- 修复悬浮弹窗（划词 / 快速提问）Markdown 不渲染：语言偏好异步恢复后会重建工具栏 UI，却未重建 sandbox 渲染 bridge，导致结果以原始 Markdown 文本显示；现在每次重建都会重新创建 bridge。
+- 悬浮窗 renderer 模式改为等待 `marked` 真正加载完成（不再吃 sidepanel 的 5 秒软超时），bridge 不可用时安全转义为纯文本，并补充 bridge / loader 回归测试。
+- 修复侧边栏发送路径上的鉴权与上下文误重置：避免每次发送都 `RESET_CONTEXT` 与多账号轮换，keep-alive 过期时清理内存中的 auth，并收紧晚到回复的 stream 清理、MCP 工具匹配与 debugger 挂起时的 detach。
+- 恢复页面上下文按钮相关 CSS；修正 native logger 安装脚本的扩展 ID 推导（32 位 a-p）与绝对 Node shebang，unpacked 开发环境默认开启 native 日志。
+
 ## v5.0.15 - 2026-07-11
 
 - 新增浏览器控制复合工具 `run_steps`：把确定的、无分支的多步操作序列（如 导航→等待→点击、填表→提交）压成一次工具调用，减少 agent 循环往返与 2–4 秒/轮的限流延迟。顺序复用已有 22 个原子动作（遮挡检测、JS 回退、导航等待全继承），≤8 步，任一步失败即停并报出失败步骤，末尾默认返回一次快照。
