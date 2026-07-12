@@ -103,8 +103,7 @@ export function createStreamingBubble(handler, state = {}) {
         thoughtsElapsedSeconds: state.thoughtsElapsedSeconds,
     });
     handler.streamingBubble = bubble;
-    handler.streamingBubbleSessionId =
-        state.sessionId || handler.app?.generatingSessionId || null;
+    handler.streamingBubbleSessionId = state.sessionId || handler.app?.generatingSessionId || null;
 }
 
 export function finalizeActiveStream(handler, state = {}) {

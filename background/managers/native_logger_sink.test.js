@@ -127,11 +127,11 @@ describe('NativeLoggerSink', () => {
             }),
         };
         const sink = new NativeLoggerSink({ runtime, enabled: true });
-        sink.log({ level: 'info', message: 'a' });   // buffer (connect down)
+        sink.log({ level: 'info', message: 'a' }); // buffer (connect down)
         sink.log({ level: 'info', message: 'fail' }); // buffer
-        sink.log({ level: 'info', message: 'b' });   // buffer
+        sink.log({ level: 'info', message: 'b' }); // buffer
         connectOk = true;
-        sink.log({ level: 'info', message: 'c' });   // connect ok → flush then send c
+        sink.log({ level: 'info', message: 'c' }); // connect ok → flush then send c
 
         const sent = goodPort.postMessage.mock.calls.map((c) => c[0].message);
         expect(sent).toEqual(['a', 'fail', 'c']); // a flushed ok; fail attempted but threw; c sent via _send

@@ -9,7 +9,12 @@ const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 const BUFFER_LIMIT = 200;
 
 export class NativeLoggerSink {
-    constructor({ runtime, hostName = DEFAULT_HOST_NAME, minLevel = 'info', enabled = false } = {}) {
+    constructor({
+        runtime,
+        hostName = DEFAULT_HOST_NAME,
+        minLevel = 'info',
+        enabled = false,
+    } = {}) {
         this.runtime = runtime ?? (typeof chrome !== 'undefined' ? chrome.runtime : undefined);
         this.hostName = hostName;
         this.minLevel = LEVELS[minLevel] ?? LEVELS.info;

@@ -90,7 +90,9 @@
             if (changes.geminiImageToolsEnabled) {
                 const imageToolsEnabled = changes.geminiImageToolsEnabled.newValue !== false;
                 chrome.storage.local.get(['geminiImageToolsBlacklist'], (data) => {
-                    const isBlacklisted = isSelectionBlacklisted(data.geminiImageToolsBlacklist || '');
+                    const isBlacklisted = isSelectionBlacklisted(
+                        data.geminiImageToolsBlacklist || ''
+                    );
                     toolbar?.setImageToolsEnabled?.(imageToolsEnabled && !isBlacklisted);
                 });
             }

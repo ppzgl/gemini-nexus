@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { extensionIdFromKey, buildHostManifest, install, uninstall } from './install-native-logger.mjs';
+import {
+    extensionIdFromKey,
+    buildHostManifest,
+    install,
+    uninstall,
+} from './install-native-logger.mjs';
 
 // Gemini-Nexus manifest.json key → real Chrome extension ID (32-char a-p).
 const GN_KEY =

@@ -53,7 +53,11 @@ describe('LogManager sinks', () => {
         manager._save = () => {};
         manager.add({ level: 'INFO', context: 'X', message: 'm' });
         expect(sink.log).toHaveBeenCalledTimes(1);
-        expect(sink.log.mock.calls[0][0]).toMatchObject({ level: 'INFO', context: 'X', message: 'm' });
+        expect(sink.log.mock.calls[0][0]).toMatchObject({
+            level: 'INFO',
+            context: 'X',
+            message: 'm',
+        });
     });
 
     it('works with no sinks (backward compatible)', () => {
@@ -63,7 +67,11 @@ describe('LogManager sinks', () => {
     });
 
     it('keeps working if a sink throws', () => {
-        const broken = { log: () => { throw new Error('boom'); } };
+        const broken = {
+            log: () => {
+                throw new Error('boom');
+            },
+        };
         const ok = { log: vi.fn() };
         const manager = new LogManager([broken, ok]);
         manager._save = () => {};

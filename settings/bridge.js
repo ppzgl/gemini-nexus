@@ -123,9 +123,7 @@ export class StandaloneSettingsBridge {
             localStorageData[CUSTOM_SELECTION_TOOLS_STORAGE_KEY] || []
         );
         this.controller.updateImageTools(localStorageData.geminiImageToolsEnabled !== false);
-        this.controller.updateImageToolsBlacklist(
-            localStorageData.geminiImageToolsBlacklist || ''
-        );
+        this.controller.updateImageToolsBlacklist(localStorageData.geminiImageToolsBlacklist || '');
         this.controller.updateGeneratedImageWatermarkRemoval(
             localStorageData.geminiGeneratedImageWatermarkRemovalEnabled !== false
         );

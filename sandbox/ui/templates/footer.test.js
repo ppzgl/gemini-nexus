@@ -39,8 +39,14 @@ describe('FooterTemplate', () => {
         });
 
         // Capture tools live in the always-visible dropdown and are never hidden.
-        ['browser-control-btn', 'live-artifacts-btn', 'screen-capture-btn', 'ocr-btn',
-            'screenshot-translate-btn', 'snip-btn'].forEach((buttonId) => {
+        [
+            'browser-control-btn',
+            'live-artifacts-btn',
+            'screen-capture-btn',
+            'ocr-btn',
+            'screenshot-translate-btn',
+            'snip-btn',
+        ].forEach((buttonId) => {
             expect(document.getElementById(buttonId).classList.contains('context-aware')).toBe(
                 false
             );

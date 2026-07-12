@@ -36,9 +36,10 @@
                     resolve(canvas.toDataURL('image/png'));
                 } catch (error) {
                     const reason =
-                        error?.name === 'SecurityError' || /taint|security/i.test(error?.message || '')
+                        error?.name === 'SecurityError' ||
+                        /taint|security/i.test(error?.message || '')
                             ? 'This cross-origin image cannot be cropped due to browser security (canvas taint).'
-                            : (error?.message || 'Failed to read cropped image from canvas.');
+                            : error?.message || 'Failed to read cropped image from canvas.';
                     reject(new Error(reason));
                 }
             };

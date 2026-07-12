@@ -81,6 +81,8 @@ describe('ScrollActions.scrollElement', () => {
 
         const calls = connection.sendCommand.mock.calls.map(([m]) => m);
         expect(calls).toContain('Page.bringToFront');
-        expect(calls.indexOf('Input.dispatchMouseEvent')).toBeGreaterThan(calls.indexOf('Page.bringToFront'));
+        expect(calls.indexOf('Input.dispatchMouseEvent')).toBeGreaterThan(
+            calls.indexOf('Page.bringToFront')
+        );
     });
 });

@@ -31,12 +31,10 @@ export class SessionMessageHandler {
         // --- QUICK ASK IMAGE ---
         if (request.action === 'QUICK_ASK_IMAGE') {
             this.quickAskHandler.trackActiveTab(sender);
-            this.quickAskHandler
-                .handleQuickAskImage(request, sender)
-                .finally(() => {
-                    this.quickAskHandler.clearActiveTab(sender);
-                    sendResponse({ status: 'completed' });
-                });
+            this.quickAskHandler.handleQuickAskImage(request, sender).finally(() => {
+                this.quickAskHandler.clearActiveTab(sender);
+                sendResponse({ status: 'completed' });
+            });
             return true;
         }
 

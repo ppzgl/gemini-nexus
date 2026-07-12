@@ -96,7 +96,9 @@
 
                 if (!isLargerWindow) {
                     element.classList.remove('placed-top', 'placed-bottom');
-                    element.classList.add(base.placement === 'top' ? 'placed-top' : 'placed-bottom');
+                    element.classList.add(
+                        base.placement === 'top' ? 'placed-top' : 'placed-bottom'
+                    );
                     element.style.left = `${visualLeft + scrollX}px`;
                     element.style.top = `${visualTop + scrollY}px`;
                 } else {

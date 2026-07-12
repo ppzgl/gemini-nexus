@@ -11,6 +11,7 @@
 ## 2. 范围
 
 **覆盖(全动作埋点)**:
+
 - 浏览器控制动作:`click` / `fill` / `fill_form` / `scroll` / `navigate` / `extract` / `hover` / `upload` / `keypress` 等——记录开始、结果、耗时、错误
 - 工具调用循环(`background/handlers/session/prompt/tool_loop.js`):每轮的工具名、参数摘要、LLM 返回状态、耗时
 - 光标(`background/control/cursor_controller.js`):`move`(目标坐标、moveSequence)、`show`、`hide`
@@ -19,6 +20,7 @@
 - 所有 `catch` 与异常路径
 
 **非目标**:
+
 - 不记每一行微状态(只记"动作"粒度)
 - 不做实时流式推送(事后回溯)
 - 不替代开发者 console,只做面向观测的统一日志
@@ -44,16 +46,18 @@ content script / sidepanel 动作
 ## 4. 组件
 
 ### 4.1 `shared/logger.js`(统一 logger)
+
 - 导出 `createLogger(module: string)` → `{ debug, info, warn, error }`
 - 每次调用:
-  1. 构造条目 `{ts: ISO, level, module, msg, ctx}`
-  2. `console[level](formatted)`(保留现有 console 行为)
-  3. 若 native 日志**已开启**(读缓存配置):按上下文发送
-     - background:`nativePort.send(entry)`
-     - content / sidepanel:`chrome.runtime.sendMessage({type:"native_log", entry})`
+    1. 构造条目 `{ts: ISO, level, module, msg, ctx}`
+    2. `console[level](formatted)`(保留现有 console 行为)
+    3. 若 native 日志**已开启**(读缓存配置):按上下文发送
+        - background:`nativePort.send(entry)`
+        - content / sidepanel:`chrome.runtime.sendMessage({type:"native_log", entry})`
 - **脱敏**:当配置 `includeSensitive === false`(默认),对 `ctx` 调用 `redact(ctx)`:移除 `prompt` / `content` / `text` / `body` / `apiKey` / `authorization` / `key` 等键的值(替换为 `<redacted:N字>`),保留元数据(模型、耗时、状态、token 数等)
 
 ### 4.2 `background/native_logger_port.js`(端口管理)
+
 - `getPort()`:lazy 连接 `chrome.runtime.connectNative("com.gemini_nexus.logger")`;缓存 port
 - `send(entry)`:若 port 不存在或已断开则重连;`port.postMessage(entry)`;失败入内存小缓冲(上限 200 条),下次重连补发
 - 监听 `port.onDisconnect`:清空缓存 port、设需重连标志
@@ -61,6 +65,7 @@ content script / sidepanel 动作
 - 读配置(`chrome.storage.local`)决定是否实际发送、级别阈值、脱敏
 
 ### 4.3 `scripts/native-logger/host.js`(native host,Node)
+
 - 从 stdin 读 Chrome native messaging 帧(4 字节 LE uint32 长度 + UTF-8 JSON)
 - 解析 `{ts, level, module, msg, ctx}`,格式化为一行,append 到 `~/Library/Logs/gemini-nexus.log`
 - **轮转**:写前检查大小,>10MB 时把 `.log` 重命名为 `.log.1`(覆盖旧 `.1`),新建 `.log`
@@ -68,35 +73,37 @@ content script / sidepanel 动作
 - 进程退出/stdin 关闭时 flush
 
 ### 4.4 `scripts/install-native-logger.mjs`(安装器,Node)
+
 - 复制 `host.js` 到 `~/.gemini-nexus/native-logger.js`,赋可执行权限
 - 生成 native messaging host manifest,写到 `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.gemini_nexus.logger.json`:
-  ```json
-  {
-    "name": "com.gemini_nexus.logger",
-    "description": "Gemini Nexus action logger",
-    "type": "stdio",
-    "path": "/Users/<user>/.gemini-nexus/native-logger.js",
-    "allowed_origins": ["chrome-extension://<EXTENSION_ID>/"]
-  }
-  ```
+    ```json
+    {
+        "name": "com.gemini_nexus.logger",
+        "description": "Gemini Nexus action logger",
+        "type": "stdio",
+        "path": "/Users/<user>/.gemini-nexus/native-logger.js",
+        "allowed_origins": ["chrome-extension://<EXTENSION_ID>/"]
+    }
+    ```
 - **扩展 ID**:`<EXTENSION_ID>` 优先从 `manifest.json` 的 `key` 字段自动算(对公钥 DER 做 SHA256,取前 16 字节,每字节 mod 32 + 映射 `a-p`)。失败则提示用户从 `chrome://extensions` 复制 ID 传入
 - 幂等:重复运行覆盖旧文件
 - 卸载模式 `--uninstall`:删除 host 与 manifest
 
 ### 4.5 `manifest.json` 改动
+
 - `permissions` 加 `"nativeMessaging"`
 
 ## 5. 埋点清单(落点)
 
-| 区域 | 文件 | 记录点 |
-|---|---|---|
-| 浏览器控制 | `background/control/actions/**` | 每个动作 start / result / error + 耗时 |
-| 动作执行器 | `background/control/action_waiter.js` | 等待结果、超时 |
-| 工具循环 | `background/handlers/session/prompt/tool_loop.js` | 每轮工具名、参数摘要、状态、耗时 |
-| 光标 | `background/control/cursor_controller.js` | move / show / hide + moveSequence |
-| LLM API | `services/**` 或 API 适配层 | 请求(模型/渠道)、响应状态、token、耗时、error |
-| 消息 | 关键 `chrome.runtime.onMessage` 处理器 | 收发事件 |
-| 错误 | 所有 `catch` | 抛出点、消息 |
+| 区域       | 文件                                              | 记录点                                        |
+| ---------- | ------------------------------------------------- | --------------------------------------------- |
+| 浏览器控制 | `background/control/actions/**`                   | 每个动作 start / result / error + 耗时        |
+| 动作执行器 | `background/control/action_waiter.js`             | 等待结果、超时                                |
+| 工具循环   | `background/handlers/session/prompt/tool_loop.js` | 每轮工具名、参数摘要、状态、耗时              |
+| 光标       | `background/control/cursor_controller.js`         | move / show / hide + moveSequence             |
+| LLM API    | `services/**` 或 API 适配层                       | 请求(模型/渠道)、响应状态、token、耗时、error |
+| 消息       | 关键 `chrome.runtime.onMessage` 处理器            | 收发事件                                      |
+| 错误       | 所有 `catch`                                      | 抛出点、消息                                  |
 
 埋点用各模块顶部 `const log = createLogger("module.path")`,替换或补充现有 `console.*`。
 
@@ -109,11 +116,11 @@ content script / sidepanel 动作
 
 ## 7. 配置(存 `chrome.storage.local`)
 
-| 键 | 默认 | 说明 |
-|---|---|---|
-| `nativeLogEnabled` | `false` | 总开关,**默认关** |
-| `nativeLogLevel` | `"info"` | 最低记录级别 |
-| `nativeLogIncludeSensitive` | `false` | 是否记录 prompt 正文/密钥,**默认脱敏** |
+| 键                          | 默认     | 说明                                   |
+| --------------------------- | -------- | -------------------------------------- |
+| `nativeLogEnabled`          | `false`  | 总开关,**默认关**                      |
+| `nativeLogLevel`            | `"info"` | 最低记录级别                           |
+| `nativeLogIncludeSensitive` | `false`  | 是否记录 prompt 正文/密钥,**默认脱敏** |
 
 设置页(`settings/index.html` + `index.js`)新增「Native 动作日志」分组:开关 + 级别下拉 + 「含敏感正文」开关 + 显示日志文件路径。
 
@@ -128,6 +135,7 @@ content script / sidepanel 动作
 ## 9. 文件改动清单
 
 **新增**:
+
 - `shared/logger.js` + `shared/logger.test.js`
 - `background/native_logger_port.js` + `.test.js`
 - `scripts/native-logger/host.js` + `host.test.js`
@@ -135,6 +143,7 @@ content script / sidepanel 动作
 - `docs/native-action-logging-design.md`(本文件)
 
 **修改**:
+
 - `manifest.json`:加 `nativeMessaging` 权限
 - `settings/index.html` / `settings/index.js`:加日志配置 UI
 - `background/index.js`(或入口):初始化 native logger port、注册消息转发
@@ -166,20 +175,25 @@ content script / sidepanel 动作
 ## 13. 使用方式(实测)
 
 **安装(一次性)**:
+
 ```sh
 node scripts/install-native-logger.mjs        # 装 host + 写 NativeMessagingHosts manifest
 chmod +x ~/.gemini-nexus/native-logger.js     # 让 host 可执行
 npm run package:extension                      # 重新打包扩展
 ```
+
 然后在 `chrome://extensions` reload Gemini Nexus。
 
 **开启日志**(默认关):在 service worker console 或任意扩展页面 console 执行
+
 ```js
-chrome.storage.local.set({ geminiNativeLogEnabled: true })
+chrome.storage.local.set({ geminiNativeLogEnabled: true });
 ```
+
 可选调级别:`chrome.storage.local.set({ geminiNativeLogLevel: 'debug' })`(默认 `info`)。
 
 **读取**(Claude / 任意终端):
+
 ```sh
 tail -n 500 ~/Library/Logs/gemini-nexus.log
 grep '\[ERROR\]' ~/Library/Logs/gemini-nexus.log

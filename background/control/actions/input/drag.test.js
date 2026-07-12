@@ -28,7 +28,12 @@ function mouseEvents(connection) {
 
 describe('interpolateDragPath', () => {
     it('linearly interpolates each segment capped at 48px steps', () => {
-        expect(interpolateDragPath([{ x: 0, y: 0 }, { x: 96, y: 0 }])).toEqual([
+        expect(
+            interpolateDragPath([
+                { x: 0, y: 0 },
+                { x: 96, y: 0 },
+            ])
+        ).toEqual([
             { x: 0, y: 0 },
             { x: 48, y: 0 },
             { x: 96, y: 0 },
@@ -36,7 +41,12 @@ describe('interpolateDragPath', () => {
     });
 
     it('uses at least one step for sub-threshold distances', () => {
-        expect(interpolateDragPath([{ x: 0, y: 0 }, { x: 5, y: 0 }])).toEqual([
+        expect(
+            interpolateDragPath([
+                { x: 0, y: 0 },
+                { x: 5, y: 0 },
+            ])
+        ).toEqual([
             { x: 0, y: 0 },
             { x: 5, y: 0 },
         ]);
@@ -89,7 +99,13 @@ describe('DragActions.dragElement', () => {
         // Pressed then released at the same point; sequence shape still完整.
         const events = mouseEvents(connection);
         expect(events.at(-1)).toEqual({ type: 'mouseReleased', button: 'left', x: 10, y: 20 });
-        expect(events[1]).toEqual({ type: 'mousePressed', button: 'left', buttons: 1, x: 10, y: 20 });
+        expect(events[1]).toEqual({
+            type: 'mousePressed',
+            button: 'left',
+            buttons: 1,
+            x: 10,
+            y: 20,
+        });
     });
 
     it('throws when neither target_uid nor dx/dy is provided', async () => {

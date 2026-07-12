@@ -13,7 +13,9 @@ import { fileURLToPath } from 'node:url';
 export const HOST_NAME = 'com.gemini_nexus.logger';
 export const DEFAULT_HOST_DIR = join(homedir(), '.gemini-nexus');
 export const DEFAULT_HOST_SCRIPT = join(DEFAULT_HOST_DIR, 'native-logger.js');
-export const DEFAULT_SOURCE_HOST = fileURLToPath(new URL('./native-logger/host.js', import.meta.url));
+export const DEFAULT_SOURCE_HOST = fileURLToPath(
+    new URL('./native-logger/host.js', import.meta.url)
+);
 export const DEFAULT_MANIFEST_DIR = join(
     homedir(),
     'Library',
@@ -40,7 +42,12 @@ export function extensionIdFromKey(keyBase64) {
     return id;
 }
 
-export function buildHostManifest({ extensionId, hostScriptPath, name = HOST_NAME, description = 'Gemini Nexus action logger' }) {
+export function buildHostManifest({
+    extensionId,
+    hostScriptPath,
+    name = HOST_NAME,
+    description = 'Gemini Nexus action logger',
+}) {
     return {
         name,
         description,
@@ -84,7 +91,11 @@ export function resolveNodeBinary() {
 function writeHostScript(sourceHost, hostScriptPath, nodeBinary = resolveNodeBinary()) {
     const source = readFileSync(sourceHost, 'utf8');
     const rewritten = source.replace(/^#!.*\n/, `#!${nodeBinary}\n`);
-    writeFileSync(hostScriptPath, rewritten.startsWith('#!') ? rewritten : `#!${nodeBinary}\n${source}`, 'utf8');
+    writeFileSync(
+        hostScriptPath,
+        rewritten.startsWith('#!') ? rewritten : `#!${nodeBinary}\n${source}`,
+        'utf8'
+    );
     chmodSync(hostScriptPath, 0o755);
 }
 
@@ -103,7 +114,11 @@ export function install({
     writeHostScript(sourceHost, hostScriptPath, nodeBinary);
     mkdirSync(manifestDir, { recursive: true });
     const writtenPath = join(manifestDir, `${HOST_NAME}.json`);
-    writeFileSync(writtenPath, `${JSON.stringify(buildHostManifest({ extensionId, hostScriptPath }), null, 2)}\n`, 'utf8');
+    writeFileSync(
+        writtenPath,
+        `${JSON.stringify(buildHostManifest({ extensionId, hostScriptPath }), null, 2)}\n`,
+        'utf8'
+    );
     return { extensionId, hostScriptPath, manifestPath: writtenPath, nodeBinary };
 }
 
@@ -130,7 +145,9 @@ function main() {
     console.log(`  Node binary:   ${result.nodeBinary}`);
     console.log(`  Host manifest: ${result.manifestPath}`);
     console.log('  Log file:      ~/Library/Logs/gemini-nexus.log');
-    console.log('  Enable in extension: chrome.storage.local.set({ geminiNativeLogEnabled: true })');
+    console.log(
+        '  Enable in extension: chrome.storage.local.set({ geminiNativeLogEnabled: true })'
+    );
 }
 
 const invokedAsScript = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

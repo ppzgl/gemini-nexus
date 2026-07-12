@@ -233,7 +233,12 @@ export class SettingsView {
     }
 
     setToggles(textSelection, imageTools, generatedImageWatermarkRemoval, imageToolsBlacklist) {
-        this.general.setToggles(textSelection, imageTools, generatedImageWatermarkRemoval, imageToolsBlacklist);
+        this.general.setToggles(
+            textSelection,
+            imageTools,
+            generatedImageWatermarkRemoval,
+            imageToolsBlacklist
+        );
     }
 
     setTextSelectionBlacklist(value) {

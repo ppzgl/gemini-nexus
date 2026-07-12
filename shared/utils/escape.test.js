@@ -10,9 +10,7 @@ describe('escapeHtml', () => {
     });
 
     it('escapes quotes so values cannot break out of attribute contexts', () => {
-        expect(escapeHtml('"onmouseover="alert(1)')).toBe(
-            '&quot;onmouseover=&quot;alert(1)'
-        );
+        expect(escapeHtml('"onmouseover="alert(1)')).toBe('&quot;onmouseover=&quot;alert(1)');
         expect(escapeHtml("'><img src=x onerror=alert(1)>")).toContain('&#039;');
     });
 

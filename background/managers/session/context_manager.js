@@ -466,10 +466,7 @@ export async function prepareManagedContext(request, settings, history, signal, 
         // wrapper is a plain user message and a subsequent request's
         // officialUserParts referencing the batchId finds no match.
         const tailToolMetadata = collectPreservedToolMetadata(tailHistory);
-        const hiddenHistory = buildHiddenCompressedMessage(
-            existingSummary.text,
-            tailToolMetadata
-        );
+        const hiddenHistory = buildHiddenCompressedMessage(existingSummary.text, tailToolMetadata);
 
         if (!hasRecentTurnThreshold(tailHistory, recentTurns)) {
             return {

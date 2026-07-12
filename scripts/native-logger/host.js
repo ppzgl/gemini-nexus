@@ -13,7 +13,9 @@ export const DEFAULT_LOG_PATH = join(homedir(), 'Library', 'Logs', 'gemini-nexus
 export const ROTATE_BYTES = 10 * 1024 * 1024;
 
 export function formatLogLine(entry) {
-    const ts = entry?.timestamp ? new Date(entry.timestamp).toISOString() : new Date().toISOString();
+    const ts = entry?.timestamp
+        ? new Date(entry.timestamp).toISOString()
+        : new Date().toISOString();
     const level = String(entry?.level || 'INFO').toUpperCase();
     const ctx = entry?.context || 'System';
     const msg = entry?.message ?? '';

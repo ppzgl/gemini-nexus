@@ -58,7 +58,10 @@ export function renderGeminiReply(handler, session, request) {
     // Error and cancelled replies need the same streaming-bubble teardown
     // as success, otherwise the partial streaming bubble is left dangling
     // (visible ghost with stale content, no way to dismiss).
-    const isTerminal = request.status === 'success' || request.status === 'error' || request.status === 'cancelled';
+    const isTerminal =
+        request.status === 'success' ||
+        request.status === 'error' ||
+        request.status === 'cancelled';
 
     if (handler.streamingBubble) {
         if (handler.hasStorageRenderedAiReply(session, request)) {
@@ -88,7 +91,10 @@ export function renderGeminiReply(handler, session, request) {
 
             // For error replies, mark the bubble as an error so the render
             // layer can style it differently (error color, retry button).
-            if (request.status === 'error' && typeof handler.streamingBubble.markError === 'function') {
+            if (
+                request.status === 'error' &&
+                typeof handler.streamingBubble.markError === 'function'
+            ) {
                 handler.streamingBubble.markError(request.errorKind, request.retryable);
             }
 

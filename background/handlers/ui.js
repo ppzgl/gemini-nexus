@@ -9,7 +9,11 @@ import {
     handleFetchImage,
     handleGwrExtensionXhrRequest,
 } from './ui_image_fetching.js';
-import { handleMcpListTools, handleMcpTestConnection, handleMcpDisconnect } from './ui_mcp_tools.js';
+import {
+    handleMcpListTools,
+    handleMcpTestConnection,
+    handleMcpDisconnect,
+} from './ui_mcp_tools.js';
 import { handleCheckPageContext, handleGetActiveSelection } from './ui_page_context.js';
 import { handleProviderModelList } from './ui_provider_models.js';
 import {

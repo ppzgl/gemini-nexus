@@ -12,11 +12,18 @@ describe('formatLogLine', () => {
             context: 'browser_control.click',
             message: '点击元素',
         });
-        expect(line).toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] \[INFO\] \[browser_control\.click\] 点击元素$/);
+        expect(line).toMatch(
+            /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] \[INFO\] \[browser_control\.click\] 点击元素$/
+        );
     });
 
     it('appends compact data json when data present', () => {
-        const line = formatLogLine({ level: 'warn', context: 'X', message: 'm', data: { ok: true, n: 3 } });
+        const line = formatLogLine({
+            level: 'warn',
+            context: 'X',
+            message: 'm',
+            data: { ok: true, n: 3 },
+        });
         expect(line).toMatch(/ \{"ok":true,"n":3\}$/);
     });
 
@@ -83,7 +90,12 @@ describe('readFramedMessages', () => {
     it('parses complete 4-byte-LE-length-prefixed JSON frames', () => {
         const a = Buffer.from(JSON.stringify({ message: 'a' }), 'utf8');
         const b = Buffer.from(JSON.stringify({ message: 'b' }), 'utf8');
-        const buf = Buffer.concat([Buffer.from([a.length, 0, 0, 0]), a, Buffer.from([b.length, 0, 0, 0]), b]);
+        const buf = Buffer.concat([
+            Buffer.from([a.length, 0, 0, 0]),
+            a,
+            Buffer.from([b.length, 0, 0, 0]),
+            b,
+        ]);
         const { messages, rest } = readFramedMessages(buf);
         expect(messages).toEqual([{ message: 'a' }, { message: 'b' }]);
         expect(rest.length).toBe(0);
