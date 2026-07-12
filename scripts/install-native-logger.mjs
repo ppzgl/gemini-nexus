@@ -5,7 +5,7 @@
 // to remove. Run from the project root so manifest.json's key can be read.
 
 import { createHash } from 'node:crypto';
-import { chmodSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,11 +23,20 @@ export const DEFAULT_MANIFEST_DIR = join(
     'NativeMessagingHosts'
 );
 
+/**
+ * Derive a Chrome extension ID from a manifest "key" (base64 SPKI).
+ * Chrome maps each of the first 16 SHA-256 bytes to two a-p characters
+ * (high nibble, then low nibble) → 32-char id. An earlier half-byte map
+ * produced a 16-char id that never matched real Chrome IDs.
+ */
 export function extensionIdFromKey(keyBase64) {
     const der = Buffer.from(keyBase64, 'base64');
     const hash = createHash('sha256').update(der).digest();
     let id = '';
-    for (let i = 0; i < 16; i++) id += String.fromCharCode(97 + (hash[i] % 16));
+    for (let i = 0; i < 16; i++) {
+        id += String.fromCharCode(97 + ((hash[i] >> 4) & 0xf));
+        id += String.fromCharCode(97 + (hash[i] & 0xf));
+    }
     return id;
 }
 
@@ -49,23 +58,53 @@ function readManifestKey(manifestPath) {
     return manifest.key;
 }
 
+/**
+ * Chrome native-messaging hosts inherit a minimal PATH on macOS
+ * (/usr/bin:/bin:/usr/sbin:/sbin). `#!/usr/bin/env node` therefore fails when
+ * Node lives only under Homebrew. Rewrite the shebang to an absolute node path
+ * so Chrome can exec the host.
+ */
+export function resolveNodeBinary() {
+    const candidates = [
+        process.execPath,
+        '/opt/homebrew/bin/node',
+        '/usr/local/bin/node',
+        '/usr/bin/node',
+    ];
+    for (const candidate of candidates) {
+        try {
+            if (candidate && existsSync(candidate)) return candidate;
+        } catch {
+            // ignore
+        }
+    }
+    return process.execPath || '/usr/bin/env node';
+}
+
+function writeHostScript(sourceHost, hostScriptPath, nodeBinary = resolveNodeBinary()) {
+    const source = readFileSync(sourceHost, 'utf8');
+    const rewritten = source.replace(/^#!.*\n/, `#!${nodeBinary}\n`);
+    writeFileSync(hostScriptPath, rewritten.startsWith('#!') ? rewritten : `#!${nodeBinary}\n${source}`, 'utf8');
+    chmodSync(hostScriptPath, 0o755);
+}
+
 export function install({
     extensionId,
     hostScriptPath = DEFAULT_HOST_SCRIPT,
     manifestDir = DEFAULT_MANIFEST_DIR,
     sourceHost = DEFAULT_SOURCE_HOST,
     manifestPath = join(process.cwd(), 'manifest.json'),
+    nodeBinary = resolveNodeBinary(),
 } = {}) {
     if (!extensionId) {
         extensionId = extensionIdFromKey(readManifestKey(manifestPath));
     }
     mkdirSync(dirname(hostScriptPath), { recursive: true });
-    copyFileSync(sourceHost, hostScriptPath);
-    chmodSync(hostScriptPath, 0o755);
+    writeHostScript(sourceHost, hostScriptPath, nodeBinary);
     mkdirSync(manifestDir, { recursive: true });
     const writtenPath = join(manifestDir, `${HOST_NAME}.json`);
     writeFileSync(writtenPath, `${JSON.stringify(buildHostManifest({ extensionId, hostScriptPath }), null, 2)}\n`, 'utf8');
-    return { extensionId, hostScriptPath, manifestPath: writtenPath };
+    return { extensionId, hostScriptPath, manifestPath: writtenPath, nodeBinary };
 }
 
 export function uninstall({
@@ -88,8 +127,10 @@ function main() {
     console.log('Installed native logger host.');
     console.log(`  Extension ID:  ${result.extensionId}`);
     console.log(`  Host script:   ${result.hostScriptPath}`);
+    console.log(`  Node binary:   ${result.nodeBinary}`);
     console.log(`  Host manifest: ${result.manifestPath}`);
     console.log('  Log file:      ~/Library/Logs/gemini-nexus.log');
+    console.log('  Enable in extension: chrome.storage.local.set({ geminiNativeLogEnabled: true })');
 }
 
 const invokedAsScript = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

@@ -1,4 +1,4 @@
-import { loadLibs } from './loader.js';
+import { ensureMarkdownDependencies } from './loader.js';
 import { transformMarkdown } from '../render/pipeline.js';
 import { createPrefixedId, getHighResImageUrl } from '../../shared/utils/index.js';
 import { t } from '../core/i18n.js';
@@ -16,7 +16,10 @@ function escapeAttribute(value) {
 export function initRendererMode() {
     document.body.innerHTML = ''; // Clear UI
 
-    const dependencyLoadPromise = loadLibs();
+    // Kick off dependency load immediately; each RENDER also awaits readiness.
+    // Unlike sidepanel app mode, toolbar renderer has no MARKDOWN_READY re-render,
+    // so we must wait for marked itself (not the soft 5s loadLibs timeout).
+    const dependencyLoadPromise = ensureMarkdownDependencies();
 
     if (rendererMessageHandler) {
         window.removeEventListener('message', rendererMessageHandler);
@@ -31,6 +34,8 @@ export function initRendererMode() {
 
             try {
                 await dependencyLoadPromise;
+                // Re-check in case the first load failed and a later import succeeded.
+                await ensureMarkdownDependencies();
 
                 let html = transformMarkdown(text);
 

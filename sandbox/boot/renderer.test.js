@@ -2,13 +2,14 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initRendererMode } from './renderer.js';
-import { loadLibs } from './loader.js';
+import { ensureMarkdownDependencies } from './loader.js';
 
 const mockIds = vi.hoisted(() => ({
     next: 1,
 }));
 
 vi.mock('./loader.js', () => ({
+    ensureMarkdownDependencies: vi.fn(),
     loadLibs: vi.fn(),
 }));
 
@@ -22,6 +23,7 @@ describe('renderer mode', () => {
         mockIds.next = 1;
         document.body.innerHTML = '<p>old ui</p>';
         vi.clearAllMocks();
+        ensureMarkdownDependencies.mockResolvedValue(true);
     });
 
     async function flushRenderer() {
@@ -83,7 +85,7 @@ describe('renderer mode', () => {
 
     it('waits for Markdown dependencies before rendering toolbar results', async () => {
         let resolveDependencies;
-        loadLibs.mockReturnValueOnce(
+        ensureMarkdownDependencies.mockReturnValue(
             new Promise((resolve) => {
                 resolveDependencies = resolve;
             })
@@ -109,7 +111,8 @@ describe('renderer mode', () => {
 
         expect(postMessage).not.toHaveBeenCalled();
 
-        resolveDependencies();
+        resolveDependencies(true);
+        await flushRenderer();
         await flushRenderer();
 
         expect(postMessage).toHaveBeenCalledTimes(1);

@@ -36,19 +36,44 @@ async function loadBundledDependencies() {
     emitMarkdownReady();
 }
 
+function startDependencyLoad() {
+    if (!dependencyLoadPromise) {
+        dependencyLoadPromise = loadBundledDependencies().catch((error) => {
+            dependencyLoadPromise = null;
+            throw error;
+        });
+    }
+    return dependencyLoadPromise;
+}
+
+/**
+ * Wait until Markdown dependencies are fully loaded (no soft timeout).
+ * Used by toolbar renderer mode, which has no MARKDOWN_READY re-render path.
+ * @returns {Promise<boolean>} true when marked is available
+ */
+export async function ensureMarkdownDependencies() {
+    if (typeof globalThis.marked !== 'undefined') {
+        emitMarkdownReady();
+        return true;
+    }
+
+    try {
+        await startDependencyLoad();
+        return typeof globalThis.marked !== 'undefined';
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn('Markdown dependency load issue:', message);
+        return false;
+    }
+}
+
 export async function loadLibs() {
     try {
-        if (!dependencyLoadPromise) {
-            dependencyLoadPromise = loadBundledDependencies().catch((error) => {
-                dependencyLoadPromise = null;
-                throw error;
-            });
-        }
-
         // Race against a timeout so app startup is never blocked by dependency initialization.
+        // Sidepanel listens for MARKDOWN_READY_EVENT and re-renders once marked arrives.
         let timedOut = false;
         let timeoutId = null;
-        const dependencyPromise = dependencyLoadPromise
+        const dependencyPromise = startDependencyLoad()
             .then(() => true)
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);

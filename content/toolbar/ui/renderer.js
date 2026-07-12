@@ -17,7 +17,7 @@
         async show(text, title, isStreaming, images = []) {
             this.currentResultText = text;
 
-            let renderedHtml = text;
+            let renderedHtml = this._escapeAsPlainHtml(text);
             let imageFetchTasks = [];
 
             if (this.bridge) {
@@ -27,12 +27,10 @@
                     imageFetchTasks = renderResult.fetchTasks || [];
                 } catch {
                     console.warn('Bridge render failed, falling back to simple escape');
-                    renderedHtml = text
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/\n/g, '<br>');
+                    renderedHtml = this._escapeAsPlainHtml(text);
                 }
+            } else {
+                console.warn('Markdown renderer bridge is unavailable; showing escaped plain text');
             }
 
             this.view.showResult(renderedHtml, title, isStreaming);
@@ -121,6 +119,14 @@
 
         get currentText() {
             return this.currentResultText;
+        }
+
+        _escapeAsPlainHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
         }
     }
 

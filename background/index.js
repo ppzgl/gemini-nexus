@@ -15,11 +15,36 @@ import {
     startAreaOcrForTab as startAreaOcrForTabWithManager,
 } from './page_shortcut_tab_actions.js';
 
-const nativeLoggerSink = new NativeLoggerSink({ minLevel: 'info', enabled: false });
+// Unpacked (dev) loads default native logging ON so local agents can tail
+// ~/Library/Logs/gemini-nexus.log without a settings UI. Store-built packages
+// (manifest has update_url) stay off until geminiNativeLogEnabled is set true.
+function isUnpackedExtension() {
+    try {
+        return !('update_url' in chrome.runtime.getManifest());
+    } catch {
+        return false;
+    }
+}
+
+const defaultNativeLogEnabled = isUnpackedExtension();
+const nativeLoggerSink = new NativeLoggerSink({
+    minLevel: 'info',
+    enabled: defaultNativeLogEnabled,
+});
 const logManager = new LogManager([nativeLoggerSink]);
 
 chrome.storage.local.get(['geminiNativeLogEnabled', 'geminiNativeLogLevel'], (result) => {
-    nativeLoggerSink.setEnabled(result.geminiNativeLogEnabled === true);
+    if (result.geminiNativeLogEnabled === false) {
+        nativeLoggerSink.setEnabled(false);
+    } else if (result.geminiNativeLogEnabled === true || defaultNativeLogEnabled) {
+        nativeLoggerSink.setEnabled(true);
+        // Persist the unpacked default so storage matches runtime and reloads stay on.
+        if (result.geminiNativeLogEnabled !== true && defaultNativeLogEnabled) {
+            chrome.storage.local.set({ geminiNativeLogEnabled: true });
+        }
+    } else {
+        nativeLoggerSink.setEnabled(false);
+    }
     if (result.geminiNativeLogLevel) nativeLoggerSink.setMinLevel(result.geminiNativeLogLevel);
 });
 chrome.storage.onChanged.addListener((changes, area) => {

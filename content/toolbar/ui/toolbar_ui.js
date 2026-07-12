@@ -171,18 +171,22 @@
             this.bridge = null;
         }
 
-        _initializeRuntimeComponents({ createBridge = false } = {}) {
+        _initializeRuntimeComponents() {
             // Tear down the previous runtime components before recreating them.
-            // rebuildForLanguageChange() calls this without first disposing the
-            // prior Events instance, which leaked a capture-phase document
-            // keydown listener + a ResizeObserver on every language switch.
-            // Same risk for the image-preview controller's document listeners.
+            // rebuildForLanguageChange() used to skip dispose and leak a
+            // capture-phase document keydown listener + ResizeObserver on every
+            // language switch. Same risk for the image-preview controller's
+            // document listeners.
             this._disposeRuntimeComponents();
 
             this.view = new View(this.shadow);
             this.grammarManager = new GrammarManager(this.view);
 
-            if (createBridge) {
+            // Always recreate the sandbox Markdown renderer bridge whenever the
+            // host exists. Language rebuild previously passed createBridge:false,
+            // which permanently destroyed the bridge after the async language
+            // preference load and left floating popup results as raw Markdown.
+            if (this.host && window.GeminiRendererBridge) {
                 this.bridge = new window.GeminiRendererBridge(this.host);
             }
 
@@ -236,7 +240,7 @@
             this.host = host;
             this.shadow = shadow;
 
-            this._initializeRuntimeComponents({ createBridge: true });
+            this._initializeRuntimeComponents();
             this.isBuilt = true;
             this.restoreTranslationTargets();
         }
