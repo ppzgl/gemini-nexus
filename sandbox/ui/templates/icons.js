@@ -22,43 +22,6 @@ export const TemplateIcons = {
             aria-hidden="true"
         ></span>
     `,
-    MOUSE_POINTER: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-            <path d="m13 13 6 6"></path>
-        </svg>
-    `,
-    MOUSE_POINTER_CLICK: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-            <path d="m13 13 6 6"></path>
-            <path d="M14 4.5V2"></path>
-            <path d="M18.5 8H21"></path>
-            <path d="m16.8 5.2 1.8-1.8"></path>
-        </svg>
-    `,
-    FORM: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-            <path d="M8 8h8"></path>
-            <path d="M8 12h8"></path>
-            <path d="M8 16h5"></path>
-        </svg>
-    `,
-    CLOCK: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 7v5l3 2"></path>
-        </svg>
-    `,
     CODE: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -66,13 +29,6 @@ export const TemplateIcons = {
             <path d="m8 9-4 3 4 3"></path>
             <path d="m16 9 4 3-4 3"></path>
             <path d="m14 4-4 16"></path>
-        </svg>
-    `,
-    MESSAGE_SQUARE: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
     `,
     TERMINAL: icon`

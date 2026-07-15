@@ -376,6 +376,7 @@
         const button = document.createElement('button');
         button.id = BUTTON_ID;
         button.type = 'button';
+        button.setAttribute('data-gemini-nexus-ui', 'youtube-summary');
 
         const logo = document.createElement('img');
         logo.className = CLASS_NAMES.logo;
@@ -414,6 +415,7 @@
     function createPanel(strings, onPanelClick) {
         const panel = document.createElement('section');
         panel.id = PANEL_ID;
+        panel.setAttribute('data-gemini-nexus-ui', 'youtube-summary');
         panel.hidden = true;
 
         const header = document.createElement('div');

@@ -287,6 +287,7 @@ class CursorOverlay {
         const root = document.createElement('div');
         root.id = ROOT_ID;
         root.dataset[ROOT_ATTR] = 'true';
+        root.setAttribute('data-gemini-nexus-ui', 'cursor');
         const shadow = root.attachShadow({ mode: 'closed' });
         const style = document.createElement('style');
         style.textContent = cssText();

@@ -21,14 +21,9 @@ describe('TemplateIcons', () => {
         expect(TemplateIcons.SUMMARY).toContain('<svg');
         expect(TemplateIcons.ACTIVE_TAB).toContain('<svg');
         expect(TemplateIcons.KEY).toContain('<svg');
-        expect(TemplateIcons.MOUSE_POINTER).toContain('<svg');
-        expect(TemplateIcons.MOUSE_POINTER_CLICK).toContain('<svg');
-        expect(TemplateIcons.FORM).toContain('<svg');
-        expect(TemplateIcons.CLOCK).toContain('<svg');
         expect(TemplateIcons.CODE).toContain('<svg');
         expect(TemplateIcons.ARTIFACTS).toContain('<svg');
         expect(TemplateIcons.CAPTURE_IMAGE).toContain('<svg');
-        expect(TemplateIcons.MESSAGE_SQUARE).toContain('<svg');
         expect(TemplateIcons.TERMINAL).toContain('<svg');
         expect(TemplateIcons.KEY).toContain(
             'M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z'

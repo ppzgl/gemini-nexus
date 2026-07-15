@@ -7,12 +7,14 @@ import {
 } from '../../shared/attachments/index.js';
 import { getLiveArtifactsSystemInstruction } from '../core/live_artifacts.js';
 
-// Normal (non browser-control) generations should finish or fail well under this.
-// Browser-control tool loops may legitimately run longer.
+// Idle (no stream / tool activity) budget before the UI treats a run as stuck.
+// Browser-control tool loops may legitimately run longer between model turns.
 const WATCHDOG_DEFAULT_MS = 90 * 1000;
 const WATCHDOG_BROWSER_CONTROL_MS = 3 * 60 * 1000;
 // If the stop button is stuck with no stream activity, a second click may
 // force-clear and send instead of only cancelling forever.
+// Measured from last activity only — NOT from generation start (a healthy
+// multi-minute browser-control run still produces regular tool/stream events).
 const STUCK_GENERATION_MS = 12 * 1000;
 
 export class PromptController {
@@ -141,9 +143,11 @@ export class PromptController {
 
     /** Call on stream/tool activity so stuck detection does not fire mid-loop. */
     markGenerationActivity() {
-        if (this.app.isGenerating) {
-            this.lastGenerationActivityAt = Date.now();
-        }
+        if (!this.app.isGenerating) return;
+        this.lastGenerationActivityAt = Date.now();
+        // Re-arm idle watchdog: absolute wall-clock timers incorrectly kill
+        // healthy browser-control loops that stay active for many minutes.
+        this._armGenerationWatchdog(true);
     }
 
     /**
@@ -154,9 +158,8 @@ export class PromptController {
     isGenerationLikelyStuck() {
         if (!this.app.isGenerating) return false;
         const now = Date.now();
-        const started = this.generationStartedAt || now;
-        const last = this.lastGenerationActivityAt || started;
-        return now - last >= STUCK_GENERATION_MS || now - started >= STUCK_GENERATION_MS;
+        const last = this.lastGenerationActivityAt || this.generationStartedAt || now;
+        return now - last >= STUCK_GENERATION_MS;
     }
 
     /**
@@ -189,6 +192,8 @@ export class PromptController {
      * If stream/reply never reaches the sandbox (parent postMessage drop,
      * SW death, network hang), isGenerating stays true and the send button
      * becomes a silent Stop/Cancel with no further progress. Auto-recover.
+     * Budget is idle time since last activity (stream/tool), not wall clock
+     * from send — re-armed by markGenerationActivity().
      */
     _armGenerationWatchdog(isGenerating) {
         if (this._generationWatchdogTimer) {
@@ -205,9 +210,22 @@ export class PromptController {
             this._generationWatchdogTimer = null;
             if (!this.app.isGenerating) return;
             if (startedFor && this.app.generatingSessionId !== startedFor) return;
+
+            const last = this.lastGenerationActivityAt || this.generationStartedAt || 0;
+            const idleMs = last ? Date.now() - last : timeoutMs;
+            // Activity arrived after we scheduled this timer (race); re-arm.
+            if (idleMs < timeoutMs) {
+                this._armGenerationWatchdog(true);
+                return;
+            }
+
             console.warn(
-                `[Gemini Nexus] Generation watchdog: clearing stuck isGenerating after ${timeoutMs}ms`
+                `[Gemini Nexus] Generation watchdog: clearing stuck isGenerating after ${timeoutMs}ms idle`
             );
+            // Cancel the SW run so late tool outputs / replies cannot race a
+            // new send. forceClear alone only unlocks UI and drops messages.
+            this.cancellationTimestamp = Date.now();
+            sendToBackground({ action: 'CANCEL_PROMPT' });
             this.forceClearGenerating({ status: t('requestTimedOut'), keepStatusMs: 4000 });
         }, timeoutMs);
     }

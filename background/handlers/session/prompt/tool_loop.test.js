@@ -1,12 +1,57 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { appendRawMessages, appendUserMessage } from '../../../managers/history_manager.js';
-import { injectBrowserControlSnapshot, persistToolOutputMessages } from './tool_loop.js';
+import {
+    buildNarrationNudgePrompt,
+    injectBrowserControlSnapshot,
+    looksLikeUnexecutedBrowserActionPlan,
+    persistToolOutputMessages,
+} from './tool_loop.js';
 
 vi.mock('../../../managers/history_manager.js', () => ({
     appendAiMessageIfDisplayable: vi.fn(),
     appendRawMessages: vi.fn(),
     appendUserMessage: vi.fn(),
 }));
+
+describe('looksLikeUnexecutedBrowserActionPlan', () => {
+    it('detects Chinese narration that plans a fill without tool JSON', () => {
+        const text =
+            '语言下拉菜单的最新 UID 为 `13_147`。现在，我将在这个下拉菜单中选择“简体中文”。\n' +
+            '由于“简体中文”是该选项对应的文本，我将直接使用 `fill` 工具进行操作。';
+        expect(looksLikeUnexecutedBrowserActionPlan(text)).toBe(true);
+    });
+
+    it('detects English intent + tool name without tool JSON', () => {
+        expect(
+            looksLikeUnexecutedBrowserActionPlan(
+                'I will click the Confirm button next using the click tool on uid 10_127.'
+            )
+        ).toBe(true);
+    });
+
+    it('ignores completed summaries and plain answers', () => {
+        expect(
+            looksLikeUnexecutedBrowserActionPlan(
+                '任务已完成。微软已开始提供 Windows 11 ISO 下载链接。'
+            )
+        ).toBe(false);
+        expect(looksLikeUnexecutedBrowserActionPlan('Hello, how can I help you today?')).toBe(
+            false
+        );
+    });
+
+    it('ignores replies that already include a tool-call JSON block', () => {
+        const text =
+            'Next I will select the language.\n```json\n{"tool":"fill","args":{"uid":"13_147","value":"简体中文"}}\n```';
+        expect(looksLikeUnexecutedBrowserActionPlan(text)).toBe(false);
+    });
+
+    it('builds a bilingual nudge that demands a tool JSON call', () => {
+        expect(buildNarrationNudgePrompt('zh')).toContain('工具调用');
+        expect(buildNarrationNudgePrompt('zh')).toContain('"tool"');
+        expect(buildNarrationNudgePrompt('default')).toContain('tool call');
+    });
+});
 
 describe('browser-control tool loop handling', () => {
     beforeEach(() => {

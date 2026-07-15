@@ -58,7 +58,7 @@ describe('renderContent tool disclosure', () => {
         expect(contentDiv.querySelector('.tool-disclosure-meta')?.textContent).toContain('1.5s');
     });
 
-    it('renders an action icon for every browser-control tool card', () => {
+    it('renders the Control button icon for every browser-control tool card', () => {
         const toolNames = [
             'navigate_page',
             'new_page',
@@ -73,7 +73,13 @@ describe('renderContent tool disclosure', () => {
             'type_text',
             'attach_file',
             'take_snapshot',
+            'take_screenshot',
             'wait_for',
+            'wait_for_url',
+            'wait_for_load_state',
+            'drag',
+            'scroll',
+            'run_steps',
             'handle_dialog',
             'evaluate_script',
         ];
@@ -89,8 +95,10 @@ describe('renderContent tool disclosure', () => {
 
             const icon = contentDiv.querySelector('.tool-disclosure-icon');
             expect(icon, toolName).not.toBeNull();
-            expect(icon?.dataset.toolIcon, toolName).toBeTruthy();
-            expect(icon?.querySelector('svg'), toolName).not.toBeNull();
+            expect(icon?.dataset.toolIcon, toolName).toBe('browser-control');
+            // Same glyph as the input #browser-control-btn (masked cursor-chat PNG).
+            expect(icon?.querySelector('.tool-icon-browser-control'), toolName).not.toBeNull();
+            expect(icon?.querySelector('svg'), toolName).toBeNull();
         }
     });
 

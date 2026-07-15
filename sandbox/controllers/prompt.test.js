@@ -82,6 +82,43 @@ describe('PromptController generation recovery', () => {
         expect(controller.isGenerationLikelyStuck()).toBe(true);
     });
 
+    it('isGenerationLikelyStuck is false when activity is recent even if started long ago', () => {
+        const { app, controller } = createPromptHarness();
+        app.isGenerating = true;
+        // Browser-control runs routinely exceed 12s wall clock while still healthy.
+        controller.generationStartedAt = Date.now() - 120_000;
+        controller.lastGenerationActivityAt = Date.now() - 1_000;
+        expect(controller.isGenerationLikelyStuck()).toBe(false);
+    });
+
+    it('markGenerationActivity re-arms the idle watchdog', () => {
+        vi.useFakeTimers();
+        try {
+            const { app, controller } = createPromptHarness();
+            app.isGenerating = true;
+            app.generatingSessionId = 's1';
+            app.browserControlActive = false;
+            controller.generationStartedAt = Date.now();
+            controller.lastGenerationActivityAt = Date.now();
+            controller._armGenerationWatchdog(true);
+
+            // Advance just under the default idle budget, then mark activity.
+            vi.advanceTimersByTime(80_000);
+            controller.markGenerationActivity();
+            vi.advanceTimersByTime(80_000);
+            // Still active within the new budget — should not time out.
+            expect(app.isGenerating).toBe(true);
+            expect(sendToBackground).not.toHaveBeenCalledWith({ action: 'CANCEL_PROMPT' });
+
+            // Full idle budget after last activity → cancel SW + clear UI.
+            vi.advanceTimersByTime(20_000);
+            expect(app.isGenerating).toBe(false);
+            expect(sendToBackground).toHaveBeenCalledWith({ action: 'CANCEL_PROMPT' });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('cancel clears stuck generating even without an active flag edge case', () => {
         const { app, controller, ui } = createPromptHarness();
         app.isGenerating = true;

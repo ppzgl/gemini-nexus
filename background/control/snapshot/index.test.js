@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SnapshotManager } from './index.js';
+import { EXTENSION_UI_HIDE_SELECTOR, SnapshotManager } from './index.js';
 
 function createSnapshotConnection(getNodes) {
     let listener = null;
@@ -19,6 +19,52 @@ function createSnapshotConnection(getNodes) {
         }),
     };
 }
+
+describe('SnapshotManager extension UI hiding', () => {
+    it('hides then restores extension hosts around Accessibility.getFullAXTree', async () => {
+        const callOrder = [];
+        const connection = {
+            onDetach: vi.fn(),
+            addListener: vi.fn(),
+            sendCommand: vi.fn(async (method, params) => {
+                callOrder.push(method);
+                if (method === 'Runtime.evaluate') {
+                    callOrder.push(params?.expression?.includes('aria-hidden') ? 'eval-hide-or-restore' : 'eval-other');
+                    return { result: { value: 1 } };
+                }
+                if (method === 'Accessibility.getFullAXTree') {
+                    return {
+                        nodes: [
+                            {
+                                nodeId: 'root',
+                                role: { value: 'RootWebArea' },
+                                name: { value: 'Page' },
+                                childIds: [],
+                            },
+                        ],
+                    };
+                }
+                return {};
+            }),
+        };
+
+        const manager = new SnapshotManager(connection);
+        const snapshot = await manager.takeSnapshot();
+
+        expect(snapshot).toContain('RootWebArea');
+        const axIndex = callOrder.indexOf('Accessibility.getFullAXTree');
+        expect(axIndex).toBeGreaterThan(-1);
+        // Two Runtime.evaluate calls (hide + restore) surround the AX tree fetch.
+        const evalIndexes = callOrder
+            .map((name, index) => (name === 'Runtime.evaluate' ? index : -1))
+            .filter((index) => index >= 0);
+        expect(evalIndexes.length).toBeGreaterThanOrEqual(2);
+        expect(evalIndexes[0]).toBeLessThan(axIndex);
+        expect(evalIndexes[evalIndexes.length - 1]).toBeGreaterThan(axIndex);
+        expect(EXTENSION_UI_HIDE_SELECTOR).toContain('gemini-nexus-toolbar-host');
+        expect(EXTENSION_UI_HIDE_SELECTOR).toContain('data-gemini-nexus-ui');
+    });
+});
 
 describe('SnapshotManager descendant lookup', () => {
     it('only returns AX nodes that are descendants of the requested root UID', async () => {

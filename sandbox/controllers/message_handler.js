@@ -61,6 +61,9 @@ export class MessageHandler {
             case 'TOOL_CALL_STATUS_MESSAGE':
                 this.handleToolCallStatusMessage(request);
                 return;
+            case 'AGENT_INTERMEDIATE_MESSAGE':
+                this.handleAgentIntermediateMessage(request);
+                return;
             case 'FETCH_IMAGE_RESULT':
                 this.handleImageResult(request);
                 return;
@@ -248,6 +251,44 @@ export class MessageHandler {
 
     handleToolCallStatusMessage(request) {
         return handleToolCallStatusMessageRequest(this, request);
+    }
+
+    /**
+     * Browser-control loop nudged after a narration-only model turn.
+     * Finalize the current stream bubble as an intermediate AI row so the
+     * next generation can start a fresh stream without losing the plan text.
+     */
+    handleAgentIntermediateMessage(request) {
+        if (!this.isGeneratingSessionMessage(request)) return;
+        this.app.prompt?.markGenerationActivity?.();
+        if (!this.isCurrentSessionMessage(request)) {
+            this.clearStreamState(this.getRequestSessionId(request));
+            return;
+        }
+
+        const sessionId = this.getRequestSessionId(request);
+        const text =
+            typeof request.text === 'string'
+                ? request.text
+                : this.getStreamRawText(sessionId) || '';
+        const thoughts =
+            typeof request.thoughts === 'string'
+                ? request.thoughts
+                : this.getStreamThoughts(sessionId);
+
+        if (this.streamingBubble) {
+            if (typeof this.streamingBubble.finalize === 'function') {
+                this.streamingBubble.finalize(text, thoughts || undefined, {
+                    suppressCopy: request.suppressCopy !== false,
+                });
+            } else if (typeof this.streamingBubble.dispose === 'function') {
+                this.streamingBubble.dispose();
+            }
+            this.streamingBubble = null;
+            this.streamingBubbleSessionId = null;
+        }
+
+        this.clearStreamState(sessionId);
     }
 
     finalizeActiveStream(state = {}) {

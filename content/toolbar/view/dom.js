@@ -10,6 +10,8 @@
         create() {
             this.host = document.createElement('div');
             this.host.id = 'gemini-nexus-toolbar-host';
+            // Marker for browser-control snapshots (filtered via aria-hidden).
+            this.host.setAttribute('data-gemini-nexus-ui', 'toolbar');
             Object.assign(this.host.style, {
                 position: 'absolute',
                 top: '0',

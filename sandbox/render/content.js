@@ -8,24 +8,39 @@ const TOOL_OUTPUT_HEADER_PATTERN = /^\[Tool Output:\s*([^\]]+)\]\n?/;
 const TOOL_STEP_FOOTER_PATTERN = /\n\n\[Proceeding to step\s+(\d+)\]\s*$/;
 const TOOL_DISCLOSURE_PREFIX = 'tool-disclosure';
 const TOOL_PREVIEW_KEYS = ['summary', 'message', 'error', 'result', 'text', 'title', 'name', 'url'];
-const TOOL_ICON_BY_NAME = new Map([
-    ['navigate_page', { id: 'navigate', html: TemplateIcons.EXTERNAL_OPEN }],
-    ['new_page', { id: 'new-page', html: TemplateIcons.BROWSER_TAB }],
-    ['close_page', { id: 'close-page', html: TemplateIcons.CLOSE }],
-    ['list_pages', { id: 'tabs', html: TemplateIcons.TAB_STACK }],
-    ['select_page', { id: 'active-tab', html: TemplateIcons.ACTIVE_TAB }],
-    ['click', { id: 'click', html: TemplateIcons.MOUSE_POINTER_CLICK }],
-    ['hover', { id: 'hover', html: TemplateIcons.MOUSE_POINTER }],
-    ['fill', { id: 'fill', html: TemplateIcons.EDIT }],
-    ['fill_form', { id: 'form', html: TemplateIcons.FORM }],
-    ['press_key', { id: 'keyboard', html: TemplateIcons.KEYBOARD }],
-    ['type_text', { id: 'keyboard', html: TemplateIcons.KEYBOARD }],
-    ['attach_file', { id: 'attach', html: TemplateIcons.PAPERCLIP }],
-    ['take_snapshot', { id: 'capture', html: TemplateIcons.SCREEN_CAPTURE }],
-    ['wait_for', { id: 'wait', html: TemplateIcons.CLOCK }],
-    ['handle_dialog', { id: 'dialog', html: TemplateIcons.MESSAGE_SQUARE }],
-    ['evaluate_script', { id: 'code', html: TemplateIcons.CODE }],
-]);
+// Browser-control actions share the input "Control" button glyph (cursor-chat mask).
+const BROWSER_CONTROL_TOOL_ICON = {
+    id: 'browser-control',
+    html: TemplateIcons.BROWSER_CONTROL,
+};
+const BROWSER_CONTROL_TOOL_NAMES = [
+    'navigate_page',
+    'new_page',
+    'close_page',
+    'list_pages',
+    'select_page',
+    'click',
+    'hover',
+    'fill',
+    'fill_form',
+    'press_key',
+    'type_text',
+    'attach_file',
+    'take_snapshot',
+    'take_screenshot',
+    'wait_for',
+    'wait_for_url',
+    'wait_for_load_state',
+    'wait_for_timeout',
+    'handle_dialog',
+    'evaluate_script',
+    'drag',
+    'scroll',
+    'run_steps',
+];
+const TOOL_ICON_BY_NAME = new Map(
+    BROWSER_CONTROL_TOOL_NAMES.map((name) => [name, BROWSER_CONTROL_TOOL_ICON])
+);
 const TOOL_ICON_KEYWORDS = [
     { pattern: /(?:search|find|lookup|query|grep|rg)/i, id: 'search', html: TemplateIcons.SEARCH },
     {

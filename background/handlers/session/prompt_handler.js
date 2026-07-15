@@ -1,16 +1,20 @@
 import {
     appendAiMessage,
+    appendAiMessageIfDisplayable,
     invalidateSessionContextSummary,
     replaceSessionSnapshot,
 } from '../../managers/history_manager.js';
 import { PromptBuilder } from './prompt/builder.js';
 import { ToolExecutor } from './prompt/tool_executor.js';
 import {
+    buildNarrationNudgePrompt,
     buildToolContinuationPrompt,
+    createNarrationIntermediateAiResult,
     detectPromptLanguage,
     executePendingToolResult,
     getToolResultsFiles,
     injectBrowserControlSnapshot,
+    looksLikeUnexecutedBrowserActionPlan,
     persistToolOutputMessages,
     updateBrowserControlFunctionResponses,
 } from './prompt/tool_loop.js';
@@ -18,6 +22,9 @@ import { toControlTabSummary } from '../../control/tabs.js';
 import { classifyProviderError } from '../../managers/session/error_classifier.js';
 
 export { hasInlinePageSnapshot } from './prompt/tool_loop.js';
+
+// One free retry when the model narrates a browser step without tool JSON.
+const MAX_NARRATION_NUDGES = 1;
 
 // Spaces out looped requests to avoid rate-limit bursts.
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -188,6 +195,7 @@ export class PromptHandler {
                 let currentFiles = request.files;
 
                 let loopCount = 0;
+                let narrationNudges = 0;
                 // maxLoops == 0 historically meant "unlimited" (Infinity). That is
                 // dangerous: a model stuck in a tool-calling loop (repeatedly
                 // retrying a failing action, or oscillating between take_snapshot
@@ -301,6 +309,38 @@ export class PromptHandler {
                         // This prevents "No valid response" errors caused by rapid-fire requests.
                         await delay(2000 + Math.random() * 2000);
 
+                        if (this.isRunCancelled(run)) break;
+                    } else if (
+                        request.enableBrowserControl === true &&
+                        narrationNudges < MAX_NARRATION_NUDGES &&
+                        looksLikeUnexecutedBrowserActionPlan(result?.text)
+                    ) {
+                        // Model described the next browser action but emitted no
+                        // tool-call JSON. Nudge once instead of ending the loop.
+                        narrationNudges++;
+                        loopCount++;
+
+                        const intermediate = createNarrationIntermediateAiResult(result);
+                        if (request.sessionId) {
+                            await appendAiMessageIfDisplayable(request.sessionId, intermediate);
+                        }
+                        chrome.runtime
+                            .sendMessage({
+                                action: 'AGENT_INTERMEDIATE_MESSAGE',
+                                sessionId: request.sessionId || null,
+                                text: intermediate.text || '',
+                                thoughts: intermediate.thoughts || null,
+                                suppressCopy: true,
+                            })
+                            .catch(() => {});
+
+                        currentPromptText = buildNarrationNudgePrompt(continuationLanguage);
+                        currentHistoryText = intermediate.text || result?.text || '';
+                        currentFiles = [];
+                        request.officialUserParts = null;
+                        request.officialFunctionResponseBatchId = null;
+
+                        await delay(1500 + Math.random() * 1500);
                         if (this.isRunCancelled(run)) break;
                     } else {
                         // No tool execution, final answer reached.

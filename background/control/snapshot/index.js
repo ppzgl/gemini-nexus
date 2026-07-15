@@ -1,6 +1,53 @@
 import { SnapshotFormatter } from './formatter.js';
 
 /**
+ * Host elements owned by this extension that pollute page a11y trees
+ * (toolbar, capture overlay, cursor, YouTube summary). Hidden via aria-hidden
+ * only for the duration of Accessibility.getFullAXTree.
+ */
+export const EXTENSION_UI_HIDE_SELECTOR = [
+    '#gemini-nexus-toolbar-host',
+    '#gemini-nexus-overlay',
+    '#gemini-nexus-cursor-root',
+    '#gemini-nexus-youtube-summary-btn',
+    '#gemini-nexus-youtube-summary-panel',
+    '[data-gemini-nexus-ui]',
+].join(',');
+
+const HIDE_EXTENSION_UI_SCRIPT = `(() => {
+  const SEL = ${JSON.stringify(EXTENSION_UI_HIDE_SELECTOR)};
+  const ATTR_ARIA = 'data-gnx-snapshot-prev-aria';
+  const ATTR_INERT = 'data-gnx-snapshot-prev-inert';
+  let count = 0;
+  for (const el of document.querySelectorAll(SEL)) {
+    if (!el.hasAttribute(ATTR_ARIA)) {
+      el.setAttribute(ATTR_ARIA, el.hasAttribute('aria-hidden') ? el.getAttribute('aria-hidden') : '');
+      el.setAttribute(ATTR_INERT, el.inert ? '1' : '0');
+    }
+    el.setAttribute('aria-hidden', 'true');
+    try { el.inert = true; } catch (_) {}
+    count += 1;
+  }
+  return count;
+})()`;
+
+const RESTORE_EXTENSION_UI_SCRIPT = `(() => {
+  const ATTR_ARIA = 'data-gnx-snapshot-prev-aria';
+  const ATTR_INERT = 'data-gnx-snapshot-prev-inert';
+  let count = 0;
+  for (const el of document.querySelectorAll('[' + ATTR_ARIA + ']')) {
+    const prev = el.getAttribute(ATTR_ARIA);
+    if (prev === null || prev === '') el.removeAttribute('aria-hidden');
+    else el.setAttribute('aria-hidden', prev);
+    try { el.inert = el.getAttribute(ATTR_INERT) === '1'; } catch (_) {}
+    el.removeAttribute(ATTR_ARIA);
+    el.removeAttribute(ATTR_INERT);
+    count += 1;
+  }
+  return count;
+})()`;
+
+/**
  * Handles Accessibility Tree generation and UID mapping.
  * Converts complex DOM structures into an LLM-friendly, token-efficient text tree.
  */
@@ -125,13 +172,47 @@ export class SnapshotManager {
         return visit(rootNodeId);
     }
 
+    async _evaluatePageExpression(expression) {
+        try {
+            await this.connection.sendCommand('Runtime.enable');
+            await this.connection.sendCommand('Runtime.evaluate', {
+                expression,
+                returnByValue: true,
+                awaitPromise: false,
+            });
+        } catch {
+            // Page may be restricted / detached — snapshot still proceeds.
+        }
+    }
+
+    async _hideExtensionUiForSnapshot() {
+        await this._evaluatePageExpression(HIDE_EXTENSION_UI_SCRIPT);
+    }
+
+    async _restoreExtensionUiAfterSnapshot() {
+        await this._evaluatePageExpression(RESTORE_EXTENSION_UI_SCRIPT);
+    }
+
     async takeSnapshot(args = {}) {
         // Ensure domains are enabled
         await this.connection.sendCommand('DOM.enable');
         await this.connection.sendCommand('Accessibility.enable');
 
-        // Get the full accessibility tree from CDP
-        const { nodes } = await this.connection.sendCommand('Accessibility.getFullAXTree');
+        // Keep extension chrome (toolbar / cursor / overlays) out of the tree
+        // the agent reads, so it does not click "询问 Gemini" by mistake.
+        await this._hideExtensionUiForSnapshot();
+
+        let nodes;
+        try {
+            const result = await this.connection.sendCommand('Accessibility.getFullAXTree');
+            nodes = result?.nodes;
+        } finally {
+            await this._restoreExtensionUiAfterSnapshot();
+        }
+
+        if (!Array.isArray(nodes)) {
+            return 'Error: Could not read accessibility tree.';
+        }
 
         // Increment Snapshot ID (Version Control)
         this.snapshotIdCount++;

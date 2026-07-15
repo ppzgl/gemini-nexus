@@ -64,10 +64,10 @@ describe('input layout styles', () => {
         const inputCss = await readCss('input.css');
 
         expect(inputCss).toMatch(
-            /\.tool-btn\s+\.tool-icon-browser-control\s*{[^}]*mask-image:\s*url\(['"]?\.\.\/assets\/cursors\/cursor-chat\.png['"]?\)/s
+            /\.tool-btn\s+\.tool-icon-browser-control\s*,\s*\.tool-disclosure-icon\s+\.tool-icon-browser-control\s*{[^}]*mask-image:\s*url\(['"]?\.\.\/assets\/cursors\/cursor-chat\.png['"]?\)/s
         );
         expect(inputCss).toMatch(
-            /\.tool-btn\s+\.tool-icon-browser-control\s*{[^}]*background-color:\s*currentColor/s
+            /\.tool-btn\s+\.tool-icon-browser-control\s*,\s*\.tool-disclosure-icon\s+\.tool-icon-browser-control\s*{[^}]*background-color:\s*currentColor/s
         );
         expect(inputCss).not.toMatch(/filter:\s*brightness\(0\)/);
         expect(inputCss).toMatch(/\.tool-btn:focus-visible\s*{/s);

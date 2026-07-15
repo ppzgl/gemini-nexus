@@ -117,6 +117,7 @@
 
             this.overlay = document.createElement('div');
             this.overlay.id = 'gemini-nexus-overlay';
+            this.overlay.setAttribute('data-gemini-nexus-ui', 'overlay');
             this.overlay.className = 'gemini-nexus-capture-overlay';
 
             if (screenshotBase64) {

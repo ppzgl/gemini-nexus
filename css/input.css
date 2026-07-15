@@ -244,8 +244,10 @@ body:not(.has-page-context) .context-aware {
 /*
  * Same PNG as the on-page AI cursor, masked so fill tracks currentColor
  * like neighboring SVG tool icons (hover / active / theme free).
+ * Used by the input Control toggle and chat browser-control action cards.
  */
-.tool-btn .tool-icon-browser-control {
+.tool-btn .tool-icon-browser-control,
+.tool-disclosure-icon .tool-icon-browser-control {
     display: block;
     width: 14px;
     height: 14px;
