@@ -89,19 +89,25 @@
 }
 
 .setting-panel {
-    margin-bottom: 12px;
-    padding: 14px 16px;
-    border-radius: 8px;
-    background: var(--bg-setting-panel);
-    border: none;
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--bg-body) 55%, var(--bg-setting-panel));
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
     box-shadow: none;
     transition:
-        background var(--settings-transition-speed, 0.2s) cubic-bezier(0.16, 1, 0.3, 1),
-        box-shadow var(--settings-transition-speed, 0.2s) cubic-bezier(0.16, 1, 0.3, 1);
+        background var(--settings-transition-speed, 0.2s) var(--ease-standard),
+        border-color var(--settings-transition-speed, 0.2s) var(--ease-standard),
+        box-shadow var(--settings-transition-speed, 0.2s) var(--ease-standard);
+}
+
+.setting-panel:last-child {
+    margin-bottom: 0;
 }
 
 .setting-panel:hover {
     background: color-mix(in srgb, var(--bg-setting-panel) 84%, var(--bg-input));
+    border-color: color-mix(in srgb, var(--border-color) 100%, transparent);
     box-shadow: none;
 }
 

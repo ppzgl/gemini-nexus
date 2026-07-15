@@ -29,6 +29,7 @@ function createPromptHarness({ text = 'Hello', files = [], liveArtifactsEnabled 
         settings: { connectionData: { provider: 'official' } },
         resetInput: vi.fn(),
         setLoading: vi.fn(),
+        updateStatus: vi.fn(),
     };
 
     const imageManager = {
@@ -119,13 +120,14 @@ describe('PromptController.send', () => {
     });
 
     it('does not create a session for an empty draft send', async () => {
-        const { controller, sessionManager } = createPromptHarness({ text: '   ' });
+        const { controller, sessionManager, ui } = createPromptHarness({ text: '   ' });
 
         await controller.send();
 
         expect(sessionManager.sessions).toEqual([]);
         expect(saveSessionsToStorage).not.toHaveBeenCalled();
         expect(sendToBackground).not.toHaveBeenCalled();
+        expect(ui.updateStatus).toHaveBeenCalledWith('enterMessageToSend');
     });
 
     it('renders and persists full metadata for mixed user attachments', async () => {

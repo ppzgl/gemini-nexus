@@ -98,6 +98,10 @@ export class AppController {
         const browserControlButton = document.getElementById('browser-control-btn');
         if (browserControlButton) {
             browserControlButton.classList.toggle('active', this.browserControlActive);
+            browserControlButton.setAttribute(
+                'aria-pressed',
+                this.browserControlActive ? 'true' : 'false'
+            );
         }
 
         this.ui.setBrowserControlVisible(this.browserControlActive);
@@ -330,9 +334,15 @@ export class AppController {
             this.currentTabUrl = payload?.url || '';
             this.currentTabTitle = payload?.title || '';
             this.boundSessionId = payload?.sessionId || null;
-            this.ui.setPageContextAvailable?.(
-                Number.isInteger(this.currentTabId) && this.currentTabId > 0
-            );
+            const pageContextAvailable =
+                Number.isInteger(this.currentTabId) && this.currentTabId > 0;
+            this.ui.setPageContextAvailable?.(pageContextAvailable);
+            // When no webpage is bound the toggle is disabled — clear sticky "on"
+            // so UI and SEND_PROMPT includePageContext stay consistent.
+            if (!pageContextAvailable && this.pageContextActive) {
+                this.pageContextActive = false;
+                this.ui.chat?.togglePageContext?.(false);
+            }
             if (this.sessionsRestored && this.sidePanelScope === DEFAULT_SIDE_PANEL_SCOPE) {
                 this.restoreRememberedTabSession();
             }
@@ -429,6 +439,17 @@ export class AppController {
                 return;
             }
             if (payload.action === 'BACKGROUND_REQUEST_ERROR') {
+                // SEND_PROMPT sets isGenerating before the parent forwards the
+                // message. If chrome.runtime.sendMessage fails, we must clear
+                // the loading/stop state or the next send clicks look dead
+                // (handleSendClick keeps calling cancel / send early-returns).
+                if (this.isGenerating) {
+                    this.isGenerating = false;
+                    this.generatingSessionId = null;
+                    this.ui.setLoading(false);
+                    this.messageHandler?.clearActiveStream?.();
+                    this.sessionFlow?.refreshHistoryUI?.();
+                }
                 this.ui.updateStatus(payload.error || 'Background request failed.');
                 setTimeout(() => {
                     if (!this.isGenerating) this.ui.updateStatus('');

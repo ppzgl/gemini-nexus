@@ -1,5 +1,13 @@
+/* Tool process cards stay secondary to the answer prose */
 .tool-disclosure {
     min-width: min(360px, 72vw);
+    margin: 4px 0 10px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--bg-input) 72%, transparent);
+    color: var(--text-secondary);
+    font-size: 13px;
 }
 
 .tool-disclosure-toggle {
@@ -57,7 +65,7 @@
     height: 22px;
     margin-top: -1px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
     background: var(--tool-bg);
     color: var(--text-secondary);
 }
@@ -74,8 +82,8 @@
 }
 
 .tool-disclosure-failed .tool-disclosure-icon {
-    border-color: rgba(198, 40, 40, 0.35);
-    color: var(--danger, #c62828);
+    border-color: var(--danger-border);
+    color: var(--danger);
 }
 
 .tool-disclosure-main {

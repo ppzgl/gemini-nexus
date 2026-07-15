@@ -118,6 +118,40 @@ export class PromptController {
         this.app.generatingSessionId = isGenerating ? sessionId : null;
         this.ui.setLoading(isGenerating);
         this.app.sessionFlow.refreshHistoryUI();
+        this._armGenerationWatchdog(isGenerating);
+    }
+
+    /**
+     * If stream/reply never reaches the sandbox (parent postMessage drop,
+     * SW death, network hang), isGenerating stays true and the send button
+     * becomes a silent Stop/Cancel with no further progress. Auto-recover.
+     */
+    _armGenerationWatchdog(isGenerating) {
+        if (this._generationWatchdogTimer) {
+            clearTimeout(this._generationWatchdogTimer);
+            this._generationWatchdogTimer = null;
+        }
+        if (!isGenerating) return;
+        const startedFor = this.app.generatingSessionId;
+        // Long browser-control loops can run for minutes; 3 min is a safety net
+        // for true stalls (no terminal GEMINI_REPLY), not normal tool loops.
+        this._generationWatchdogTimer = setTimeout(() => {
+            this._generationWatchdogTimer = null;
+            if (!this.app.isGenerating) return;
+            if (startedFor && this.app.generatingSessionId !== startedFor) return;
+            console.warn(
+                '[Gemini Nexus] Generation watchdog: clearing stuck isGenerating after 3 minutes'
+            );
+            this.app.isGenerating = false;
+            this.app.generatingSessionId = null;
+            this.ui.setLoading(false);
+            this.app.messageHandler?.clearActiveStream?.();
+            this.app.sessionFlow?.refreshHistoryUI?.();
+            this.ui.updateStatus(t('requestTimedOut'));
+            setTimeout(() => {
+                if (!this.app.isGenerating) this.ui.updateStatus('');
+            }, 4000);
+        }, 3 * 60 * 1000);
     }
 
     getMessageFiles(message) {
@@ -140,9 +174,20 @@ export class PromptController {
     }
 
     async sendPromptText(text, files = []) {
-        if (this.app.isGenerating) return;
+        if (this.app.isGenerating) {
+            console.info('[Gemini Nexus] send ignored: already generating', {
+                sessionId: this.app.generatingSessionId,
+            });
+            return;
+        }
 
-        if (!text && files.length === 0) return;
+        if (!text && files.length === 0) {
+            this.ui.updateStatus(t('enterMessageToSend'));
+            setTimeout(() => {
+                if (!this.app.isGenerating) this.ui.updateStatus('');
+            }, 2000);
+            return;
+        }
 
         if (!this.sessionManager.currentSessionId) {
             this.sessionManager.createSession();
@@ -150,7 +195,11 @@ export class PromptController {
 
         const currentId = this.sessionManager.currentSessionId;
         const session = this.sessionManager.getCurrentSession();
-        if (!session) return;
+        if (!session) {
+            console.error('[Gemini Nexus] send aborted: no current session after create');
+            this.ui.updateStatus(t('sessionCreateFailed'));
+            return;
+        }
 
         if (session.messages.length === 0) {
             const titleUpdate = this.sessionManager.updateTitle(currentId, text || t('imageSent'));
@@ -200,7 +249,15 @@ export class PromptController {
 
         this.setGeneratingState(true, currentId);
 
-        sendToBackground(this.buildRequestPayload(text, files, currentId));
+        const payload = this.buildRequestPayload(text, files, currentId);
+        console.info('[Gemini Nexus] SEND_PROMPT → parent', {
+            sessionId: currentId,
+            model: payload.model,
+            enableBrowserControl: payload.enableBrowserControl,
+            textLen: (text || '').length,
+            files: Array.isArray(files) ? files.length : 0,
+        });
+        sendToBackground(payload);
     }
 
     async send() {
@@ -276,6 +333,7 @@ export class PromptController {
 
         this.app.isGenerating = false;
         this.app.generatingSessionId = null;
+        this._armGenerationWatchdog(false);
         this.ui.setLoading(false);
         this.app.sessionFlow.refreshHistoryUI();
         this.ui.updateStatus(t('cancelled'));

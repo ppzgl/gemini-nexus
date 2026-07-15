@@ -48,4 +48,30 @@ describe('ImageManager', () => {
         expect(removeButton.type).toBe('button');
         expect(removeButton.getAttribute('aria-label')).toBe('Remove attachment');
     });
+
+    it('notifies when attachment list changes', () => {
+        document.body.innerHTML = `
+            <input id="image-input" type="file">
+            <div id="image-preview"></div>
+            <div id="input-wrapper"></div>
+            <textarea id="prompt"></textarea>
+        `;
+        const onFilesChanged = vi.fn();
+        const manager = new ImageManager(
+            {
+                imageInput: document.getElementById('image-input'),
+                imagePreview: document.getElementById('image-preview'),
+                inputWrapper: document.getElementById('input-wrapper'),
+                inputFn: document.getElementById('prompt'),
+            },
+            { onFilesChanged }
+        );
+        vi.spyOn(manager.inputFn, 'focus').mockImplementation(() => {});
+
+        manager.addFile('data:image/png;base64,AAAA', 'image/png', 'sample.png');
+        expect(onFilesChanged).toHaveBeenLastCalledWith(true, expect.any(Array));
+
+        manager.clearFile();
+        expect(onFilesChanged).toHaveBeenLastCalledWith(false, []);
+    });
 });

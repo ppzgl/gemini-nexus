@@ -96,6 +96,13 @@ export class PromptHandler {
             id: `sidepanel_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
         };
         this.activeRun = run;
+        console.info('[Gemini Nexus] SEND_PROMPT received', {
+            runId: run.id,
+            sessionId: request?.sessionId || null,
+            model: request?.model || null,
+            enableBrowserControl: request?.enableBrowserControl === true,
+            textLen: typeof request?.text === 'string' ? request.text.length : 0,
+        });
 
         (async () => {
             const onUpdate = (partialText, partialThoughts) => {

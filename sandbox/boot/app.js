@@ -24,61 +24,77 @@ export function initAppMode() {
     });
 
     (async () => {
-        // Load the heavier application modules after the shell is visible.
-        const [{ ImageManager }, { SessionManager }, { UIController }, { AppController }] =
-            await Promise.all([
-                import('../core/image_manager.js'),
-                import('../core/session_manager.js'),
-                import('../ui/ui_controller.js'),
-                import('../controllers/app_controller.js'),
-            ]);
+        try {
+            // Load the heavier application modules after the shell is visible.
+            const [{ ImageManager }, { SessionManager }, { UIController }, { AppController }] =
+                await Promise.all([
+                    import('../core/image_manager.js'),
+                    import('../core/session_manager.js'),
+                    import('../ui/ui_controller.js'),
+                    import('../controllers/app_controller.js'),
+                ]);
 
-        const sessionManager = new SessionManager();
+            const sessionManager = new SessionManager();
 
-        const ui = new UIController({
-            historyListEl: document.getElementById('history-list'),
-            sidebar: document.getElementById('history-sidebar'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
-            statusDiv: document.getElementById('status'),
-            historyDiv: document.getElementById('chat-history'),
-            inputFn: document.getElementById('prompt'),
-            sendBtn: document.getElementById('send'),
-            historyToggleBtn: document.getElementById('history-toggle'),
-            closeSidebarBtn: document.getElementById('close-sidebar'),
-            modelSelect: document.getElementById('model-select'),
-        });
-
-        const imageManager = new ImageManager(
-            {
-                imageInput: document.getElementById('image-input'),
-                imagePreview: document.getElementById('image-preview'),
-                inputWrapper: document.querySelector('.input-wrapper'),
+            const ui = new UIController({
+                historyListEl: document.getElementById('history-list'),
+                sidebar: document.getElementById('history-sidebar'),
+                sidebarOverlay: document.getElementById('sidebar-overlay'),
+                statusDiv: document.getElementById('status'),
+                historyDiv: document.getElementById('chat-history'),
                 inputFn: document.getElementById('prompt'),
-            },
-            {
-                onUrlDrop: (url) => {
-                    ui.updateStatus(t('loadingImage'));
-                    sendToBackground({ action: 'FETCH_IMAGE', url });
+                sendBtn: document.getElementById('send'),
+                historyToggleBtn: document.getElementById('history-toggle'),
+                closeSidebarBtn: document.getElementById('close-sidebar'),
+                modelSelect: document.getElementById('model-select'),
+            });
+
+            const imageManager = new ImageManager(
+                {
+                    imageInput: document.getElementById('image-input'),
+                    imagePreview: document.getElementById('image-preview'),
+                    inputWrapper: document.querySelector('.input-wrapper'),
+                    inputFn: document.getElementById('prompt'),
                 },
+                {
+                    onUrlDrop: (url) => {
+                        ui.updateStatus(t('loadingImage'));
+                        sendToBackground({ action: 'FETCH_IMAGE', url });
+                    },
+                    onFilesChanged: (hasFiles) => {
+                        ui.chat?.setHasAttachments?.(hasFiles);
+                    },
+                }
+            );
+
+            const app = new AppController(sessionManager, ui, imageManager);
+
+            bridge.setUI(ui);
+            bridge.setApp(app);
+
+            bindAppEvents(app, ui, (resizeCallback) => bridge.setResizeCallback(resizeCallback));
+
+            // Re-render restored sessions exactly when Markdown becomes available.
+            window.addEventListener(MARKDOWN_READY_EVENT, () => {
+                if (app) app.rerender();
+            });
+
+            // Trigger dependency load in parallel.
+            loadLibs();
+
+            // Initial pass may be skipped until marked is loaded.
+            configureMarkdown();
+            console.info('[Gemini Nexus] Sandbox app controllers ready');
+        } catch (error) {
+            // Previously this async IIFE had no catch — a failed dynamic import
+            // left a painted shell with a permanently dead send button.
+            console.error('[Gemini Nexus] Failed to boot sandbox app:', error);
+            const status = document.getElementById('status');
+            if (status) {
+                status.textContent =
+                    'UI failed to load. Reload the side panel. ' +
+                    (error?.message || String(error));
             }
-        );
-
-        const app = new AppController(sessionManager, ui, imageManager);
-
-        bridge.setUI(ui);
-        bridge.setApp(app);
-
-        bindAppEvents(app, ui, (resizeCallback) => bridge.setResizeCallback(resizeCallback));
-
-        // Re-render restored sessions exactly when Markdown becomes available.
-        window.addEventListener(MARKDOWN_READY_EVENT, () => {
-            if (app) app.rerender();
-        });
-
-        // Trigger dependency load in parallel.
-        loadLibs();
-
-        // Initial pass may be skipped until marked is loaded.
-        configureMarkdown();
+        }
     })();
 }

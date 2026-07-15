@@ -59,6 +59,7 @@
     text-overflow: ellipsis;
 }
 
+/* Always visible enough to tap on touch; fine pointers can still hover-fade. */
 .preview-remove-btn {
     position: absolute;
     top: 4px;
@@ -75,14 +76,23 @@
     cursor: pointer;
     border: none;
     z-index: 10;
-    opacity: 0;
+    opacity: 0.92;
     transition: opacity 0.2s;
 }
 
-.preview-item:hover .preview-remove-btn {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    .preview-remove-btn {
+        opacity: 0;
+    }
+
+    .preview-item:hover .preview-remove-btn,
+    .preview-item:focus-within .preview-remove-btn {
+        opacity: 1;
+    }
 }
 
-.preview-remove-btn:hover {
+.preview-remove-btn:hover,
+.preview-remove-btn:focus-visible {
     background: #d93025;
+    opacity: 1;
 }

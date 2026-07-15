@@ -3,7 +3,7 @@
 #chat-history {
     flex: 1;
     overflow-y: auto;
-    padding: 80px 20px 0 20px;
+    padding: var(--header-offset) 20px 0 20px;
     padding-bottom: calc(var(--footer-height, 140px) + 16px);
     display: flex;
     flex-direction: column;
@@ -13,7 +13,7 @@
 
 .chat-empty {
     position: fixed;
-    top: 84px;
+    top: calc(var(--header-offset) + 4px);
     right: 20px;
     bottom: calc(var(--footer-height, 140px) + 24px);
     left: 20px;
@@ -30,29 +30,89 @@
 }
 
 body.layout-wide .chat-empty {
-    left: 16.2rem;
+    left: var(--sidebar-width);
 }
 
 body.layout-wide.sidebar-collapsed .chat-empty {
-    left: 52.2px;
+    left: var(--sidebar-collapsed-width);
 }
 
 .chat-empty-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     max-width: min(360px, calc(100vw - 64px));
+    padding: 28px 20px;
+    border-radius: var(--radius-lg);
+    background: radial-gradient(ellipse 80% 70% at 50% 0%, var(--brand-glow), transparent 70%);
+}
+
+.chat-empty-mark {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-soft);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 4px;
+}
+
+.chat-empty-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: calc(var(--radius-sm) - 2px);
 }
 
 .chat-empty-title {
-    color: var(--text-secondary);
+    color: var(--text-primary);
     font-size: 20px;
     font-weight: 650;
+    letter-spacing: -0.02em;
 }
 
 .chat-empty-hint {
     font-size: 14px;
+    color: var(--text-tertiary);
+    line-height: 1.45;
+}
+
+.chat-empty-tips {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+}
+
+.chat-empty-tips li {
+    position: relative;
+    padding: 8px 12px 8px 28px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-input) 88%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+.chat-empty-tips li::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+    transform: translateY(-50%);
+    opacity: 0.85;
 }
 
 .gemini-auth-link {
@@ -61,15 +121,15 @@ body.layout-wide.sidebar-collapsed .chat-empty {
 }
 
 body.layout-wide #chat-history {
-    padding-left: 16.2rem;
+    padding-left: var(--sidebar-width);
 }
 
 body.layout-wide.sidebar-collapsed #chat-history {
-    padding-left: 52.2px;
+    padding-left: var(--sidebar-collapsed-width);
 }
 
 body.browser-control-active #chat-history {
-    padding-top: 126px;
+    padding-top: var(--browser-control-header-offset);
 }
 
 body.layout-wide .msg.user,
@@ -90,12 +150,15 @@ body.layout-wide .msg.ai {
     position: relative;
     width: 100%;
     word-wrap: break-word;
-    line-height: 1.6;
+    line-height: 1.65;
     font-size: 15px;
     color: var(--text-primary);
-    animation: fadeIn 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
-    opacity: 0;
-    transform: translateY(10px);
+    /*
+     * Entrance motion lives only in keyframes. Avoid a base opacity trap:
+     * if the animation is dropped (invalid timing token, reduced-motion UA
+     * policy, frozen timeline), messages must stay visible.
+     */
+    animation: fadeIn 0.3s var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .msg-row {
@@ -157,26 +220,36 @@ body.layout-wide .msg.ai {
     object-fit: contain;
 }
 
+/* Coarse / touch pointers: keep actions tappable (sidepanel is often touch-first). */
 .message-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
     margin-top: 4px;
-    opacity: 0;
-    transform: translateY(4px);
-    pointer-events: none;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
     transition:
         opacity 0.2s,
         transform 0.2s;
 }
 
-.msg:hover .message-actions,
-.msg:focus-within .message-actions,
-.msg.editing .message-actions {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+/* Fine pointer + hover: hide until hover/focus to reduce chrome density. */
+@media (hover: hover) and (pointer: fine) {
+    .message-actions {
+        opacity: 0;
+        transform: translateY(4px);
+        pointer-events: none;
+    }
+
+    .msg:hover .message-actions,
+    .msg:focus-within .message-actions,
+    .msg.editing .message-actions {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
 }
 
 .message-actions .copy-btn,
@@ -188,14 +261,14 @@ body.layout-wide .msg.ai {
     justify-content: center;
     padding: 0;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-tertiary);
     cursor: pointer;
     transition:
-        background-color 0.2s,
-        color 0.2s,
-        opacity 0.2s;
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard),
+        opacity var(--duration-normal) var(--ease-standard);
 }
 
 .message-actions .copy-btn:hover,
@@ -211,6 +284,11 @@ body.layout-wide .msg.ai {
 }
 
 @keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -226,9 +304,14 @@ body.layout-wide .msg.ai {
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
-    animation: fadeIn 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
-    opacity: 0;
-    transform: translateY(10px);
+    animation: fadeIn 0.3s var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .msg,
+    .context-compression-notice {
+        animation: none;
+    }
 }
 
 .context-compression-line {
@@ -280,11 +363,11 @@ body.layout-wide .msg.ai {
 .msg.user .message-content-container {
     width: fit-content;
     max-width: 80%;
-    padding: 16px 20px;
-    border: 1px solid transparent;
-    border-radius: 16px 4px 16px 16px;
+    padding: 14px 18px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    border-radius: var(--radius-md) 4px var(--radius-md) var(--radius-md);
     background: var(--bg-user-msg);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 .msg.user .msg-content {
@@ -357,16 +440,19 @@ body.layout-wide .msg.ai {
     box-sizing: border-box;
     padding: 8px 8px 8px 16px;
     border: 1px solid transparent;
-    border-radius: 28px;
+    border-radius: calc(var(--radius-xl) + 2px);
     background: var(--bg-input);
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition:
+        background-color var(--duration-normal) var(--ease-standard),
+        border-color var(--duration-normal) var(--ease-standard),
+        box-shadow var(--duration-normal) var(--ease-standard);
     white-space: normal;
 }
 
 .message-edit:focus-within {
     background: var(--bg-input-focus);
     border-color: var(--border-focus);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .message-edit-input {
@@ -403,13 +489,17 @@ body.layout-wide .msg.ai {
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition:
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard),
+        box-shadow var(--duration-normal) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-emphasized);
 }
 
 .message-edit-cancel {
     padding: 0 12px;
     border: none;
-    border-radius: 18px;
+    border-radius: calc(var(--radius-md) + 6px);
     background: transparent;
     color: var(--text-secondary);
 }
@@ -429,12 +519,12 @@ body.layout-wide .msg.ai {
     border-radius: 50%;
     background: var(--primary);
     color: var(--on-primary);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .message-edit-save:hover {
     background: var(--primary-hover);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
     transform: scale(1.05);
 }
 
@@ -480,10 +570,13 @@ body.layout-wide .msg.ai {
     opacity: 0.95;
 }
 
+/* AI prose is the stage; keep it open and uncluttered */
 .msg.ai .message-content-container {
     width: 100%;
-    padding: 0;
+    padding: 2px 0 4px;
     background: transparent;
+    border: none;
+    box-shadow: none;
     color: var(--text-primary);
 }
 

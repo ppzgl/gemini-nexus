@@ -17,14 +17,14 @@
             max-height: 90vh;
             box-sizing: border-box;
 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.16);
             display: flex;
             flex-direction: column;
             z-index: 1000000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", Roboto, Helvetica, Arial, sans-serif;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 
             /* Native Resize Capability */
             resize: both;

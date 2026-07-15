@@ -4,7 +4,18 @@ body {
     height: 100vh;
     overflow: hidden;
     background: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        'PingFang SC',
+        'Hiragino Sans GB',
+        'Noto Sans SC',
+        'Microsoft YaHei',
+        Roboto,
+        'Helvetica Neue',
+        Arial,
+        sans-serif;
 }
 
 iframe {
@@ -13,7 +24,7 @@ iframe {
     border: none;
     display: block;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 iframe.loaded {
@@ -31,13 +42,16 @@ iframe.loaded {
     z-index: 10;
     background: #ffffff;
     transition:
-        opacity 0.3s ease,
-        visibility 0.3s;
+        opacity 0.3s cubic-bezier(0.2, 0, 0, 1),
+        visibility 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 #skeleton.hidden {
     opacity: 0;
     visibility: hidden;
+    /* Ensure the skeleton never intercepts clicks after UI_READY (some
+       browsers still hit-test visibility:hidden ancestors in edge cases). */
+    pointer-events: none;
 }
 
 .sk-header {
@@ -71,8 +85,9 @@ iframe.loaded {
 .sk-input {
     width: 100%;
     height: 56px;
-    border-radius: 28px;
+    border-radius: 26px;
     background: #f0f4f9;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 html[data-theme='dark'] body,
@@ -81,7 +96,7 @@ html[data-theme='dark'] #skeleton {
 }
 
 html[data-theme='dark'] .sk-header {
-    border-bottom-color: #444746;
+    border-bottom-color: #3c4043;
 }
 
 html[data-theme='dark'] .sk-icon {
@@ -90,4 +105,5 @@ html[data-theme='dark'] .sk-icon {
 
 html[data-theme='dark'] .sk-input {
     background: #1e1f20;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.36);
 }

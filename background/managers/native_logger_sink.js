@@ -1,7 +1,11 @@
 // Forwards log entries to the native logger host via chrome.runtime.connectNative.
-// Lazy-connects on first send, drops the port on disconnect, reconnects on the
-// next send, and buffers a small backlog while disconnected so service-worker
-// restarts and host hiccups don't drop entries. Never throws — logging must
+// Lazy-connects on first send (or immediately via connect()), drops the port on
+// disconnect, reconnects on the next send, and buffers a small backlog while
+// disconnected so service-worker restarts and host hiccups don't drop entries.
+//
+// Bidirectional bridge: host can post {type:'request', id, method, params} on the
+// same port; we dispatch registered handlers and reply with
+// {type:'response', id, ok, result|error}. Never throws — logging / bridge must
 // never break the caller.
 
 const DEFAULT_HOST_NAME = 'com.gemini_nexus.logger';
@@ -14,6 +18,7 @@ export class NativeLoggerSink {
         hostName = DEFAULT_HOST_NAME,
         minLevel = 'info',
         enabled = false,
+        getVersion = null,
     } = {}) {
         this.runtime = runtime ?? (typeof chrome !== 'undefined' ? chrome.runtime : undefined);
         this.hostName = hostName;
@@ -21,15 +26,51 @@ export class NativeLoggerSink {
         this.enabled = !!enabled;
         this._port = null;
         this._buffer = [];
+        this._handlers = new Map();
+        this._getVersion =
+            getVersion ||
+            (() => {
+                try {
+                    return this.runtime?.getManifest?.()?.version ?? null;
+                } catch {
+                    return null;
+                }
+            });
+        this._helloSent = false;
     }
 
     setEnabled(enabled) {
         this.enabled = !!enabled;
-        if (!this.enabled) this._disconnect();
+        if (!this.enabled) {
+            this._disconnect();
+            return;
+        }
+        // Keep the native host (and its HTTP bridge) alive while enabled.
+        this.connect();
     }
 
     setMinLevel(level) {
         if (LEVELS[level] != null) this.minLevel = LEVELS[level];
+    }
+
+    /**
+     * Register an RPC handler invoked when the local HTTP bridge posts
+     * {type:'request', method, params}. Handler may be sync or async and should
+     * return a JSON-serializable result.
+     */
+    setRequestHandler(method, handler) {
+        if (typeof method !== 'string' || !method) return;
+        if (typeof handler !== 'function') {
+            this._handlers.delete(method);
+            return;
+        }
+        this._handlers.set(method, handler);
+    }
+
+    /** Eagerly open the native port (starts the host HTTP bridge). Safe to call often. */
+    connect() {
+        if (!this.enabled) return null;
+        return this._getPort();
     }
 
     log(entry) {
@@ -83,23 +124,74 @@ export class NativeLoggerSink {
             port.postMessage(this._serialize(entry));
         } catch {
             this._port = null;
+            this._helloSent = false;
             this._pushBuffer(entry);
         }
     }
 
     _getPort() {
         if (this._port) return this._port;
+        if (!this.runtime?.connectNative) return null;
         try {
             const port = this.runtime.connectNative(this.hostName);
             port.onDisconnect?.addListener(() => {
                 this._port = null;
+                this._helloSent = false;
+            });
+            port.onMessage?.addListener((msg) => {
+                this._onHostMessage(msg);
             });
             this._port = port;
+            this._sendHello();
             this._flushBuffer();
             return port;
         } catch {
             this._port = null;
+            this._helloSent = false;
             return null;
+        }
+    }
+
+    _sendHello() {
+        if (!this._port || this._helloSent) return;
+        try {
+            this._port.postMessage({
+                type: 'hello',
+                version: this._getVersion(),
+                timestamp: Date.now(),
+            });
+            this._helloSent = true;
+        } catch {
+            // ignore — next send will reconnect
+        }
+    }
+
+    async _onHostMessage(msg) {
+        if (!msg || typeof msg !== 'object') return;
+        if (msg.type !== 'request' || !msg.id || !msg.method) return;
+        const handler = this._handlers.get(msg.method);
+        try {
+            if (!handler) {
+                this._reply(msg.id, false, null, `unknown method: ${msg.method}`);
+                return;
+            }
+            const result = await handler(msg.params || {});
+            this._reply(msg.id, true, result, null);
+        } catch (error) {
+            this._reply(msg.id, false, null, error?.message || String(error));
+        }
+    }
+
+    _reply(id, ok, result, error) {
+        if (!this._port) return;
+        try {
+            const payload = ok
+                ? { type: 'response', id, ok: true, result }
+                : { type: 'response', id, ok: false, error: error || 'error' };
+            this._port.postMessage(payload);
+        } catch {
+            this._port = null;
+            this._helloSent = false;
         }
     }
 
@@ -110,6 +202,7 @@ export class NativeLoggerSink {
             // ignore
         }
         this._port = null;
+        this._helloSent = false;
         this._buffer = [];
     }
 

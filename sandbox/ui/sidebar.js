@@ -219,8 +219,15 @@ export class SidebarController {
     handleDocumentKeydown(keyboardEvent) {
         if (keyboardEvent.key !== 'Escape') return;
 
+        const hadMenu = Boolean(this.activeMenuId);
+        const hadRecent = this.isCollapsedRecentOpen === true;
         this.closeItemMenu();
         this.closeCollapsedRecentPopover();
+        if (hadMenu || hadRecent) {
+            // Prefer dismissing chrome over canceling an in-flight generation.
+            keyboardEvent.preventDefault();
+            keyboardEvent.stopPropagation();
+        }
     }
 
     _setMobileSidebarState(isOpen) {

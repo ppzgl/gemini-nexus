@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { formatLogLine, appendLogEntry, rotateIfNeeded, readFramedMessages } from './host.js';
+import {
+    formatLogLine,
+    appendLogEntry,
+    rotateIfNeeded,
+    readFramedMessages,
+    encodeFramedMessage,
+    BridgeState,
+    classifyExtensionMessage,
+    processExtensionMessage,
+    checkAuth,
+    isLoopbackHost,
+    handleBridgeRequest,
+} from './host.js';
 
 describe('formatLogLine', () => {
     it('formats a standard entry with ISO time, level, context, message', () => {
@@ -116,3 +128,141 @@ describe('readFramedMessages', () => {
         expect(readFramedMessages(buf).messages).toEqual([]);
     });
 });
+
+describe('encodeFramedMessage + round-trip', () => {
+    it('round-trips through readFramedMessages', () => {
+        const frame = encodeFramedMessage({ type: 'request', id: '1', method: 'ping' });
+        const { messages } = readFramedMessages(frame);
+        expect(messages).toEqual([{ type: 'request', id: '1', method: 'ping' }]);
+    });
+});
+
+describe('isLoopbackHost / checkAuth', () => {
+    it('recognizes loopback hosts', () => {
+        expect(isLoopbackHost('127.0.0.1')).toBe(true);
+        expect(isLoopbackHost('localhost')).toBe(true);
+        expect(isLoopbackHost('0.0.0.0')).toBe(false);
+    });
+
+    it('allows all when no token configured', () => {
+        expect(checkAuth({ headers: {}, url: '/' }, '')).toBe(true);
+    });
+
+    it('accepts bearer, query, or x-bridge-token', () => {
+        expect(
+            checkAuth({ headers: { authorization: 'Bearer secret' }, url: '/' }, 'secret')
+        ).toBe(true);
+        expect(checkAuth({ headers: {}, url: '/?token=secret' }, 'secret')).toBe(true);
+        expect(
+            checkAuth({ headers: { 'x-bridge-token': 'secret' }, url: '/' }, 'secret')
+        ).toBe(true);
+        expect(checkAuth({ headers: {}, url: '/' }, 'secret')).toBe(false);
+    });
+});
+
+describe('BridgeState', () => {
+    it('buffers logs and filters by level/limit', () => {
+        const state = new BridgeState({ ringSize: 10 });
+        state.pushLog({ level: 'info', message: 'a' });
+        state.pushLog({ level: 'error', message: 'b' });
+        state.pushLog({ level: 'error', message: 'c' });
+        expect(state.getLogs({ limit: 2 }).map((e) => e.message)).toEqual(['b', 'c']);
+        expect(state.getLogs({ level: 'error' }).map((e) => e.message)).toEqual(['b', 'c']);
+    });
+
+    it('resolves RPC when response arrives', async () => {
+        const state = new BridgeState();
+        state.markExtensionHello({ version: '1' });
+        const sent = [];
+        state.setWriter((obj) => sent.push(obj));
+        const p = state.request('ping', {});
+        expect(sent[0].type).toBe('request');
+        expect(sent[0].method).toBe('ping');
+        state.resolveRpc({ type: 'response', id: sent[0].id, ok: true, result: { pong: true } });
+        await expect(p).resolves.toEqual({ pong: true });
+    });
+
+    it('rejects RPC when extension not connected', async () => {
+        const state = new BridgeState();
+        state.setWriter(() => {});
+        await expect(state.request('ping')).rejects.toThrow(/not connected/);
+    });
+});
+
+describe('classifyExtensionMessage / processExtensionMessage', () => {
+    it('classifies hello, response, and plain logs', () => {
+        expect(classifyExtensionMessage({ type: 'hello', version: '1' })).toBe('hello');
+        expect(classifyExtensionMessage({ type: 'response', id: 'x' })).toBe('response');
+        expect(classifyExtensionMessage({ level: 'info', message: 'hi' })).toBe('log');
+    });
+
+    it('writes logs to file and ring buffer', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'gn-host-'));
+        const f = join(dir, 'out.log');
+        const state = new BridgeState();
+        processExtensionMessage({ level: 'error', context: 'X', message: 'boom' }, state, f);
+        expect(state.logs).toHaveLength(1);
+        expect(readFileSync(f, 'utf8')).toContain('boom');
+        rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('marks connected on hello', () => {
+        const state = new BridgeState();
+        processExtensionMessage({ type: 'hello', version: '5.0.18' }, state);
+        expect(state.extension.connected).toBe(true);
+        expect(state.extension.version).toBe('5.0.18');
+    });
+});
+
+describe('handleBridgeRequest', () => {
+    function mockRes() {
+        const res = {
+            statusCode: 0,
+            headers: null,
+            body: '',
+            writeHead: vi.fn((code, headers) => {
+                res.statusCode = code;
+                res.headers = headers;
+            }),
+            end: vi.fn((data) => {
+                res.body = data || '';
+            }),
+            write: vi.fn(),
+        };
+        return res;
+    }
+
+    it('GET /health returns extension connection state', async () => {
+        const state = new BridgeState();
+        state.markExtensionHello({ version: '5.0.18' });
+        const res = mockRes();
+        await handleBridgeRequest({ method: 'GET', url: '/health', headers: {} }, res, state);
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body.ok).toBe(true);
+        expect(body.extensionConnected).toBe(true);
+        expect(body.extensionVersion).toBe('5.0.18');
+    });
+
+    it('GET /logs returns buffered entries', async () => {
+        const state = new BridgeState();
+        state.pushLog({ level: 'info', message: 'one' });
+        const res = mockRes();
+        await handleBridgeRequest({ method: 'GET', url: '/logs?limit=5', headers: {} }, res, state);
+        const body = JSON.parse(res.body);
+        expect(body.logs[0].message).toBe('one');
+    });
+
+    it('rejects unauthorized when token set', async () => {
+        const state = new BridgeState();
+        const res = mockRes();
+        await handleBridgeRequest(
+            { method: 'GET', url: '/health', headers: {} },
+            res,
+            state,
+            { token: 'secret' }
+        );
+        expect(res.statusCode).toBe(401);
+    });
+});
+

@@ -37,16 +37,17 @@ export class FrameManager {
     }
 
     postMessage(message) {
-        if (this.iframe.contentWindow) {
-            // sandbox iframe 与 sidepanel 同源(chrome-extension://<id>),
-            // 使用具体 origin 替代 '*' 以避免向无关源泄漏消息。
-            const runtime = globalThis.chrome && globalThis.chrome.runtime;
-            const targetOrigin =
-                runtime && typeof runtime.getURL === 'function'
-                    ? runtime.getURL('')
-                    : window.location.origin;
-            this.iframe.contentWindow.postMessage(message, targetOrigin);
-        }
+        if (!this.iframe.contentWindow) return;
+
+        // Manifest `sandbox.pages` iframes have an opaque origin. Chrome rejects
+        // targetOrigin 'null' with:
+        //   SyntaxError: Invalid target origin 'null' in a call to 'postMessage'
+        // and silently drops messages when targetOrigin is chrome-extension://<id>
+        // (does not match the opaque origin). Wildcard '*' is required here.
+        // This is not a broadcast: the message is only delivered to this
+        // contentWindow. Sandbox → parent already uses '*' for the same reason
+        // (see shared/messaging).
+        this.iframe.contentWindow.postMessage(message, '*');
     }
 
     getWindow() {

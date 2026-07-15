@@ -65,4 +65,24 @@ describe('createMessageEditControl', () => {
         expect(contentEl.hasAttribute('style')).toBe(false);
         expect(messageEl.classList.contains('editing')).toBe(false);
     });
+
+    it('consumes Escape so outer handlers do not also cancel generation', () => {
+        vi.useFakeTimers();
+        const { messageEl } = createHarness();
+        messageEl.querySelector('.edit-btn').click();
+        vi.runAllTimers();
+
+        const keyEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            cancelable: true,
+        });
+        const stopSpy = vi.spyOn(keyEvent, 'stopPropagation');
+        document.dispatchEvent(keyEvent);
+
+        expect(stopSpy).toHaveBeenCalled();
+        expect(messageEl.querySelector('.message-edit')).toBeNull();
+        expect(messageEl.classList.contains('editing')).toBe(false);
+        vi.useRealTimers();
+    });
 });

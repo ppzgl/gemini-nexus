@@ -57,4 +57,56 @@ describe('FrameManager', () => {
             'http://localhost:3000/sandbox/index.html?theme=light&lang=en'
         );
     });
+
+    it('posts to the sandbox contentWindow with wildcard origin (opaque sandbox)', () => {
+        const contentWindow = { postMessage: vi.fn() };
+        Object.defineProperty(document.getElementById('sandbox-frame'), 'contentWindow', {
+            configurable: true,
+            get: () => contentWindow,
+        });
+
+        const manager = new FrameManager();
+        const payload = { action: 'BACKGROUND_MESSAGE', payload: { action: 'GEMINI_REPLY' } };
+        manager.postMessage(payload);
+
+        // Must not use chrome-extension:// (silent drop) or 'null' (Chrome throws).
+        expect(contentWindow.postMessage).toHaveBeenCalledWith(payload, '*');
+        expect(contentWindow.postMessage).not.toHaveBeenCalledWith(
+            expect.anything(),
+            expect.stringMatching(/^chrome-extension:/)
+        );
+        expect(contentWindow.postMessage).not.toHaveBeenCalledWith(expect.anything(), 'null');
+    });
+
+    it('still posts with * when chrome.runtime is unavailable in local dev', () => {
+        delete globalThis.chrome;
+        const contentWindow = { postMessage: vi.fn() };
+        Object.defineProperty(document.getElementById('sandbox-frame'), 'contentWindow', {
+            configurable: true,
+            get: () => contentWindow,
+        });
+
+        const manager = new FrameManager();
+        const payload = { action: 'RESTORE_THEME', payload: 'dark' };
+        manager.postMessage(payload);
+
+        expect(contentWindow.postMessage).toHaveBeenCalledWith(payload, '*');
+    });
+
+    it('no-ops when the sandbox iframe has no contentWindow', () => {
+        const iframe = document.getElementById('sandbox-frame');
+        const contentWindow = { postMessage: vi.fn() };
+        let windowRef = null;
+        Object.defineProperty(iframe, 'contentWindow', {
+            configurable: true,
+            get: () => windowRef,
+        });
+
+        const manager = new FrameManager();
+        expect(() => manager.postMessage({ action: 'PING' })).not.toThrow();
+        expect(contentWindow.postMessage).not.toHaveBeenCalled();
+
+        // Restore a window-like object so jsdom teardown can close the iframe.
+        windowRef = contentWindow;
+    });
 });

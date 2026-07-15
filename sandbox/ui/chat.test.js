@@ -61,6 +61,47 @@ describe('ChatController footer spacing', () => {
     });
 });
 
+describe('ChatController send enablement', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it('disables send when empty and enables when text or attachments exist', () => {
+        const sendBtn = document.createElement('button');
+        const inputFn = document.createElement('textarea');
+        const controller = new ChatController({
+            historyDiv: document.createElement('div'),
+            inputFn,
+            sendBtn,
+            statusDiv: document.createElement('div'),
+        });
+
+        expect(sendBtn.disabled).toBe(true);
+
+        inputFn.value = 'hello';
+        inputFn.dispatchEvent(new Event('input'));
+        expect(sendBtn.disabled).toBe(false);
+
+        inputFn.value = '   ';
+        inputFn.dispatchEvent(new Event('input'));
+        expect(sendBtn.disabled).toBe(true);
+
+        controller.setHasAttachments(true);
+        expect(sendBtn.disabled).toBe(false);
+
+        controller.setLoading(true);
+        expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('generating')).toBe(true);
+
+        controller.setLoading(false);
+        expect(sendBtn.classList.contains('generating')).toBe(false);
+        expect(sendBtn.disabled).toBe(false);
+
+        controller.setHasAttachments(false);
+        expect(sendBtn.disabled).toBe(true);
+    });
+});
+
 describe('ChatController streaming scroll following', () => {
     beforeEach(() => {
         vi.clearAllMocks();

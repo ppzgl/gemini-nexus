@@ -111,10 +111,13 @@ export function createMessageEditControl({
         function handleDocumentKey(keyEvent) {
             if (keyEvent.key === 'Escape') {
                 keyEvent.preventDefault();
+                keyEvent.stopPropagation();
                 cancel();
+                return;
             }
             if ((keyEvent.metaKey || keyEvent.ctrlKey) && keyEvent.key === 'Enter') {
                 keyEvent.preventDefault();
+                keyEvent.stopPropagation();
                 save();
             }
         }

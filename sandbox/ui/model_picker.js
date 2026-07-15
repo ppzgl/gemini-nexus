@@ -207,6 +207,7 @@ function createModelPickerController(select, elements) {
 
             if (keyboardEvent.key === 'Escape' && this.isOpen) {
                 keyboardEvent.preventDefault();
+                keyboardEvent.stopPropagation();
                 this.setOpen(false);
             }
         },

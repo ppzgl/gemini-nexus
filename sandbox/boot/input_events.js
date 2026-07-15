@@ -10,6 +10,18 @@ const ACTIVE_MODAL_SELECTOR = [
     '[aria-modal="true"].visible',
 ].join(', ');
 
+// Overlays that should consume Escape before canceling generation.
+const DISMISSIBLE_OVERLAY_SELECTOR = [
+    ACTIVE_MODAL_SELECTOR,
+    '.msg.editing',
+    '.history-item.menu-open',
+    '.history-group.menu-open',
+    '#capture-menu:not([hidden])',
+    '#tools-more-menu:not([hidden])',
+    '#model-picker-menu:not([hidden])',
+    '#collapsed-recent-popover:not([hidden])',
+].join(', ');
+
 function isEditableTarget(target) {
     if (!target || target.nodeType !== Node.ELEMENT_NODE) return false;
 
@@ -42,6 +54,17 @@ function isImeEvent(keyEvent) {
 
 function hasActiveModal() {
     return Boolean(document.querySelector(ACTIVE_MODAL_SELECTOR));
+}
+
+function hasDismissibleOverlay() {
+    return Boolean(document.querySelector(DISMISSIBLE_OVERLAY_SELECTOR));
+}
+
+/** Tab cycles models only while focus is in the prompt or model picker. */
+function isModelCycleFocusTarget(target) {
+    if (!target || target.nodeType !== Node.ELEMENT_NODE) return false;
+    if (target.id === 'prompt') return true;
+    return Boolean(target.closest?.('.model-select-wrapper'));
 }
 
 function focusInputAtEnd(inputFn, delayMs = 0) {
@@ -146,6 +169,15 @@ function cycleModelSelect(modelSelect, keyEvent, inputFn) {
     focusInputAtEnd(inputFn, 50);
 }
 
+function tryCancelGeneration(app, keyEvent) {
+    if (!app.isGenerating || hasDismissibleOverlay()) {
+        return false;
+    }
+    keyEvent.preventDefault();
+    app.handleCancel();
+    return true;
+}
+
 export function bindInputEvents(app, ui, setResizeRef) {
     const inputFn = ui?.inputFn || document.getElementById('prompt');
     const sendBtn = ui?.sendBtn || document.getElementById('send');
@@ -169,14 +201,18 @@ export function bindInputEvents(app, ui, setResizeRef) {
                 return;
             }
 
-            if (keyEvent.key === 'Escape' && app.isGenerating) {
-                keyEvent.preventDefault();
-                app.handleCancel();
+            if (keyEvent.key === 'Escape') {
+                tryCancelGeneration(app, keyEvent);
                 return;
             }
 
             if (keyEvent.key === 'Enter' && !keyEvent.shiftKey) {
                 keyEvent.preventDefault();
+                // Generation in progress: Stop is the send button, but Enter must
+                // not cancel — users often press Enter while drafting the next turn.
+                if (app.isGenerating) {
+                    return;
+                }
                 sendBtn.click();
                 return;
             }
@@ -197,15 +233,44 @@ export function bindInputEvents(app, ui, setResizeRef) {
         const handleSendClick = () => {
             if (app.isGenerating) {
                 app.handleCancel();
-            } else {
-                app.handleSendMessage();
+                return;
             }
+            // Disabled buttons don't fire click in some browsers/paths; still
+            // guard so empty sends surface a status instead of a silent no-op.
+            const text = (ui?.inputFn || inputFn)?.value?.trim?.() || '';
+            const hasFiles =
+                typeof app.imageManager?.getFiles === 'function'
+                    ? app.imageManager.getFiles().length > 0
+                    : false;
+            if (!text && !hasFiles) {
+                // PromptController.send also guards; this path covers empty
+                // clicks when the button is kept enabled for feedback.
+                app.handleSendMessage();
+                return;
+            }
+            app.handleSendMessage();
         };
 
         inputFn.addEventListener('keydown', handleInputKeyDown);
+        // Use pointerup as well so a visually-enabled but still-disabled button
+        // (race during IME composition) can be recovered via direct call path
+        // when we stop relying solely on the disabled attribute for empty state.
         sendBtn.addEventListener('click', handleSendClick);
         cleanupHandlers.push(() => inputFn.removeEventListener('keydown', handleInputKeyDown));
         cleanupHandlers.push(() => sendBtn.removeEventListener('click', handleSendClick));
+    }
+
+    // Keyboard-accessible file upload (label is not focusable by default).
+    const uploadBtn = document.getElementById('upload-btn');
+    const imageInput = document.getElementById('image-input');
+    if (uploadBtn && imageInput) {
+        const handleUploadKeyDown = (keyEvent) => {
+            if (keyEvent.key !== 'Enter' && keyEvent.key !== ' ') return;
+            keyEvent.preventDefault();
+            imageInput.click();
+        };
+        uploadBtn.addEventListener('keydown', handleUploadKeyDown);
+        cleanupHandlers.push(() => uploadBtn.removeEventListener('keydown', handleUploadKeyDown));
     }
 
     const handleGlobalPaste = (pasteEvent) => {
@@ -251,13 +316,16 @@ export function bindInputEvents(app, ui, setResizeRef) {
             return;
         }
 
-        if (keyEvent.key === 'Escape' && app.isGenerating) {
-            keyEvent.preventDefault();
-            app.handleCancel();
+        if (keyEvent.key === 'Escape') {
+            tryCancelGeneration(app, keyEvent);
             return;
         }
 
-        if (keyEvent.key === 'Tab' && !isEditableTarget(keyEvent.target)) {
+        // Tab cycles models only in the prompt / model picker — elsewhere keep
+        // native focus order for toolbar, sidebar, and settings controls.
+        if (keyEvent.key === 'Tab' && isModelCycleFocusTarget(keyEvent.target)) {
+            // Prompt has its own handler; model-picker-area Tab still cycles here.
+            if (keyEvent.target?.id === 'prompt') return;
             keyEvent.preventDefault();
             cycleModelSelect(modelSelect, keyEvent, inputFn);
             return;
@@ -286,3 +354,10 @@ export function bindInputEvents(app, ui, setResizeRef) {
         cleanupHandlers.forEach((cleanup) => cleanup());
     };
 }
+
+// Exported for unit tests.
+export const __test__ = {
+    hasDismissibleOverlay,
+    isModelCycleFocusTarget,
+    hasActiveModal,
+};

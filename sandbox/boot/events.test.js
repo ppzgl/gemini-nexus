@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bindAppEvents, getToolsPageScrollDistance } from './events.js';
+import { bindAppEvents } from './events.js';
 import { LIVE_ARTIFACT_FOLLOWUP_EVENT } from '../core/live_artifacts.js';
 
 vi.mock('../../shared/messaging/index.js', () => ({
@@ -14,18 +14,26 @@ function installFooterDom() {
         <button id="tab-switcher-btn"></button>
         <button id="open-full-page-btn"></button>
         <div class="tools-container">
-            <button id="tools-scroll-left"></button>
-            <div id="tools-row">
-                <button id="browser-control-btn"></button>
-                <button id="quote-btn"></button>
-                <button id="ocr-btn"></button>
-                <button id="screenshot-translate-btn"></button>
-                <button id="screen-capture-btn"></button>
-                <button id="snip-btn"></button>
-                <button id="page-context-btn"></button>
-                <button id="live-artifacts-btn"></button>
+            <div class="tools-primary" id="tools-row">
+                <button id="page-context-btn" class="tool-toggle" aria-pressed="false"></button>
+                <button id="browser-control-btn" class="tool-toggle" aria-pressed="false"></button>
+                <button id="live-artifacts-btn" class="tool-toggle" aria-pressed="false"></button>
             </div>
-            <button id="tools-scroll-right"></button>
+            <div class="tools-more-dropdown" id="tools-more-dropdown">
+                <button id="tools-more-btn" aria-expanded="false"></button>
+                <div id="tools-more-menu" hidden>
+                    <button id="quote-btn"></button>
+                    <button id="screen-capture-btn"></button>
+                </div>
+            </div>
+            <div class="capture-dropdown" id="capture-dropdown">
+                <button id="capture-menu-btn" aria-expanded="false"></button>
+                <div id="capture-menu" hidden>
+                    <button id="ocr-btn"></button>
+                    <button id="screenshot-translate-btn"></button>
+                    <button id="snip-btn"></button>
+                </div>
+            </div>
         </div>
         <div class="model-select-wrapper">
             <select id="model-select" class="model-native-select">
@@ -42,7 +50,6 @@ function installFooterDom() {
         <textarea id="prompt"></textarea>
         <button id="send"></button>
     `;
-    document.getElementById('tools-row').scrollBy = vi.fn();
 }
 
 describe('app events', () => {
@@ -198,22 +205,7 @@ describe('app events', () => {
         expect(app.handleNewChat).toHaveBeenCalledTimes(1);
     });
 
-    it('uses a page-sized distance for tools row navigation', () => {
-        expect(getToolsPageScrollDistance({ clientWidth: 320 })).toBe(296);
-        expect(getToolsPageScrollDistance({ clientWidth: 120 })).toBe(160);
-    });
-
-    it('scrolls the tools row by one visible page when using navigation buttons', () => {
-        const toolsRow = document.getElementById('tools-row');
-        Object.defineProperty(toolsRow, 'clientWidth', {
-            value: 320,
-            configurable: true,
-        });
-        Object.defineProperty(toolsRow, 'scrollWidth', {
-            value: 720,
-            configurable: true,
-        });
-
+    it('opens the more tools menu without requiring horizontal scroll chrome', () => {
         const app = {
             handleNewChat: vi.fn(),
             handleTabSwitcher: vi.fn(),
@@ -230,9 +222,13 @@ describe('app events', () => {
         };
 
         bindAppEvents(app, ui);
-        document.getElementById('tools-scroll-right').click();
-
-        expect(toolsRow.scrollBy).toHaveBeenCalledWith({ left: 296, behavior: 'smooth' });
+        const moreMenu = document.getElementById('tools-more-menu');
+        expect(moreMenu.hidden).toBe(true);
+        document.getElementById('tools-more-btn').click();
+        expect(moreMenu.hidden).toBe(false);
+        expect(document.getElementById('tools-more-btn').getAttribute('aria-expanded')).toBe(
+            'true'
+        );
     });
 
     it('selects models through the custom AMC-style model picker', () => {

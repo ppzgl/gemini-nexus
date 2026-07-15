@@ -191,6 +191,7 @@ describe('AppController session restore behavior', () => {
         });
         expect(ui.setPageContextAvailable).toHaveBeenCalledWith(true);
 
+        app.pageContextActive = true;
         await app.handleIncomingMessage({
             data: {
                 action: 'RESTORE_SIDE_PANEL_TAB_CONTEXT',
@@ -198,6 +199,8 @@ describe('AppController session restore behavior', () => {
             },
         });
         expect(ui.setPageContextAvailable).toHaveBeenCalledWith(false);
+        expect(app.pageContextActive).toBe(false);
+        expect(ui.chat.togglePageContext).toHaveBeenCalledWith(false);
     });
 
     it('restores saved groups and rerenders history after sessions are loaded', async () => {

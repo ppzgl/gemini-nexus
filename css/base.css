@@ -1,8 +1,47 @@
 :root {
+    /* --- Radius scale (sm / md / lg / xl / pill) --- */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 26px;
+    --radius-pill: 999px;
+
+    /* --- Layout (sidepanel / composer) --- */
+    --sidebar-width: 16.2rem;
+    --sidebar-collapsed-width: 52.2px;
+    --composer-max-width: 40.32rem;
+    --layout-gutter: 12px;
+    --layout-gutter-tight: 8px;
+    --header-offset: 80px;
+    --browser-control-header-offset: 126px;
+
+    /* --- Motion --- */
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --duration-fast: 0.15s;
+    --duration-normal: 0.2s;
+
+    /* --- Elevation --- */
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
+
+    /* --- Semantic --- */
+    --danger: #c62828;
+    --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
+    --danger-border: color-mix(in srgb, var(--danger) 28%, transparent);
+    --success: #047857;
+    --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
+    --success-border: color-mix(in srgb, var(--success) 42%, transparent);
+    --warning: #b45309;
+    --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
+    --warning-border: color-mix(in srgb, var(--warning) 42%, transparent);
+
     /* --- Light Theme (Default) --- */
     --bg-body: #ffffff;
     --bg-sidebar: #f0f4f9;
     --bg-modal: #ffffff;
+    --bg-elevated: #ffffff;
     --bg-input: #f0f4f9;
     --bg-input-focus: #ffffff;
     --bg-setting-panel: rgba(0, 0, 0, 0.03);
@@ -17,18 +56,23 @@
     --border-focus: #d3e3fd;
 
     /* User Message Bubble */
-    --bg-user-msg: #f0f4f9;
+    --bg-user-msg: #e8eef8;
     --text-user-msg: #1f1f1f;
 
     /* Interactive Elements */
     --btn-hover: #e0e4e9;
-    --btn-active-bg: #c2e7ff;
+    --btn-active-bg: #dce8ff;
     --btn-active-text: #001d35;
 
-    /* Primary Actions (Send button, User Bubble) */
+    /* Primary actions (send, links) — Material blue for clarity */
     --primary: #0b57d0;
     --primary-hover: #0842a0;
     --on-primary: #ffffff;
+
+    /* Brand spark (empty state, soft accents) — Gemini-leaning violet */
+    --brand: #6c5ce7;
+    --brand-soft: color-mix(in srgb, var(--brand) 14%, transparent);
+    --brand-glow: color-mix(in srgb, var(--brand) 22%, transparent);
 
     /* Toolbar / Tools */
     --tool-bg: rgba(255, 255, 255, 0.8);
@@ -56,6 +100,7 @@
     --bg-body: #131314;
     --bg-sidebar: #1e1f20;
     --bg-modal: #2d2e2f;
+    --bg-elevated: #2a2b2c;
     --bg-input: #1e1f20;
     --bg-input-focus: #2d2e2f;
     --bg-setting-panel: rgba(255, 255, 255, 0.05);
@@ -66,21 +111,26 @@
     --text-tertiary: #8e918f;
     --text-inverse: #1f1f1f;
 
-    --border-color: #444746;
+    --border-color: #3c4043;
     --border-focus: #5e5e5e;
 
-    /* User Message Bubble */
-    --bg-user-msg: #2d2e2f;
+    /* User Message Bubble — slightly lifted from body */
+    --bg-user-msg: #2a2d32;
     --text-user-msg: #e3e3e3;
 
     --btn-hover: #333537;
-    --btn-active-bg: #004a77;
-    --btn-active-text: #c2e7ff;
 
-    /* Adjusted Blue for Dark Mode */
-    --primary: #4a90e2;
-    --primary-hover: #357abd;
-    --on-primary: #ffffff;
+    /* Cool blue with a hint of brand violet */
+    --primary: #6b9ef5;
+    --primary-hover: #8bb4f8;
+    --on-primary: #0b1220;
+    /* Active toggles track primary (not brand violet) for consistent on-state */
+    --btn-active-bg: color-mix(in srgb, var(--primary) 22%, #1e1f20);
+    --btn-active-text: #dce8ff;
+
+    --brand: #a78bfa;
+    --brand-soft: color-mix(in srgb, var(--brand) 18%, transparent);
+    --brand-glow: color-mix(in srgb, var(--brand) 26%, transparent);
 
     --tool-bg: rgba(45, 46, 47, 0.8);
     --tool-hover: #3c3d3f;
@@ -88,6 +138,10 @@
     --icon-btn-bg: rgba(45, 46, 47, 0.85);
     --icon-btn-hover: rgba(60, 61, 63, 0.95);
     --icon-btn-border: rgba(255, 255, 255, 0.1);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
+    --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.42);
 
     /* Code */
     --code-bg: #28292a;
@@ -101,7 +155,18 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        'PingFang SC',
+        'Hiragino Sans GB',
+        'Noto Sans SC',
+        'Microsoft YaHei',
+        Roboto,
+        'Helvetica Neue',
+        Arial,
+        sans-serif;
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -110,8 +175,8 @@ body {
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     transition:
-        background-color 0.2s ease,
-        color 0.2s ease;
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard);
 }
 
 #app {

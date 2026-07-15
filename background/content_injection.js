@@ -245,6 +245,13 @@ export async function injectContentScriptsIntoOpenTabs(options = {}) {
     return results;
 }
 
+// Delay bulk injection after install/update/reload so chrome://extensions can
+// finish tearing down/rebuilding the extension UI. Immediate mass
+// scripting.executeScript across every open tab during that window has been
+// correlated with browser-process crashes (EXC_BREAKPOINT on CrBrowserMain,
+// extensions-frame.GetSiteInstance) when reloading from chrome://extensions.
+const INSTALL_INJECT_DELAY_MS = 750;
+
 function initializeOpenTabs(reason) {
     injectContentScriptsIntoOpenTabs().catch((error) => {
         console.warn(`[Gemini Nexus] Failed to initialize existing tabs${reason}:`, error);
@@ -252,12 +259,26 @@ function initializeOpenTabs(reason) {
 }
 
 export function setupContentScriptInjection(options = {}) {
-    if (options.initializeOpenTabs !== false) {
+    // Do NOT inject into every open tab on every service-worker wake.
+    // Manifest content_scripts already cover normal navigations; existing pages
+    // keep their isolated-world scripts across SW idle restarts. Bulk injection
+    // is only needed after install / update / developer reload (onInstalled).
+    // Opt-in for tests or special hosts: { initializeOpenTabs: true }.
+    if (options.initializeOpenTabs === true) {
         queueMicrotask(() => initializeOpenTabs(' on startup'));
     }
 
+    const installDelayMs =
+        typeof options.installInjectDelayMs === 'number'
+            ? options.installInjectDelayMs
+            : INSTALL_INJECT_DELAY_MS;
+
     chrome.runtime.onInstalled.addListener(() => {
-        initializeOpenTabs(' after install or update');
+        if (installDelayMs <= 0) {
+            initializeOpenTabs(' after install or update');
+            return;
+        }
+        setTimeout(() => initializeOpenTabs(' after install or update'), installDelayMs);
     });
 
     chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {

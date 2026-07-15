@@ -13,7 +13,7 @@
 
 /* Wide Layout Overrides */
 body.layout-wide .header {
-    padding-left: calc(16.2rem + 12px);
+    padding-left: calc(var(--sidebar-width) + var(--layout-gutter));
 }
 
 body.layout-wide #history-toggle {
@@ -38,9 +38,9 @@ body.host-tab:not(.has-page-context) #open-full-page-btn {
     padding: 6px;
     margin: 0 auto;
     background: var(--icon-btn-bg);
-    border: 1px solid rgba(11, 87, 208, 0.34);
-    border-radius: 18px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid color-mix(in srgb, var(--primary) 34%, transparent);
+    border-radius: calc(var(--radius-md) + 6px);
+    box-shadow: var(--shadow-md);
     backdrop-filter: blur(14px);
     pointer-events: auto;
 }
@@ -50,15 +50,15 @@ body.host-tab:not(.has-page-context) #open-full-page-btn {
 }
 
 body.layout-wide .browser-control-bar {
-    left: calc(16.2rem + 12px);
+    left: calc(var(--sidebar-width) + var(--layout-gutter));
 }
 
 body.layout-wide.sidebar-collapsed .header {
-    padding-left: calc(52.2px + 8px);
+    padding-left: calc(var(--sidebar-collapsed-width) + var(--layout-gutter-tight));
 }
 
 body.layout-wide.sidebar-collapsed .browser-control-bar {
-    left: calc(52.2px + 8px);
+    left: calc(var(--sidebar-collapsed-width) + var(--layout-gutter-tight));
 }
 
 .browser-control-target {
@@ -69,7 +69,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     gap: 10px;
     padding: 0 10px;
     border: 0;
-    border-radius: 13px;
+    border-radius: calc(var(--radius-sm) + 5px);
     background: transparent;
     color: var(--text-primary);
     cursor: pointer;
@@ -132,8 +132,8 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     gap: 6px;
     height: 26px;
     padding: 0 9px;
-    border-radius: 999px;
-    background: rgba(11, 87, 208, 0.1);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
     color: var(--primary);
     font-size: 11px;
     font-weight: 700;
@@ -149,21 +149,21 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 }
 
 .browser-control-bar.is-attached {
-    border-color: rgba(5, 150, 105, 0.5);
+    border-color: var(--success-border);
 }
 
 .browser-control-bar.is-attached .browser-control-status {
-    color: #047857;
-    background: rgba(5, 150, 105, 0.12);
+    color: var(--success);
+    background: var(--success-soft);
 }
 
 .browser-control-bar.is-unavailable {
-    border-color: rgba(217, 119, 6, 0.42);
+    border-color: var(--warning-border);
 }
 
 .browser-control-bar.is-unavailable .browser-control-status {
-    color: #b45309;
-    background: rgba(217, 119, 6, 0.12);
+    color: var(--warning);
+    background: var(--warning-soft);
 }
 
 .browser-control-stop {
@@ -309,7 +309,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     max-width: min(220px, calc(100vw - 208px));
     padding: 0 12px;
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-primary);
     cursor: pointer;
@@ -321,9 +321,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     font-weight: 650;
     outline: none;
     transition:
-        background-color 0.2s,
-        border-color 0.2s,
-        color 0.2s;
+        background-color var(--duration-normal) var(--ease-standard),
+        border-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard);
 }
 
 .web-thinking-toggle {
@@ -331,7 +331,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     height: 36px;
     flex: 0 0 36px;
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-tertiary);
     cursor: pointer;
@@ -340,9 +340,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     justify-content: center;
     outline: none;
     transition:
-        background-color 0.2s,
-        border-color 0.2s,
-        color 0.2s;
+        background-color var(--duration-normal) var(--ease-standard),
+        border-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard);
 }
 
 .web-thinking-toggle[hidden] {
@@ -363,12 +363,12 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 
 .web-thinking-toggle:focus-visible {
     box-shadow:
-        0 0 0 2px var(--bg-primary),
+        0 0 0 2px var(--bg-body),
         0 0 0 4px var(--border-focus);
 }
 
 .web-thinking-toggle.is-fast {
-    color: #eab308;
+    color: var(--warning);
 }
 
 .web-thinking-toggle.is-fast svg {
@@ -383,7 +383,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 
 .model-picker-trigger:focus-visible {
     box-shadow:
-        0 0 0 2px var(--bg-primary),
+        0 0 0 2px var(--bg-body),
         0 0 0 4px var(--border-focus);
 }
 
@@ -408,9 +408,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     max-height: min(384px, calc(100vh - 88px));
     padding: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--bg-modal);
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
     z-index: 80;
 }
@@ -432,7 +432,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     min-height: 54px;
     padding: 8px 10px;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: calc(var(--radius-sm) + 2px);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -443,9 +443,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     font: inherit;
     text-align: left;
     transition:
-        background-color 0.15s,
-        border-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .model-picker-option:hover,

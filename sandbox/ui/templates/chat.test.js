@@ -13,5 +13,8 @@ describe('chat template', () => {
         expect(empty.previousElementSibling.id).toBe('chat-history');
         expect(empty.querySelector('[data-i18n="chatEmptyTitle"]')).toBeTruthy();
         expect(empty.querySelector('[data-i18n="chatEmptyHint"]')).toBeTruthy();
+        expect(empty.querySelector('.chat-empty-logo')).toBeTruthy();
+        expect(empty.querySelectorAll('.chat-empty-tips li')).toHaveLength(3);
+        expect(empty.querySelector('[data-i18n="chatEmptyTip1"]')).toBeTruthy();
     });
 });

@@ -139,15 +139,23 @@ function main() {
     }
     const idIdx = args.indexOf('--extension-id');
     const result = install({ extensionId: idIdx !== -1 ? args[idIdx + 1] : undefined });
-    console.log('Installed native logger host.');
+    console.log('Installed native logger host + local HTTP debug bridge.');
     console.log(`  Extension ID:  ${result.extensionId}`);
     console.log(`  Host script:   ${result.hostScriptPath}`);
     console.log(`  Node binary:   ${result.nodeBinary}`);
     console.log(`  Host manifest: ${result.manifestPath}`);
     console.log('  Log file:      ~/Library/Logs/gemini-nexus.log');
+    console.log('  HTTP bridge:   http://127.0.0.1:17321  (starts when extension connects)');
+    console.log('    GET  /health          bridge + extension status');
+    console.log('    GET  /logs?limit=100  recent logs');
+    console.log('    GET  /logs/stream     SSE real-time stream');
+    console.log('    GET  /status          live extension status (RPC)');
+    console.log('    POST /rpc             {"method","params"} → extension');
+    console.log('  Env: GEMINI_NEXUS_BRIDGE_HOST / _PORT / _TOKEN');
     console.log(
         '  Enable in extension: chrome.storage.local.set({ geminiNativeLogEnabled: true })'
     );
+    console.log('  Then reload the extension so connectNative starts the host.');
 }
 
 const invokedAsScript = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

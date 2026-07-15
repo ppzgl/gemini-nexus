@@ -19,10 +19,10 @@ describe('header layout styles', () => {
 
         expect(headerCss).toMatch(/\.header\s*{[^}]*padding:\s*6px 12px 6px 8px/s);
         expect(headerCss).toMatch(
-            /body\.layout-wide\s+\.header\s*{[^}]*padding-left:\s*calc\(16\.2rem \+ 12px\)/s
+            /body\.layout-wide\s+\.header\s*{[^}]*padding-left:\s*calc\(var\(--sidebar-width\) \+ var\(--layout-gutter\)\)/s
         );
         expect(headerCss).toMatch(
-            /body\.layout-wide\.sidebar-collapsed\s+\.header\s*{[^}]*padding-left:\s*calc\(52\.2px \+ 8px\)/s
+            /body\.layout-wide\.sidebar-collapsed\s+\.header\s*{[^}]*padding-left:\s*calc\(var\(--sidebar-collapsed-width\) \+ var\(--layout-gutter-tight\)\)/s
         );
         expect(headerCss).toMatch(/\.header \.icon-btn\s*{[^}]*width:\s*36px/s);
         expect(headerCss).not.toContain('padding: 16px 40px 16px 20px');
@@ -46,12 +46,23 @@ describe('header layout styles', () => {
         const headerCss = await readCss('./header.css');
 
         expect(headerCss).toMatch(/\.model-picker-trigger\s*{[^}]*min-height:\s*36px/s);
-        expect(headerCss).toMatch(/\.model-picker-trigger\s*{[^}]*border-radius:\s*12px/s);
+        expect(headerCss).toMatch(
+            /\.model-picker-trigger\s*{[^}]*border-radius:\s*var\(--radius-md\)/s
+        );
         expect(headerCss).toMatch(/\.model-picker-menu\s*{[^}]*position:\s*absolute/s);
         expect(headerCss).toMatch(/\.model-picker-menu\s*{[^}]*max-width:\s*320px/s);
         expect(headerCss).toMatch(/\.model-picker-option\s*{[^}]*min-height:\s*54px/s);
         expect(headerCss).toMatch(/\.model-picker-option-id\s*{[^}]*font-family:\s*ui-monospace/s);
         expect(headerCss).toMatch(/\.model-native-select\s*{[^}]*position:\s*absolute/s);
         expect(headerCss).not.toContain('#model-select:hover');
+        // Focus ring uses a real token (never the undefined --bg-primary).
+        expect(headerCss).toMatch(
+            /\.model-picker-trigger:focus-visible\s*{[^}]*var\(--bg-body\)/s
+        );
+        expect(headerCss).not.toContain('var(--bg-primary)');
+        expect(headerCss).toMatch(
+            /\.browser-control-status\s*{[^}]*color-mix\(in srgb,\s*var\(--primary\)/s
+        );
+        expect(headerCss).toMatch(/\.browser-control-bar\.is-attached\s*{[^}]*var\(--success-border\)/s);
     });
 });

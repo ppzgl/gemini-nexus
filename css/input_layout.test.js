@@ -6,13 +6,18 @@ const readCss = (file) => readFile(new URL(`./${file}`, import.meta.url), 'utf8'
 describe('input layout styles', () => {
     it('keeps the wide composer inset from the sidebar edge like AMC', async () => {
         const inputCss = await readCss('input.css');
+        const baseCss = await readCss('base.css');
+
+        expect(baseCss).toMatch(/--sidebar-width:\s*16\.2rem/);
+        expect(baseCss).toMatch(/--sidebar-collapsed-width:\s*52\.2px/);
+        expect(baseCss).toMatch(/--composer-max-width:\s*40\.32rem/);
 
         expect(inputCss).toMatch(/\.footer\s*{[^}]*box-sizing:\s*border-box/s);
         expect(inputCss).toMatch(
-            /body\.layout-wide\s+\.footer\s*{[^}]*padding-left:\s*calc\(16\.2rem \+ 12px\)/s
+            /body\.layout-wide\s+\.footer\s*{[^}]*padding-left:\s*calc\(var\(--sidebar-width\) \+ var\(--layout-gutter\)\)/s
         );
         expect(inputCss).toMatch(
-            /body\.layout-wide\.sidebar-collapsed\s+\.footer\s*{[^}]*padding-left:\s*calc\(52\.2px \+ 8px\)/s
+            /body\.layout-wide\.sidebar-collapsed\s+\.footer\s*{[^}]*padding-left:\s*calc\(var\(--sidebar-collapsed-width\) \+ var\(--layout-gutter-tight\)\)/s
         );
         expect(inputCss).not.toContain('body.layout-wide .footer {\n    padding-left: 16.2rem;');
     });
@@ -21,11 +26,13 @@ describe('input layout styles', () => {
         const inputCss = await readCss('input.css');
         const attachmentsCss = await readCss('input_attachments.css');
 
-        expect(inputCss).toMatch(/\.input-wrapper\s*{[^}]*max-width:\s*40\.32rem/s);
+        expect(inputCss).toMatch(
+            /\.input-wrapper\s*{[^}]*max-width:\s*var\(--composer-max-width\)/s
+        );
         expect(inputCss).toMatch(
             /\.input-wrapper\s*{[^}]*border:\s*1px solid var\(--border-color\)/s
         );
-        expect(inputCss).toMatch(/\.input-wrapper\s*{[^}]*border-radius:\s*26px/s);
+        expect(inputCss).toMatch(/\.input-wrapper\s*{[^}]*border-radius:\s*var\(--radius-xl\)/s);
         expect(inputCss).toMatch(/\.input-wrapper\s*{[^}]*background:\s*var\(--bg-input\)/s);
         expect(inputCss).toMatch(/\.composer-actions\s*{[^}]*justify-content:\s*space-between/s);
         expect(inputCss).toMatch(/\.composer-textarea-shell\s*{[^}]*cursor:\s*text/s);
@@ -35,5 +42,41 @@ describe('input layout styles', () => {
 
         expect(attachmentsCss).toMatch(/\.image-preview\s*{[^}]*padding:\s*0 4px 8px/s);
         expect(attachmentsCss).toMatch(/\.preview-item\s*{[^}]*width:\s*64px/s);
+        // Remove control is always discoverable on touch; fine pointers can fade on hover.
+        expect(attachmentsCss).toMatch(/\.preview-remove-btn\s*{[^}]*opacity:\s*0\.92/s);
+        expect(attachmentsCss).toMatch(
+            /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)[\s\S]*\.preview-remove-btn\s*{[^}]*opacity:\s*0/s
+        );
+    });
+
+    it('uses primary toggles + menus instead of a horizontal scroll shell', async () => {
+        const inputCss = await readCss('input.css');
+
+        expect(inputCss).toMatch(/\.tools-primary\s*{/s);
+        expect(inputCss).toMatch(/\.tool-btn\.tool-toggle\.active/s);
+        expect(inputCss).toMatch(/\.tools-menu\s*{/s);
+        expect(inputCss).toMatch(/body:not\(\.has-page-context\)\s+\.context-aware/s);
+        expect(inputCss).not.toMatch(/\.tools-scroll-shell\s*{/s);
+        expect(inputCss).toMatch(/\.capture-dropdown\s*{[^}]*flex-shrink:\s*0/s);
+    });
+
+    it('masks the browser-control cursor icon with currentColor and focuses tools', async () => {
+        const inputCss = await readCss('input.css');
+
+        expect(inputCss).toMatch(
+            /\.tool-btn\s+\.tool-icon-browser-control\s*{[^}]*mask-image:\s*url\(['"]?\.\.\/assets\/cursors\/cursor-chat\.png['"]?\)/s
+        );
+        expect(inputCss).toMatch(
+            /\.tool-btn\s+\.tool-icon-browser-control\s*{[^}]*background-color:\s*currentColor/s
+        );
+        expect(inputCss).not.toMatch(/filter:\s*brightness\(0\)/);
+        expect(inputCss).toMatch(/\.tool-btn:focus-visible\s*{/s);
+        // Narrow sidepanel hides text labels only — not the mask-based icon span.
+        expect(inputCss).toMatch(
+            /@media\s*\(max-width:\s*600px\)[\s\S]*\.tools-primary\s+\.tool-btn\s+span:not\(\.tool-icon-img\)/s
+        );
+        expect(inputCss).not.toMatch(
+            /@media\s*\(max-width:\s*600px\)[\s\S]*\.tools-primary\s+\.tool-btn\s+span\s*,/s
+        );
     });
 });

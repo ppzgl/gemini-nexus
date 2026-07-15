@@ -14,13 +14,13 @@ export const TemplateIcons = {
             <path d="M3 9h18"></path>
         </svg>
     `,
+    /* Same asset as the on-page AI control cursor; color via CSS mask + currentColor. */
     BROWSER_CONTROL: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-            <path d="m13 13 6 6"></path>
-        </svg>
+        <span
+            class="tool-icon-img tool-icon-browser-control"
+            role="img"
+            aria-hidden="true"
+        ></span>
     `,
     MOUSE_POINTER: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -242,6 +242,7 @@ export const TemplateIcons = {
             <path d="M14 11v6"></path>
         </svg>
     `,
+    /* Scan frame + text lines: extract text from a region. */
     OCR: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -250,15 +251,31 @@ export const TemplateIcons = {
             <path d="M20 7V4h-3"></path>
             <path d="M4 17v3h3"></path>
             <path d="M20 17v3h-3"></path>
-            <line x1="9" y1="12" x2="15" y2="12"></line>
+            <path d="M8 9h8"></path>
+            <path d="M8 13h6"></path>
+            <path d="M8 17h4"></path>
         </svg>
     `,
+    /* File with text lines: "read this page into chat context". */
     PAGE_CONTEXT: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+            <path d="M10 9H8"></path>
+            <path d="M16 13H8"></path>
+            <path d="M16 17H8"></path>
+        </svg>
+    `,
+    /* Window + content panes: live HTML/code/preview artifacts (not just "code"). */
+    ARTIFACTS: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <path d="M3 9h18"></path>
+            <path d="M9 21V9"></path>
         </svg>
     `,
     PAPERCLIP: icon`
@@ -296,13 +313,15 @@ export const TemplateIcons = {
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
     `,
+    /* Monitor with lens mark: capture another screen/window. */
     SCREEN_CAPTURE: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-            <path d="M8 20h8"></path>
-            <path d="M12 16v4"></path>
+            <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+            <path d="M8 21h8"></path>
+            <path d="M12 17v4"></path>
+            <circle cx="12" cy="10" r="2.5"></circle>
         </svg>
     `,
     SEND: icon`
@@ -363,12 +382,23 @@ export const TemplateIcons = {
             <path d="M15.41 6.51 8.59 10.49"></path>
         </svg>
     `,
+    /* Crop corners: area capture menu entry. */
     SNIP: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
             <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+        </svg>
+    `,
+    /* Image frame: "capture selection as an image attachment". */
+    CAPTURE_IMAGE: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="9" cy="9" r="2"></circle>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
         </svg>
     `,
     ACTIVE_TAB: icon`

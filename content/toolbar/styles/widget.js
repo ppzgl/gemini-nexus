@@ -1,21 +1,21 @@
 (function () {
     window.GeminiStyles = window.GeminiStyles || {};
     window.GeminiStyles.Widget = `
-        /* Toolbar Styles */
+        /* Toolbar Styles — aligned with sidepanel dark tokens (radius md, system font, soft border) */
         .toolbar {
             position: absolute;
             display: flex;
             align-items: center;
             gap: 4px;
-            background: #1e1e1e;
+            background: #1e1f20;
             padding: 4px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1);
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.32), 0 0 0 1px rgba(255,255,255,0.08);
             opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform: translateY(8px);
+            transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             pointer-events: none;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", Roboto, Helvetica, Arial, sans-serif;
             z-index: 999999;
         }
         .toolbar.visible {
@@ -30,20 +30,20 @@
             gap: 0;
             background: transparent;
             border: none;
-            color: #e3e3e3;
+            color: #c4c7c5;
             padding: 6px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.15s cubic-bezier(0.2, 0, 0, 1), color 0.15s cubic-bezier(0.2, 0, 0, 1);
             white-space: nowrap;
             width: 32px;
             height: 32px;
         }
         .btn:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            color: #e3e3e3;
         }
         .btn.hidden {
             display: none;
@@ -91,10 +91,10 @@
             flex-direction: column;
             gap: 2px;
             padding: 4px;
-            border-radius: 8px;
-            background: #232429;
+            border-radius: 12px;
+            background: #2a2b2c;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.36);
         }
 
         .custom-selection-more:hover .custom-selection-more-menu,
@@ -305,7 +305,9 @@
             right: -10px;
         }
 
-        .menu-item.has-submenu:hover .submenu {
+        .menu-item.has-submenu:hover .submenu,
+        .menu-item.has-submenu:focus-within .submenu,
+        .menu-item.has-submenu.submenu-open .submenu {
             display: flex;
         }
     `;

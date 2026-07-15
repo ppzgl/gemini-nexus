@@ -80,6 +80,15 @@ export function isMessageForCurrentTab(state, message) {
 
 export function forwardToBackground(bridge, payload) {
     const scopedPayload = attachCurrentTabContext(bridge.state, payload);
+    if (scopedPayload?.action === 'SEND_PROMPT') {
+        console.info('[Gemini Nexus] Forwarding SEND_PROMPT to background', {
+            sessionId: scopedPayload.sessionId || null,
+            model: scopedPayload.model || null,
+            enableBrowserControl: scopedPayload.enableBrowserControl === true,
+            sidePanelTabId: scopedPayload.sidePanelTabId ?? null,
+            textLen: typeof scopedPayload.text === 'string' ? scopedPayload.text.length : 0,
+        });
+    }
     chrome.runtime
         .sendMessage(scopedPayload)
         .then((response) => {
@@ -96,6 +105,11 @@ export function forwardToBackground(bridge, payload) {
             }
         })
         .catch((error) => {
+            console.error(
+                '[Gemini Nexus] chrome.runtime.sendMessage failed:',
+                scopedPayload?.action,
+                error
+            );
             if (scopedPayload?.action === 'TOGGLE_BROWSER_CONTROL') {
                 postBrowserControlToggleResult(bridge, scopedPayload, {
                     status: 'error',

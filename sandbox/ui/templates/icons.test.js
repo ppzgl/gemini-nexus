@@ -26,6 +26,8 @@ describe('TemplateIcons', () => {
         expect(TemplateIcons.FORM).toContain('<svg');
         expect(TemplateIcons.CLOCK).toContain('<svg');
         expect(TemplateIcons.CODE).toContain('<svg');
+        expect(TemplateIcons.ARTIFACTS).toContain('<svg');
+        expect(TemplateIcons.CAPTURE_IMAGE).toContain('<svg');
         expect(TemplateIcons.MESSAGE_SQUARE).toContain('<svg');
         expect(TemplateIcons.TERMINAL).toContain('<svg');
         expect(TemplateIcons.KEY).toContain(
@@ -50,6 +52,25 @@ describe('TemplateIcons', () => {
         );
         expect(TemplateIcons.RELEASES).not.toContain('M18 8h1a4 4 0 0 1 0 8h-1');
         expect(TemplateIcons.RELEASES).not.toContain('M2 8h16v9a4 4 0 0 1-4 4H6');
+    });
+
+    it('uses semantic icons for composer tools', () => {
+        // Browser control: mask span colored by currentColor (asset wired in CSS).
+        expect(TemplateIcons.BROWSER_CONTROL).toContain('tool-icon-browser-control');
+        expect(TemplateIcons.BROWSER_CONTROL).toContain('role="img"');
+        expect(TemplateIcons.BROWSER_CONTROL).toContain('<span');
+        expect(TemplateIcons.BROWSER_CONTROL).not.toContain('<img');
+        // Page context: document with text lines (not a sidebar panel).
+        expect(TemplateIcons.PAGE_CONTEXT).toContain('M15 2H6a2 2 0 0 0-2 2v16');
+        expect(TemplateIcons.PAGE_CONTEXT).toContain('M16 13H8');
+        expect(TemplateIcons.PAGE_CONTEXT).not.toContain('x1="9" y1="3" x2="9" y2="21"');
+        // Artifacts: app window panes (not raw code brackets).
+        expect(TemplateIcons.ARTIFACTS).toContain('M3 9h18');
+        expect(TemplateIcons.ARTIFACTS).toContain('M9 21V9');
+        // Capture-as-image is distinct from the crop menu trigger.
+        expect(TemplateIcons.CAPTURE_IMAGE).toContain('m21 15-3.086-3.086');
+        expect(TemplateIcons.SNIP).toContain('M6 2v14a2 2 0 0 0 2 2h14');
+        expect(TemplateIcons.CAPTURE_IMAGE).not.toBe(TemplateIcons.SNIP);
     });
 
     it('uses stacked browser tabs for the tab switcher trigger', () => {

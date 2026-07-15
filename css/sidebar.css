@@ -3,16 +3,16 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 16.2rem;
+    width: var(--sidebar-width);
     height: 100%;
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
     z-index: 200;
     transform: translateX(-100%);
     transition:
-        transform 0.2s cubic-bezier(0.2, 0, 0, 1),
-        width 0.2s cubic-bezier(0.2, 0, 0, 1),
-        background-color 0.2s;
+        transform var(--duration-normal) var(--ease-standard),
+        width var(--duration-normal) var(--ease-standard),
+        background-color var(--duration-normal) var(--ease-standard);
     will-change: transform, width;
     display: flex;
     flex-direction: column;
@@ -29,16 +29,16 @@ body.layout-wide .sidebar {
 
 .sidebar-expanded-pane {
     width: 100%;
-    min-width: 16.2rem;
+    min-width: var(--sidebar-width);
     height: 100%;
     display: flex;
     flex-direction: column;
-    transition: opacity 0.18s ease;
+    transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
 .collapsed-sidebar-rail {
     display: none;
-    width: 52.2px;
+    width: var(--sidebar-collapsed-width);
     height: 100%;
     padding: 6px;
     flex-direction: column;
@@ -49,7 +49,7 @@ body.layout-wide .sidebar {
 }
 
 body.layout-wide.sidebar-collapsed .sidebar {
-    width: 52.2px;
+    width: var(--sidebar-collapsed-width);
 }
 
 body.layout-wide.sidebar-collapsed .sidebar-expanded-pane {
@@ -91,7 +91,7 @@ body.layout-wide.sidebar-collapsed .settings-btn {
     width: 40px;
     height: 40px;
     padding: 0;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     justify-content: center;
     gap: 0;
 }
@@ -105,7 +105,7 @@ body.layout-wide .sidebar-overlay {
     height: 40px;
     padding: 0;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -113,8 +113,8 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     justify-content: center;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .collapsed-sidebar-button:hover,
@@ -148,9 +148,9 @@ body.layout-wide .sidebar-overlay {
     overflow: auto;
     padding: 8px;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-modal);
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-lg);
     z-index: 9999;
 }
 
@@ -357,7 +357,7 @@ body.layout-wide .sidebar-overlay {
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -415,7 +415,7 @@ body.layout-wide .sidebar-overlay {
 
 .history-group,
 .history-ungrouped-dropzone {
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     transition:
         background-color 0.15s,
         box-shadow 0.15s;
@@ -438,7 +438,7 @@ body.layout-wide .sidebar-overlay {
 .history-group-summary {
     min-height: 34px;
     padding: 6px 34px 6px 6px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -543,7 +543,7 @@ body.layout-wide .sidebar-overlay {
     min-height: 36px;
     margin: 2px 0;
     padding: 8px 40px 8px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -612,6 +612,7 @@ body.layout-wide .sidebar-overlay {
     pointer-events: none;
 }
 
+/* Touch / coarse: always show the ⋯ control so menus are reachable. */
 .history-menu-trigger {
     position: absolute;
     right: 4px;
@@ -620,12 +621,12 @@ body.layout-wide .sidebar-overlay {
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
     flex-shrink: 0;
-    opacity: 0;
+    opacity: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -635,10 +636,19 @@ body.layout-wide .sidebar-overlay {
         color 0.15s;
 }
 
-.history-item:hover .history-menu-trigger,
-.history-item:focus-within .history-menu-trigger,
-.history-item.menu-open .history-menu-trigger {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    .history-menu-trigger {
+        opacity: 0;
+    }
+
+    .history-item:hover .history-menu-trigger,
+    .history-item:focus-within .history-menu-trigger,
+    .history-item.menu-open .history-menu-trigger,
+    .history-group:hover .history-menu-trigger,
+    .history-group:focus-within .history-menu-trigger,
+    .history-group.menu-open .history-menu-trigger {
+        opacity: 1;
+    }
 }
 
 .history-menu-trigger:hover,
@@ -659,9 +669,9 @@ body.layout-wide .sidebar-overlay {
     min-width: 160px;
     padding: 4px;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-modal);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+    box-shadow: var(--shadow-md);
     z-index: 20;
 }
 
@@ -694,7 +704,7 @@ body.layout-wide .sidebar-overlay {
 }
 
 .history-menu-delete:hover {
-    color: var(--danger-color, #dc2626);
+    color: var(--danger);
 }
 
 @keyframes history-generating-spin {
@@ -710,7 +720,7 @@ body.layout-wide .sidebar-overlay {
     z-index: 190;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) var(--ease-standard);
 }
 
 .sidebar-overlay.visible {
@@ -729,7 +739,7 @@ body.layout-wide .sidebar-overlay {
     padding: 0 12px;
     background: transparent;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 500;

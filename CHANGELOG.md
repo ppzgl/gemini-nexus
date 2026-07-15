@@ -1,5 +1,20 @@
 # Changelog
 
+## v5.0.19 - 2026-07-15
+
+- 修复侧边栏「点发送没反应」：生成态卡住时不再静默吞掉点击；`BACKGROUND_REQUEST_ERROR` 会清 loading；空内容发送给出状态提示；发送按钮空态改为可点反馈（`is-empty`）而不是 `disabled` 完全无事件。
+- 增加 3 分钟生成 watchdog、sandbox 启动失败可见错误，以及 SEND_PROMPT 全链路 console 日志（可经本地 debug bridge 实时观察）。
+
+## v5.0.18 - 2026-07-15
+
+- 新增**本地调试桥**（Local Debug Bridge）：Native Messaging Host 在扩展连接时于 `http://127.0.0.1:17321` 暴露 HTTP/SSE，本地工具可实时拉取日志与状态（Chrome MV3 扩展本身无法监听 TCP）。
+- Host API：`GET /health`、`GET /logs`、`GET /logs/stream`（SSE）、`GET /status`、`POST /rpc`；可选 `GEMINI_NEXUS_BRIDGE_TOKEN`；非 loopback 绑定强制要求 token。
+- `NativeLoggerSink` 支持双向 RPC（`ping` / `get_logs` / `get_status`），启用时立即 `connectNative` 以保持 bridge 存活；说明见 `docs/local-debug-bridge.md`。
+
+## v5.0.17 - 2026-07-15
+
+- 修复侧边栏 sandbox 回传目标源错误：manifest sandbox 页为 opaque origin。此前安全加固误用 `chrome.runtime.getURL('')` 作为 `postMessage` targetOrigin，消息被静默丢弃，侧边栏一直转圈/无 AI 正文（浏览器控制任务仍可在后台执行）；`postMessage(..., 'null')` 在 Chrome 会抛 `Invalid target origin 'null'`。现改回对 sandbox `contentWindow` 使用 `'*'`（只投递到该 iframe，不是广播），并补充 frame 回归测试。
+
 ## v5.0.16 - 2026-07-13
 
 - 修复悬浮弹窗（划词 / 快速提问）Markdown 不渲染：语言偏好异步恢复后会重建工具栏 UI，却未重建 sandbox 渲染 bridge，导致结果以原始 Markdown 文本显示；现在每次重建都会重新创建 bridge。

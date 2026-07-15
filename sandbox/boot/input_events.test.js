@@ -220,7 +220,43 @@ describe('input events', () => {
         expect(app.handleCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('cycles models with Tab from the textarea or any non-editable target', () => {
+    it('does not cancel generation with Escape while a dismissible overlay is open', () => {
+        const { app, inputFn } = bindHarness({ isGenerating: true });
+        inputFn.focus();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="tools-more-menu" role="menu"></div>'
+        );
+
+        const keyEvent = createKeyboardEvent('Escape');
+        inputFn.dispatchEvent(keyEvent);
+
+        expect(app.handleCancel).not.toHaveBeenCalled();
+    });
+
+    it('does not cancel generation with Enter while generating', () => {
+        const { app, inputFn, sendBtn } = bindHarness({ isGenerating: true });
+        inputFn.focus();
+        const clickSpy = vi.fn();
+        sendBtn.addEventListener('click', clickSpy);
+
+        const keyEvent = createKeyboardEvent('Enter');
+        inputFn.dispatchEvent(keyEvent);
+
+        expect(keyEvent.defaultPrevented).toBe(true);
+        expect(clickSpy).not.toHaveBeenCalled();
+        expect(app.handleCancel).not.toHaveBeenCalled();
+        expect(app.handleSendMessage).not.toHaveBeenCalled();
+    });
+
+    it('still cancels generation when the stop button is clicked', () => {
+        const { app, sendBtn } = bindHarness({ isGenerating: true });
+        sendBtn.click();
+        expect(app.handleCancel).toHaveBeenCalledTimes(1);
+        expect(app.handleSendMessage).not.toHaveBeenCalled();
+    });
+
+    it('cycles models with Tab from the prompt, not from arbitrary UI targets', () => {
         const { app, inputFn, modelSelect } = bindHarness();
         inputFn.focus();
 
@@ -231,15 +267,26 @@ describe('input events', () => {
         expect(modelSelect.value).toBe('b');
         expect(app.handleModelChange).toHaveBeenLastCalledWith('b');
 
-        inputFn.blur();
-        const globalTabEvent = createKeyboardEvent('Tab');
-        document.body.dispatchEvent(globalTabEvent);
+        const trigger = document.getElementById('model-picker-trigger');
+        trigger.focus();
+        const pickerTabEvent = createKeyboardEvent('Tab');
+        trigger.dispatchEvent(pickerTabEvent);
         vi.advanceTimersByTime(50);
 
-        expect(globalTabEvent.defaultPrevented).toBe(true);
+        expect(pickerTabEvent.defaultPrevented).toBe(true);
         expect(modelSelect.value).toBe('c');
         expect(app.handleModelChange).toHaveBeenLastCalledWith('c');
-        expect(document.activeElement).toBe(inputFn);
+
+        inputFn.blur();
+        const otherBtn = document.createElement('button');
+        otherBtn.id = 'other-btn';
+        document.body.appendChild(otherBtn);
+        otherBtn.focus();
+        const globalTabEvent = createKeyboardEvent('Tab');
+        otherBtn.dispatchEvent(globalTabEvent);
+
+        expect(globalTabEvent.defaultPrevented).toBe(false);
+        expect(modelSelect.value).toBe('c');
     });
 
     it('focuses the chat input at the end with the explicit focus shortcut', () => {

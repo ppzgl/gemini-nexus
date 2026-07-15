@@ -15,37 +15,44 @@ export const FooterTemplate = `
 
             <div class="composer-actions">
                 <div class="composer-actions-left">
-                    <label id="upload-btn" data-i18n-title="uploadImageTooltip" title="Upload File">
+                    <label id="upload-btn" tabindex="0" role="button" data-i18n-title="uploadImageTooltip" title="Upload File" aria-label="Upload File">
                         ${TemplateIcons.PAPERCLIP}
-                        <input type="file" id="image-input" class="file-input-hidden" multiple accept="image/*, .pdf, .txt, .js, .py, .html, .css, .json, .csv, .md">
+                        <input type="file" id="image-input" class="file-input-hidden" tabindex="-1" multiple accept="image/*, .pdf, .txt, .js, .py, .html, .css, .json, .csv, .md">
                     </label>
 
                     <div class="tools-container">
-                        <button id="tools-scroll-left" class="scroll-nav-btn left" aria-label="Scroll Left">
-                            ${TemplateIcons.CHEVRON_LEFT}
-                        </button>
-
-                        <div class="tools-row" id="tools-row">
-                            <button id="browser-control-btn" class="tool-btn" data-i18n-title="browserControlTooltip" title="Allow model to control browser">
-                                ${TemplateIcons.BROWSER_CONTROL}
-                                <span data-i18n="browserControl">Control</span>
-                            </button>
-                            <button id="page-context-btn" class="tool-btn context-aware" data-i18n-title="pageContextTooltip" title="Toggle chat with page content">
+                        <!-- Primary toggles: always visible, no horizontal scroll -->
+                        <div class="tools-primary" id="tools-row">
+                            <button id="page-context-btn" class="tool-btn tool-toggle" data-i18n-title="pageContextTooltip" title="Toggle chat with page content" aria-pressed="false">
                                 ${TemplateIcons.PAGE_CONTEXT}
                                 <span data-i18n="pageContext">Page</span>
                             </button>
-                            <button id="live-artifacts-btn" class="tool-btn" data-i18n-title="liveArtifactsTooltip" title="Toggle Live Artifacts responses">
-                                ${TemplateIcons.CODE}
+                            <button id="browser-control-btn" class="tool-btn tool-toggle" data-i18n-title="browserControlTooltip" title="Allow model to control browser" aria-pressed="false">
+                                ${TemplateIcons.BROWSER_CONTROL}
+                                <span data-i18n="browserControl">Control</span>
+                            </button>
+                            <button id="live-artifacts-btn" class="tool-btn tool-toggle" data-i18n-title="liveArtifactsTooltip" title="Toggle Live Artifacts responses" aria-pressed="false">
+                                ${TemplateIcons.ARTIFACTS}
                                 <span data-i18n="liveArtifacts">Artifacts</span>
                             </button>
-                            <button id="quote-btn" class="tool-btn context-aware" data-i18n-title="quoteTooltip" title="Quote selected text from page">
-                                ${TemplateIcons.QUOTE}
-                                <span data-i18n="quote">Quote</span>
+                        </div>
+
+                        <!-- Secondary actions -->
+                        <div class="tools-more-dropdown" id="tools-more-dropdown">
+                            <button id="tools-more-btn" class="tool-btn" data-i18n-title="toolsMoreTooltip" title="More tools" aria-haspopup="menu" aria-expanded="false" aria-controls="tools-more-menu">
+                                ${TemplateIcons.MORE_HORIZONTAL}
+                                <span data-i18n="toolsMore">More</span>
                             </button>
-                            <button id="screen-capture-btn" class="tool-btn" data-i18n-title="screenCaptureTooltip" title="Capture another screen or app window">
-                                ${TemplateIcons.SCREEN_CAPTURE}
-                                <span data-i18n="screenCapture">Screen</span>
-                            </button>
+                            <div id="tools-more-menu" class="tools-menu" role="menu" hidden>
+                                <button id="quote-btn" class="tools-menu-item context-aware" role="menuitem" data-i18n-title="quoteTooltip" title="Quote selected text from page">
+                                    ${TemplateIcons.QUOTE}
+                                    <span data-i18n="quote">Quote</span>
+                                </button>
+                                <button id="screen-capture-btn" class="tools-menu-item" role="menuitem" data-i18n-title="screenCaptureTooltip" title="Capture another screen or app window">
+                                    ${TemplateIcons.SCREEN_CAPTURE}
+                                    <span data-i18n="screenCapture">Screen</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="capture-dropdown" id="capture-dropdown">
@@ -54,30 +61,26 @@ export const FooterTemplate = `
                                 <span data-i18n="captureMenu">Capture</span>
                                 ${TemplateIcons.CHEVRON_DOWN}
                             </button>
-                            <div id="capture-menu" class="capture-menu" role="menu" hidden>
-                                <button id="ocr-btn" class="capture-menu-item" role="menuitem" data-i18n-title="ocrTooltip" title="Capture area and extract text">
+                            <div id="capture-menu" class="tools-menu capture-menu" role="menu" hidden>
+                                <button id="ocr-btn" class="tools-menu-item" role="menuitem" data-i18n-title="ocrTooltip" title="Capture area and extract text">
                                     ${TemplateIcons.OCR}
                                     <span data-i18n="ocrLabel">Extract text (OCR)</span>
                                 </button>
-                                <button id="screenshot-translate-btn" class="capture-menu-item" role="menuitem" data-i18n-title="screenshotTranslateTooltip" title="Capture area and translate text">
+                                <button id="screenshot-translate-btn" class="tools-menu-item" role="menuitem" data-i18n-title="screenshotTranslateTooltip" title="Capture area and translate text">
                                     ${TemplateIcons.TRANSLATE}
                                     <span data-i18n="screenshotTranslateLabel">Translate screenshot</span>
                                 </button>
-                                <button id="snip-btn" class="capture-menu-item" role="menuitem" data-i18n-title="snipTooltip" title="Capture area to input">
-                                    ${TemplateIcons.SNIP}
+                                <button id="snip-btn" class="tools-menu-item" role="menuitem" data-i18n-title="snipTooltip" title="Capture area to input">
+                                    ${TemplateIcons.CAPTURE_IMAGE}
                                     <span data-i18n="snipLabel">Capture as image</span>
                                 </button>
                             </div>
                         </div>
-
-                        <button id="tools-scroll-right" class="scroll-nav-btn right" aria-label="Scroll Right">
-                            ${TemplateIcons.CHEVRON_RIGHT}
-                        </button>
                     </div>
                 </div>
 
                 <div class="composer-actions-right">
-                    <button id="send" data-i18n-title="sendMessageTooltip" title="Send message">
+                    <button id="send" type="button" data-i18n-title="sendMessageTooltip" title="Send message" class="is-empty" aria-disabled="true">
                         ${TemplateIcons.SEND}
                     </button>
                 </div>

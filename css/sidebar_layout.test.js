@@ -7,13 +7,13 @@ describe('sidebar layout styles', () => {
     it('keeps the fullscreen sidebar dense and AMC-like instead of pill-heavy', async () => {
         const sidebarCss = await readCss('sidebar.css');
 
-        expect(sidebarCss).toMatch(/\.sidebar\s*{[^}]*width:\s*16\.2rem/s);
+        expect(sidebarCss).toMatch(/\.sidebar\s*{[^}]*width:\s*var\(--sidebar-width\)/s);
         expect(sidebarCss).toMatch(
             /\.sidebar\s*{[^}]*border-right:\s*1px solid var\(--border-color\)/s
         );
         expect(sidebarCss).toMatch(/\.sidebar-actions\s*{[^}]*gap:\s*4px/s);
         expect(sidebarCss).toMatch(/\.sidebar-action-row\s*{[^}]*height:\s*32px/s);
-        expect(sidebarCss).toMatch(/\.history-item\s*{[^}]*border-radius:\s*8px/s);
+        expect(sidebarCss).toMatch(/\.history-item\s*{[^}]*border-radius:\s*var\(--radius-sm\)/s);
         expect(sidebarCss).toMatch(
             /body\.layout-wide\.sidebar-collapsed\s+\.sidebar-expanded-pane\s*{[^}]*opacity:\s*0/s
         );
@@ -21,7 +21,10 @@ describe('sidebar layout styles', () => {
             /body\.layout-wide\.sidebar-collapsed\s+\.collapsed-sidebar-rail\s*{[^}]*display:\s*flex/s
         );
         expect(sidebarCss).toMatch(/\.collapsed-sidebar-button\s*{[^}]*width:\s*40px/s);
-        expect(sidebarCss).toMatch(/\.history-menu-trigger\s*{[^}]*opacity:\s*0/s);
+        expect(sidebarCss).toMatch(/\.history-menu-trigger\s*{[^}]*opacity:\s*1/s);
+        expect(sidebarCss).toMatch(
+            /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)[\s\S]*\.history-menu-trigger\s*{[^}]*opacity:\s*0/s
+        );
         expect(sidebarCss).toMatch(/\.history-item-menu\s*{[^}]*position:\s*absolute/s);
         expect(sidebarCss).toMatch(/\.collapsed-recent-popover\s*{[^}]*position:\s*fixed/s);
         expect(sidebarCss).toMatch(/\.collapsed-recent-popover\s*{[^}]*z-index:\s*9999/s);

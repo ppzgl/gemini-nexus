@@ -31,7 +31,7 @@ describe('settings layout styles', () => {
             /\.settings-content\.split-layout\s*{[^}]*width:\s*min\(920px,\s*calc\(100vw - 32px\)\)/s
         );
         expect(settingsCss).toMatch(
-            /\.settings-content\.split-layout\s*{[^}]*border-radius:\s*8px/s
+            /\.settings-content\.split-layout\s*{[^}]*border-radius:\s*var\(--radius-md\)/s
         );
         expect(settingsCss).toMatch(/\.settings-page\s*{[^}]*align-items:\s*center/s);
         expect(settingsCss).toMatch(/\.settings-page\s*{[^}]*padding:\s*24px/s);
@@ -45,8 +45,15 @@ describe('settings layout styles', () => {
             /\.settings-main\s+\.settings-header\s*{[^}]*position:\s*sticky/s
         );
         expect(settingsCss).toMatch(/\.settings-sidebar\s*{[^}]*width:\s*232px/s);
-        expect(controlsCss).toMatch(/\.setting-panel\s*{[^}]*border-radius:\s*8px/s);
+        expect(controlsCss).toMatch(
+            /\.setting-panel\s*{[^}]*border-radius:\s*var\(--radius-sm\)/s
+        );
         expect(controlsCss).not.toMatch(/\.setting-panel\s*{[^}]*transform:/s);
+        // Section groups read as soft cards
+        expect(settingsCss).toMatch(
+            /\.setting-group\s*{[^}]*border-radius:\s*var\(--radius-md\)/s
+        );
+        expect(settingsCss).toMatch(/\.data-management-card-danger/s);
     });
 
     it('keeps the settings surface quiet instead of framed by many divider lines', async () => {
@@ -56,14 +63,17 @@ describe('settings layout styles', () => {
         const mcpCss = await readCss('./settings_mcp.css');
         const customToolsCss = await readCss('./settings_custom_tools.css');
 
-        expect(settingsCss).toMatch(/\.settings-content\.split-layout\s*{[^}]*border:\s*none/s);
+        // Soft outer frame only — no heavy chrome inside the nav column.
+        expect(settingsCss).toMatch(
+            /\.settings-content\.split-layout\s*{[^}]*border:\s*1px solid/s
+        );
         expect(settingsCss).toMatch(/\.settings-sidebar\s*{[^}]*border-right:\s*none/s);
         expect(settingsCss).toMatch(/\.settings-sidebar-header\s*{[^}]*border-bottom:\s*none/s);
         expect(settingsCss).toMatch(
             /\.settings-main\s+\.settings-header\s*{[^}]*border-bottom:\s*none/s
         );
         expect(settingsCss).not.toContain('.settings-tab.active::after');
-        expect(controlsCss).toMatch(/\.setting-panel\s*{[^}]*border:\s*none/s);
+        expect(controlsCss).toMatch(/\.setting-panel\s*{[^}]*border:\s*1px solid/s);
         expect(controlsCss).toMatch(
             /\.setting-panel\s+\.settings-section-offset\s*{[^}]*border-top:\s*none/s
         );
@@ -100,7 +110,7 @@ describe('settings layout styles', () => {
 
         expect(inputCss).not.toMatch(/body\.host-tab\s+\.tool-btn\.context-aware/s);
         expect(inputCss).toMatch(
-            /body:not\(\.has-page-context\)\s+\.tool-btn\.context-aware\s*{[^}]*display:\s*none/s
+            /body:not\(\.has-page-context\)\s+\.context-aware\s*{[^}]*display:\s*none/s
         );
         expect(inputCss).not.toMatch(/body\.layout-wide\s+\.tool-btn\.context-aware/s);
         expect(headerCss).toMatch(

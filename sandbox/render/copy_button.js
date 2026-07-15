@@ -5,8 +5,10 @@ import '../../shared/ui/copy_feedback.js';
 
 export function createCopyButton(getCopyText) {
     const button = document.createElement('button');
+    button.type = 'button';
     button.className = 'copy-btn';
     button.title = t('copyContent');
+    button.setAttribute('aria-label', t('copyContent'));
     button.innerHTML = TemplateIcons.COPY;
 
     button.addEventListener('click', async () => {

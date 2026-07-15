@@ -6,6 +6,8 @@ export class ImageManager {
         this.inputFn = elements.inputFn;
 
         this.onUrlDrop = callbacks.onUrlDrop;
+        this.onFilesChanged =
+            typeof callbacks.onFilesChanged === 'function' ? callbacks.onFilesChanged : null;
 
         this.files = []; // Array of { base64, type, name }
 
@@ -225,11 +227,18 @@ export class ImageManager {
         return [...this.files];
     }
 
+    _notifyFilesChanged() {
+        if (this.onFilesChanged) {
+            this.onFilesChanged(this.files.length > 0, this.getFiles());
+        }
+    }
+
     _render() {
         this.imagePreview.innerHTML = '';
 
         if (this.files.length === 0) {
             this.imagePreview.classList.remove('has-image');
+            this._notifyFilesChanged();
             return;
         }
 
@@ -286,5 +295,7 @@ export class ImageManager {
 
             this.imagePreview.appendChild(previewItem);
         });
+
+        this._notifyFilesChanged();
     }
 }

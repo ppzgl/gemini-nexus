@@ -2,8 +2,6 @@ import { bindInputEvents } from './input_events.js';
 import { bindToolButtonEvents } from './tool_button_events.js';
 import { LIVE_ARTIFACT_FOLLOWUP_EVENT } from '../core/live_artifacts.js';
 
-export { getToolsPageScrollDistance } from './tool_button_events.js';
-
 export function bindAppEvents(app, ui, setResizeRef) {
     const newChatHeaderBtn = document.getElementById('new-chat-header-btn');
     if (newChatHeaderBtn) {

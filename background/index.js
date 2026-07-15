@@ -33,7 +33,35 @@ const nativeLoggerSink = new NativeLoggerSink({
 });
 const logManager = new LogManager([nativeLoggerSink]);
 
-chrome.storage.local.get(['geminiNativeLogEnabled', 'geminiNativeLogLevel'], (result) => {
+// Local HTTP bridge RPC handlers (host listens on 127.0.0.1:17321 by default).
+nativeLoggerSink.setRequestHandler('ping', async () => ({ pong: true, ts: Date.now() }));
+nativeLoggerSink.setRequestHandler('get_logs', async (params = {}) => {
+    const limit = Math.max(1, Math.min(Number(params.limit) || 100, 1000));
+    let logs = logManager.getLogs();
+    if (params.level) {
+        const want = String(params.level).toUpperCase();
+        logs = logs.filter((e) => String(e.level).toUpperCase() === want);
+    }
+    return { logs: logs.slice(-limit) };
+});
+nativeLoggerSink.setRequestHandler('get_status', async () => {
+    let manifest = {};
+    try {
+        manifest = chrome.runtime.getManifest() || {};
+    } catch {
+        // ignore
+    }
+    return {
+        version: manifest.version || null,
+        name: manifest.name || 'Gemini Nexus',
+        unpacked: isUnpackedExtension(),
+        nativeLogEnabled: nativeLoggerSink.enabled,
+        logCount: logManager.getLogs().length,
+        ts: Date.now(),
+    };
+});
+
+function applyNativeLogSettings(result = {}) {
     if (result.geminiNativeLogEnabled === false) {
         nativeLoggerSink.setEnabled(false);
     } else if (result.geminiNativeLogEnabled === true || defaultNativeLogEnabled) {
@@ -46,6 +74,10 @@ chrome.storage.local.get(['geminiNativeLogEnabled', 'geminiNativeLogLevel'], (re
         nativeLoggerSink.setEnabled(false);
     }
     if (result.geminiNativeLogLevel) nativeLoggerSink.setMinLevel(result.geminiNativeLogLevel);
+}
+
+chrome.storage.local.get(['geminiNativeLogEnabled', 'geminiNativeLogLevel'], (result) => {
+    applyNativeLogSettings(result);
 });
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -57,9 +89,17 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
 });
 
+// Eager connect so the native host (HTTP bridge) starts even before first log.
+if (defaultNativeLogEnabled) {
+    nativeLoggerSink.connect();
+}
+
 setupConsoleInterception(logManager);
 
 console.info('[Gemini Nexus] Background Service Worker Started');
+console.info(
+    '[Gemini Nexus] Local debug bridge: http://127.0.0.1:17321/health (requires native logger host)'
+);
 
 const sessionManager = new GeminiSessionManager();
 const imageManager = new ImageManager();

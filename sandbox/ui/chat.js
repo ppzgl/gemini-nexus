@@ -11,15 +11,18 @@ export class ChatController {
         this.sendBtn = elements.sendBtn;
         this.pageContextBtn = document.getElementById('page-context-btn');
         this.liveArtifactsBtn = document.getElementById('live-artifacts-btn');
+        this.imagePreview = elements.imagePreview || document.getElementById('image-preview');
         this.footerEl = document.querySelector('.footer');
         this.shouldFollowBottom = true;
         this.scrollFrame = null;
         this.resizeObserver = null;
         this.footerResizeObserver = null;
         this.observedResizeElements = new WeakSet();
+        this.hasAttachments = false;
 
         this.initListeners();
         this.initFooterOffsetSync();
+        this.syncSendEnabled();
     }
 
     initListeners() {
@@ -28,6 +31,7 @@ export class ChatController {
                 this.inputFn.style.height = 'auto';
                 this.inputFn.style.height = this.inputFn.scrollHeight + 'px';
                 this.updateFooterOffset();
+                this.syncSendEnabled();
             });
         }
 
@@ -231,17 +235,49 @@ export class ChatController {
             this.updateFooterOffset();
             this.inputFn.focus();
         }
+        this.syncSendEnabled();
+    }
+
+    setHasAttachments(hasAttachments) {
+        this.hasAttachments = hasAttachments === true;
+        this.syncSendEnabled();
+    }
+
+    hasSendableContent() {
+        const text = this.inputFn?.value?.trim() || '';
+        if (text) return true;
+        if (this.hasAttachments) return true;
+        if (this.imagePreview?.classList.contains('has-image')) return true;
+        return false;
+    }
+
+    syncSendEnabled() {
+        if (!this.sendBtn) return;
+        // Stop must always be clickable while generating.
+        if (this.sendBtn.classList.contains('generating')) {
+            this.sendBtn.disabled = false;
+            this.sendBtn.setAttribute('aria-disabled', 'false');
+            return;
+        }
+        // Keep the button enabled so click always fires and can show "enter a
+        // message" feedback. Visual/aria still reflect empty vs ready state.
+        const canSend = this.hasSendableContent();
+        this.sendBtn.disabled = false;
+        this.sendBtn.setAttribute('aria-disabled', canSend ? 'false' : 'true');
+        this.sendBtn.classList.toggle('is-empty', !canSend);
     }
 
     togglePageContext(isActive) {
         if (this.pageContextBtn) {
             this.pageContextBtn.classList.toggle('active', isActive);
+            this.pageContextBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         }
     }
 
     toggleLiveArtifacts(isActive) {
         if (this.liveArtifactsBtn) {
             this.liveArtifactsBtn.classList.toggle('active', isActive);
+            this.liveArtifactsBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         }
     }
 
@@ -254,6 +290,7 @@ export class ChatController {
                 this.sendBtn.innerHTML = TemplateIcons.STOP;
                 this.sendBtn.title = t('stopGenerating');
                 this.sendBtn.classList.add('generating');
+                this.sendBtn.disabled = false;
             }
         } else {
             this.updateStatus('');
@@ -262,9 +299,9 @@ export class ChatController {
             if (this.sendBtn) {
                 this.sendBtn.innerHTML = TemplateIcons.SEND;
                 this.sendBtn.title = t('sendMessage');
-                this.sendBtn.disabled = false;
                 this.sendBtn.classList.remove('generating');
             }
+            this.syncSendEnabled();
         }
     }
 }

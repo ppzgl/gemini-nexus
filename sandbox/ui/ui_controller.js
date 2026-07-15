@@ -7,6 +7,7 @@ import { createModelOptions, getPreferredModel } from './model_options.js';
 import { resizeSelectToSelectedOption } from './model_select_width.js';
 import { syncModelPicker } from './model_picker.js';
 import { syncWebThinkingToggle } from './web_thinking_toggle.js';
+import { t } from '../core/i18n.js';
 
 export class UIController {
     constructor(elements) {
@@ -66,7 +67,24 @@ export class UIController {
     }
 
     setPageContextAvailable(isAvailable) {
-        document.body.classList.toggle('has-page-context', isAvailable === true);
+        const available = isAvailable === true;
+        document.body.classList.toggle('has-page-context', available);
+
+        // Always visible so the tool is discoverable; disabled when no webpage is bound.
+        const pageContextBtn = document.getElementById('page-context-btn');
+        if (pageContextBtn) {
+            pageContextBtn.disabled = !available;
+            if (available) {
+                pageContextBtn.dataset.i18nTitle = 'pageContextTooltip';
+                pageContextBtn.title = t('pageContextTooltip');
+            } else {
+                pageContextBtn.dataset.i18nTitle = 'pageContextUnavailableTooltip';
+                pageContextBtn.title = t('pageContextUnavailableTooltip');
+                // Visual off when the control cannot be toggled.
+                pageContextBtn.classList.remove('active');
+                pageContextBtn.setAttribute('aria-pressed', 'false');
+            }
+        }
     }
 
     scheduleLayoutCheck() {

@@ -158,7 +158,17 @@ describe('settings templates', () => {
         ]);
         expect(dataSection.querySelectorAll('.data-action-btn')).toHaveLength(5);
         expect(dataSection.querySelectorAll('.data-action-icon svg').length).toBeGreaterThan(0);
+        // Import overwrites local data — marked as danger actions.
+        expect(
+            dataSection.querySelector('#import-history-data').classList.contains('data-action-btn-danger')
+        ).toBe(true);
+        expect(
+            dataSection.querySelector('#import-settings-data').classList.contains('data-action-btn-danger')
+        ).toBe(true);
         expect(document.querySelector('#about-settings-group #export-history-data')).toBeNull();
+        expect(document.getElementById('reset-shortcuts').classList.contains('btn-danger-soft')).toBe(
+            true
+        );
     });
 
     it('labels the connection settings navigation item as API with a key icon', () => {

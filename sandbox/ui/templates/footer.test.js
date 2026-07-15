@@ -15,11 +15,20 @@ describe('FooterTemplate', () => {
 
         expect(inputWrapper.querySelector('#image-preview')).not.toBeNull();
         expect(textareaShell.querySelector('#prompt')).not.toBeNull();
-        expect(leftActions.querySelector('#upload-btn')).not.toBeNull();
+        const uploadBtn = leftActions.querySelector('#upload-btn');
+        expect(uploadBtn).not.toBeNull();
+        expect(uploadBtn.getAttribute('tabindex')).toBe('0');
+        expect(uploadBtn.getAttribute('role')).toBe('button');
         expect(leftActions.querySelector('.tools-container')).not.toBeNull();
         expect(leftActions.querySelector('#live-artifacts-btn')).not.toBeNull();
         expect(leftActions.querySelector('#youtube-summary-btn')).toBeNull();
-        expect(rightActions.querySelector('#send')).not.toBeNull();
+        const sendBtn = rightActions.querySelector('#send');
+        expect(sendBtn).not.toBeNull();
+        // Empty-state uses aria/class (not disabled) so click can show feedback.
+        expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('is-empty')).toBe(true);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('true');
+        expect(sendBtn.getAttribute('type')).toBe('button');
 
         expect(inputWrapper.contains(document.querySelector('.tools-container'))).toBe(true);
         expect(document.querySelector('.input-row')).toBeNull();
@@ -28,25 +37,32 @@ describe('FooterTemplate', () => {
         ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it('keeps context-aware flags only on tools that need page selection', () => {
+    it('keeps mode toggles primary and secondary actions under More / Capture', () => {
         document.body.innerHTML = FooterTemplate;
 
-        // page-context and quote still depend on a webpage being bound.
-        ['page-context-btn', 'quote-btn'].forEach((buttonId) => {
-            expect(document.getElementById(buttonId).classList.contains('context-aware')).toBe(
-                true
-            );
+        const primary = document.querySelector('.tools-primary');
+        expect(primary.querySelector('#page-context-btn')).not.toBeNull();
+        expect(primary.querySelector('#browser-control-btn')).not.toBeNull();
+        expect(primary.querySelector('#live-artifacts-btn')).not.toBeNull();
+
+        // Mode toggles expose aria-pressed for unified on/off affordance.
+        primary.querySelectorAll('.tool-toggle').forEach((btn) => {
+            expect(btn.getAttribute('aria-pressed')).toBe('false');
         });
 
-        // Capture tools live in the always-visible dropdown and are never hidden.
-        [
-            'browser-control-btn',
-            'live-artifacts-btn',
-            'screen-capture-btn',
-            'ocr-btn',
-            'screenshot-translate-btn',
-            'snip-btn',
-        ].forEach((buttonId) => {
+        // Secondary actions live in menus — not on the primary bar.
+        expect(primary.querySelector('#quote-btn')).toBeNull();
+        expect(primary.querySelector('#screen-capture-btn')).toBeNull();
+
+        const moreMenu = document.getElementById('tools-more-menu');
+        expect(moreMenu.querySelector('#quote-btn')).not.toBeNull();
+        expect(moreMenu.querySelector('#screen-capture-btn')).not.toBeNull();
+        expect(document.getElementById('quote-btn').classList.contains('context-aware')).toBe(true);
+
+        // Capture tools stay in the capture dropdown.
+        const captureMenu = document.getElementById('capture-menu');
+        ['ocr-btn', 'screenshot-translate-btn', 'snip-btn'].forEach((buttonId) => {
+            expect(captureMenu.querySelector(`#${buttonId}`)).not.toBeNull();
             expect(document.getElementById(buttonId).classList.contains('context-aware')).toBe(
                 false
             );
@@ -61,7 +77,6 @@ describe('FooterTemplate', () => {
         expect(dropdown.querySelector('#capture-menu-btn')).not.toBeNull();
         const menu = dropdown.querySelector('#capture-menu');
         expect(menu).not.toBeNull();
-        // The three capture tools live inside the dropdown menu.
         ['ocr-btn', 'screenshot-translate-btn', 'snip-btn'].forEach((buttonId) => {
             expect(menu.querySelector(`#${buttonId}`)).not.toBeNull();
         });

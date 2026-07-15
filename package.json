@@ -1,7 +1,7 @@
 {
     "name": "gemini-nexus",
     "private": true,
-    "version": "5.0.16",
+    "version": "5.0.19",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -14,6 +14,10 @@
         "test:watch": "vitest",
         "check": "npm run format:check && npm run build && npm exec tsc -- --noEmit && npm run lint:unused && npm run test",
         "package:extension": "npm run build && node scripts/package-extension.mjs",
+        "package:local": "npm run package:extension && node scripts/package-local.mjs",
+        "sync:local": "node scripts/package-local.mjs",
+        "native-logger:install": "node scripts/install-native-logger.mjs",
+        "native-logger:uninstall": "node scripts/install-native-logger.mjs --uninstall",
         "publish:chrome-webstore": "node scripts/chrome-webstore-publish.mjs",
         "preview": "vite preview"
     },

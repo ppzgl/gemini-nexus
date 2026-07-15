@@ -290,22 +290,36 @@ describe('content script startup injection', () => {
         ]);
     });
 
-    it('registers install-time startup injection', async () => {
-        setupContentScriptInjection({ initializeOpenTabs: false });
+    it('registers deferred install-time injection for open tabs', async () => {
+        vi.useFakeTimers();
+        setupContentScriptInjection({ initializeOpenTabs: false, installInjectDelayMs: 750 });
 
         const listener = chrome.runtime.onInstalled.addListener.mock.calls[0][0];
         expect(listener).toEqual(expect.any(Function));
 
         chrome.tabs.query.mockResolvedValue([]);
-        await listener();
+        listener();
+        expect(chrome.tabs.query).not.toHaveBeenCalled();
 
+        await vi.advanceTimersByTimeAsync(750);
         expect(chrome.tabs.query).toHaveBeenCalledWith({});
+        vi.useRealTimers();
     });
 
-    it('checks already open tabs when the background worker starts', async () => {
+    it('does not bulk-inject open tabs on every service-worker wake', async () => {
         chrome.tabs.query.mockResolvedValue([]);
 
+        // Default: no inject-on-startup (only onInstalled / tab events).
         setupContentScriptInjection();
+        await new Promise((resolve) => queueMicrotask(resolve));
+
+        expect(chrome.tabs.query).not.toHaveBeenCalled();
+    });
+
+    it('allows opt-in bulk injection on startup for tests/hosts', async () => {
+        chrome.tabs.query.mockResolvedValue([]);
+
+        setupContentScriptInjection({ initializeOpenTabs: true });
         await new Promise((resolve) => queueMicrotask(resolve));
 
         expect(chrome.tabs.query).toHaveBeenCalledWith({});
