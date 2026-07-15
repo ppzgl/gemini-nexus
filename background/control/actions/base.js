@@ -1,5 +1,6 @@
 import { ActionWaiter } from '../action_waiter.js';
 import { cursorController } from '../cursor_controller.js';
+import { SnapshotManager } from '../snapshot/index.js';
 
 const FOCUS_STEAL_CACHE_MS = 5000;
 const FOCUS_STEAL_STORAGE_KEY = 'BACKGROUND_INTERACTION_ENABLED';
@@ -28,7 +29,43 @@ export class BaseActionHandler {
         return this.connection.sendCommand(method, params);
     }
 
-    async getObjectIdFromUid(uid) {
+    /**
+     * Resolve a snapshot UID to a CDP remote objectId.
+     * On missing/stale UID: take one fresh snapshot and retry the same UID
+     * (helps same-document stable UIDs). If still failing, rethrow with the
+     * recovery snapshot attached so the agent can continue without an extra
+     * take_snapshot turn.
+     */
+    async getObjectIdFromUid(uid, { allowRefresh = true } = {}) {
+        try {
+            return await this._resolveObjectIdFromUid(uid);
+        } catch (error) {
+            if (!allowRefresh || !SnapshotManager.isUidResolutionError(error)) {
+                throw error;
+            }
+
+            let recoverySnapshot = null;
+            try {
+                recoverySnapshot = await this.snapshotManager.takeSnapshot();
+            } catch {
+                throw error;
+            }
+
+            try {
+                return await this._resolveObjectIdFromUid(uid);
+            } catch (retryError) {
+                const snapText =
+                    typeof recoverySnapshot === 'string' &&
+                    recoverySnapshot &&
+                    !recoverySnapshot.startsWith('Error')
+                        ? `\n\n## Latest page snapshot\n${recoverySnapshot}`
+                        : '';
+                throw new Error(`${retryError.message}${snapText}`);
+            }
+        }
+    }
+
+    async _resolveObjectIdFromUid(uid) {
         // This will throw "Stale Element Reference" if versions mismatch,
         // catching errors early before sending commands to browser.
         const backendNodeId = this.snapshotManager.getBackendNodeId(uid);

@@ -249,11 +249,28 @@ export async function sendWebMessage(
     }
 
     if (!finalResult) {
-        if (buffer.includes('<!DOCTYPE html>')) {
+        if (
+            buffer.includes('<!DOCTYPE html>') ||
+            buffer.includes('<html') ||
+            /\bSign in\b/i.test(buffer)
+        ) {
             throw new Error('未登录 (Session expired)');
         }
-        debugLog('Invalid response buffer sample:', buffer.substring(0, 200));
-        throw new Error('No valid response found. Check network.');
+        // Prefer the real stream failure over a generic empty-parse message so
+        // callers and logs see the underlying network/SW abort reason.
+        if (streamError) {
+            throw new Error(
+                `No valid response found. Check network. (stream error: ${streamError.message || streamError})`
+            );
+        }
+        const sample = buffer.substring(0, 240).replace(/\s+/g, ' ').trim();
+        const hint = classifyEmptyWebResponseBuffer(buffer);
+        debugLog('Invalid response buffer sample:', sample);
+        throw new Error(
+            `No valid response found. Check network. ${hint}${
+                sample ? ` Buffer sample: ${sample}` : ' Empty body.'
+            }`
+        );
     }
 
     // If the reader errored mid-stream, the reply is truncated. Surface a
@@ -286,4 +303,41 @@ export async function sendWebMessage(
         hasGeneratedImagePlaceholder: finalResult.hasGeneratedImagePlaceholder === true,
         newContext: stripNativeContextIds(context),
     };
+}
+
+/**
+ * Best-effort classification of HTTP-200 StreamGenerate bodies that never
+ * yielded a parseable chat candidate. Keeps the "No valid response found"
+ * prefix so existing retry / error_classifier paths still match.
+ */
+export function classifyEmptyWebResponseBuffer(buffer = '') {
+    const text = String(buffer || '');
+    if (!text.trim()) {
+        return 'Empty stream body (possible rate limit or soft block).';
+    }
+    const lower = text.toLowerCase();
+    if (
+        lower.includes('rate limit') ||
+        lower.includes('too many requests') ||
+        lower.includes('"status":429') ||
+        lower.includes('resource_exhausted')
+    ) {
+        return 'Likely rate-limited empty reply.';
+    }
+    if (
+        lower.includes('permission') ||
+        lower.includes('not available') ||
+        lower.includes('blocked') ||
+        lower.includes('safety')
+    ) {
+        return 'Likely blocked or restricted reply.';
+    }
+    if (lower.includes('error') || lower.includes('exception')) {
+        return 'Server returned an error-shaped payload without chat text.';
+    }
+    // Common Bard RPC pattern: length-prefix lines + wrb.fr metadata only.
+    if (/^\d+\s*\[/.test(text.trim()) || text.includes('wrb.fr')) {
+        return 'RPC metadata received but no chat candidate parsed (protocol or account issue).';
+    }
+    return 'Response body was not a valid Gemini chat stream.';
 }

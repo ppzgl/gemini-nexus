@@ -4,6 +4,7 @@ import { BrowserControlManager } from './managers/control_manager.js';
 import { McpRemoteManager } from './managers/mcp_remote_manager.js';
 import { LogManager, setupConsoleInterception } from './managers/log_manager.js';
 import { NativeLoggerSink } from './managers/native_logger_sink.js';
+import { createBridgeRecordHandlers } from './managers/bridge_records.js';
 import { SidePanelScopeManager } from './managers/sidepanel_scope_manager.js';
 import { setupContextMenus } from './menus.js';
 import { setupMessageListener } from './messages.js';
@@ -61,6 +62,20 @@ nativeLoggerSink.setRequestHandler('get_status', async () => {
     };
 });
 
+// Full usage records for local agents (chat history, groups, logs).
+const bridgeRecords = createBridgeRecordHandlers({
+    getLogs: () => logManager.getLogs(),
+});
+for (const method of [
+    'get_sessions',
+    'get_session',
+    'get_groups',
+    'get_storage_keys',
+    'get_records',
+]) {
+    nativeLoggerSink.setRequestHandler(method, (params) => bridgeRecords[method](params));
+}
+
 function applyNativeLogSettings(result = {}) {
     if (result.geminiNativeLogEnabled === false) {
         nativeLoggerSink.setEnabled(false);
@@ -100,6 +115,16 @@ console.info('[Gemini Nexus] Background Service Worker Started');
 console.info(
     '[Gemini Nexus] Local debug bridge: http://127.0.0.1:17321/health (requires native logger host)'
 );
+
+// Side panel sandbox can keep isGenerating=true across SW restarts. Notify
+// open extension pages so they unstick the send button.
+try {
+    chrome.runtime
+        .sendMessage({ action: 'SERVICE_WORKER_STARTED', ts: Date.now() })
+        .catch(() => {});
+} catch {
+    // No receivers yet — ignore.
+}
 
 const sessionManager = new GeminiSessionManager();
 const imageManager = new ImageManager();

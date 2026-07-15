@@ -152,4 +152,49 @@ describe('SnapshotManager stable UIDs', () => {
 
         expect(secondUid).not.toBe(firstUid);
     });
+
+    it('throws Stale Element Reference after nav reset empties maps (version bump)', async () => {
+        const nodes = [
+            {
+                nodeId: 'root',
+                role: { value: 'RootWebArea' },
+                name: { value: 'Page' },
+                childIds: ['button'],
+            },
+            {
+                nodeId: 'button',
+                backendDOMNodeId: 501,
+                role: { value: 'button' },
+                name: { value: 'Save' },
+            },
+        ];
+        const connection = createSnapshotConnection(() => nodes);
+        const manager = new SnapshotManager(connection);
+
+        await manager.takeSnapshot();
+        const uid = [...manager.uidToAxNode.entries()].find(
+            ([, node]) => node.backendDOMNodeId === 501
+        )?.[0];
+        expect(manager.getBackendNodeId(uid)).toBe(501);
+
+        connection.emit('Page.frameStartedNavigating', {
+            navigationType: 'differentDocument',
+        });
+
+        expect(() => manager.getBackendNodeId(uid)).toThrow(/Stale Element Reference/);
+    });
+
+    it('detects UID resolution error messages', () => {
+        expect(
+            SnapshotManager.isUidResolutionError(
+                "Element '3_64' not found in current snapshot. Please verify the UID"
+            )
+        ).toBe(true);
+        expect(
+            SnapshotManager.isUidResolutionError(
+                new Error("Stale Element Reference: UID '1_2' belongs to an older snapshot")
+            )
+        ).toBe(true);
+        expect(SnapshotManager.isUidResolutionError('Error: Target tab is outside')).toBe(false);
+    });
 });

@@ -7,6 +7,14 @@ import {
 } from '../../shared/attachments/index.js';
 import { getLiveArtifactsSystemInstruction } from '../core/live_artifacts.js';
 
+// Normal (non browser-control) generations should finish or fail well under this.
+// Browser-control tool loops may legitimately run longer.
+const WATCHDOG_DEFAULT_MS = 90 * 1000;
+const WATCHDOG_BROWSER_CONTROL_MS = 3 * 60 * 1000;
+// If the stop button is stuck with no stream activity, a second click may
+// force-clear and send instead of only cancelling forever.
+const STUCK_GENERATION_MS = 12 * 1000;
+
 export class PromptController {
     constructor(sessionManager, uiController, imageManager, appController) {
         this.sessionManager = sessionManager;
@@ -14,6 +22,8 @@ export class PromptController {
         this.imageManager = imageManager;
         this.app = appController;
         this.cancellationTimestamp = 0;
+        this.generationStartedAt = 0;
+        this.lastGenerationActivityAt = 0;
     }
 
     buildRequestPayload(text, files, sessionId, extra = {}) {
@@ -116,9 +126,63 @@ export class PromptController {
     setGeneratingState(isGenerating, sessionId = null) {
         this.app.isGenerating = isGenerating;
         this.app.generatingSessionId = isGenerating ? sessionId : null;
+        if (isGenerating) {
+            const now = Date.now();
+            this.generationStartedAt = now;
+            this.lastGenerationActivityAt = now;
+        } else {
+            this.generationStartedAt = 0;
+            this.lastGenerationActivityAt = 0;
+        }
         this.ui.setLoading(isGenerating);
         this.app.sessionFlow.refreshHistoryUI();
         this._armGenerationWatchdog(isGenerating);
+    }
+
+    /** Call on stream/tool activity so stuck detection does not fire mid-loop. */
+    markGenerationActivity() {
+        if (this.app.isGenerating) {
+            this.lastGenerationActivityAt = Date.now();
+        }
+    }
+
+    /**
+     * True when the UI thinks a run is active but it has been silent long
+     * enough that SW death / dropped GEMINI_REPLY is likely. Used so a
+     * subsequent send click can force-clear and send instead of only cancel.
+     */
+    isGenerationLikelyStuck() {
+        if (!this.app.isGenerating) return false;
+        const now = Date.now();
+        const started = this.generationStartedAt || now;
+        const last = this.lastGenerationActivityAt || started;
+        return now - last >= STUCK_GENERATION_MS || now - started >= STUCK_GENERATION_MS;
+    }
+
+    /**
+     * Hard-reset generating UI/state. Safe to call multiple times.
+     * Does not send CANCEL_PROMPT (caller may do that).
+     */
+    forceClearGenerating({ status = '', keepStatusMs = 2500 } = {}) {
+        if (this._generationWatchdogTimer) {
+            clearTimeout(this._generationWatchdogTimer);
+            this._generationWatchdogTimer = null;
+        }
+        this.app.isGenerating = false;
+        this.app.generatingSessionId = null;
+        this.generationStartedAt = 0;
+        this.lastGenerationActivityAt = 0;
+        this.ui.setLoading(false);
+        this.app.messageHandler?.clearActiveStream?.();
+        this.app.sessionFlow?.refreshHistoryUI?.();
+        if (status) {
+            this.ui.updateStatus(status);
+            if (this._forceClearStatusTimer) clearTimeout(this._forceClearStatusTimer);
+            this._forceClearStatusTimer = setTimeout(() => {
+                this._forceClearStatusTimer = null;
+                if (!this.app.isGenerating) this.ui.updateStatus('');
+            }, keepStatusMs);
+        }
     }
 
     /**
@@ -133,25 +197,19 @@ export class PromptController {
         }
         if (!isGenerating) return;
         const startedFor = this.app.generatingSessionId;
-        // Long browser-control loops can run for minutes; 3 min is a safety net
-        // for true stalls (no terminal GEMINI_REPLY), not normal tool loops.
+        const timeoutMs =
+            this.app.browserControlActive === true
+                ? WATCHDOG_BROWSER_CONTROL_MS
+                : WATCHDOG_DEFAULT_MS;
         this._generationWatchdogTimer = setTimeout(() => {
             this._generationWatchdogTimer = null;
             if (!this.app.isGenerating) return;
             if (startedFor && this.app.generatingSessionId !== startedFor) return;
             console.warn(
-                '[Gemini Nexus] Generation watchdog: clearing stuck isGenerating after 3 minutes'
+                `[Gemini Nexus] Generation watchdog: clearing stuck isGenerating after ${timeoutMs}ms`
             );
-            this.app.isGenerating = false;
-            this.app.generatingSessionId = null;
-            this.ui.setLoading(false);
-            this.app.messageHandler?.clearActiveStream?.();
-            this.app.sessionFlow?.refreshHistoryUI?.();
-            this.ui.updateStatus(t('requestTimedOut'));
-            setTimeout(() => {
-                if (!this.app.isGenerating) this.ui.updateStatus('');
-            }, 4000);
-        }, 3 * 60 * 1000);
+            this.forceClearGenerating({ status: t('requestTimedOut'), keepStatusMs: 4000 });
+        }, timeoutMs);
     }
 
     getMessageFiles(message) {
@@ -324,28 +382,18 @@ export class PromptController {
     }
 
     cancel() {
-        if (!this.app.isGenerating) return;
-
+        // Always clear local generating UI even if state was half-desynced
+        // (isGenerating true without a live SW run). Previously we returned
+        // early when !isGenerating, leaving a stuck Stop button with no way out.
+        const wasGenerating = this.app.isGenerating === true;
         this.cancellationTimestamp = Date.now();
-
-        sendToBackground({ action: 'CANCEL_PROMPT' });
-        this.app.messageHandler.clearActiveStream();
-
-        this.app.isGenerating = false;
-        this.app.generatingSessionId = null;
-        this._armGenerationWatchdog(false);
-        this.ui.setLoading(false);
-        this.app.sessionFlow.refreshHistoryUI();
-        this.ui.updateStatus(t('cancelled'));
-        // Auto-dismiss the "Cancelled" status so it doesn't linger in the
-        // status bar until the next action overwrites it — every other
-        // transient status (capture error, page-read success, share-copied)
-        // schedules this clear; cancelled was the lone exception.
-        if (this._cancelledStatusTimer) clearTimeout(this._cancelledStatusTimer);
-        this._cancelledStatusTimer = setTimeout(() => {
-            this._cancelledStatusTimer = null;
-            this.ui.updateStatus('');
-        }, 2500);
+        if (wasGenerating) {
+            sendToBackground({ action: 'CANCEL_PROMPT' });
+        }
+        this.forceClearGenerating({
+            status: wasGenerating ? t('cancelled') : '',
+            keepStatusMs: 2500,
+        });
     }
 
     isCancellationRecent() {

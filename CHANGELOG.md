@@ -1,5 +1,23 @@
 # Changelog
 
+## v5.0.24 - 2026-07-15
+
+### 侧栏可用性
+
+- 修复 sandbox 启动失败 `Cannot read properties of undefined (reading 'local')`：`updateImageTools` 不再调用 `chrome.storage`（sandbox 无 chrome API）；补齐 `RESTORE_IMAGE_TOOLS_BLACKLIST`；恢复消息 dispatch 失败不中断启动。
+- 修复侧栏大量按钮无响应：Vite `base: './'` + 打包把 HTML `/assets/` 改为相对路径，避免 sandbox 动态模块加载失败导致事件未绑定；骨架层默认 `pointer-events: none`。
+- 修复发送卡住：`forceClearGenerating` / 卡住后带正文再发；普通对话 watchdog 90s；SW 启动广播 `SERVICE_WORKER_STARTED` 清除僵尸生成态。
+
+### 浏览器控制与 Web
+
+- UID 过期：导航 `reset` 递增版本号；`getObjectIdFromUid` 自动 re-snapshot 并重试；`run_steps` / tool loop 失败附带恢复快照。
+- Web 空响应：分类提示 + buffer 样本；stream 错误优先暴露；终端错误写入历史，避免只剩用户消息。
+- Keep-Alive：连续网络失败降噪日志；429 加大退避。
+
+### 本地调试桥
+
+- 可读完整使用记录：`GET /sessions`、`/sessions/:id`、`/records`、`/groups`、`/storage/keys` 与对应 RPC；附件 data URL 默认脱敏。说明见 `docs/local-debug-bridge.md`。
+
 ## v5.0.19 - 2026-07-15
 
 - 修复侧边栏「点发送没反应」：生成态卡住时不再静默吞掉点击；`BACKGROUND_REQUEST_ERROR` 会清 loading；空内容发送给出状态提示；发送按钮空态改为可点反馈（`is-empty`）而不是 `disabled` 完全无事件。

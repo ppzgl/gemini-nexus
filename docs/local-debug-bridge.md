@@ -38,7 +38,14 @@ npm run native-logger:install
 | GET | `/logs?limit=100&level=error` | 内存环形缓冲中的最近日志 |
 | GET | `/logs/stream` | SSE 实时流（含近期 backlog） |
 | GET | `/status` | 经 RPC 查询扩展版本/日志数等 |
-| POST | `/rpc` | body: `{"method":"ping"\|"get_logs"\|"get_status","params":{}}` |
+| GET | `/sessions` | 会话列表。查询：`?q=`、`?limit=`、`?offset=`；`?messages=1` 返回全文；`?attachments=1` 保留 base64 附件 |
+| GET | `/sessions/:id` | 单会话完整消息（含 tool / thoughts / sources）。`?attachments=1` 保留附件 |
+| GET | `/records` | 一揽子导出：sessions（默认含全文）+ groups + logs。`?messages=0` 仅摘要；`?logs=0` 不要日志 |
+| GET | `/groups` | 会话分组 |
+| GET | `/storage/keys` | `chrome.storage.local` 键名与大致字节数 |
+| POST | `/rpc` | body: `{"method":"…","params":{}}`（见下表） |
+
+> **体积提示**：图片 / data URL 默认替换为 `[omitted base64 N chars]`，避免 Native Messaging 1MB 帧限制。需要原图时再加 `attachments=1`（可能失败或很慢）。
 
 ### 示例
 
@@ -55,10 +62,22 @@ curl -N http://127.0.0.1:17321/logs/stream
 # 扩展状态
 curl -s http://127.0.0.1:17321/status | jq .
 
+# 会话列表（摘要）
+curl -s 'http://127.0.0.1:17321/sessions?limit=20' | jq .
+
+# 搜索 + 全文
+curl -s 'http://127.0.0.1:17321/sessions?q=browser&messages=1' | jq .
+
+# 单会话完整过程
+curl -s "http://127.0.0.1:17321/sessions/<SESSION_ID>" | jq .
+
+# 一揽子记录（聊天 + 分组 + 日志）
+curl -s 'http://127.0.0.1:17321/records?limit=50' | jq .
+
 # RPC
 curl -s -X POST http://127.0.0.1:17321/rpc \
   -H 'Content-Type: application/json' \
-  -d '{"method":"get_logs","params":{"limit":20}}' | jq .
+  -d '{"method":"get_session","params":{"id":"<SESSION_ID>"}}' | jq .
 ```
 
 文件日志仍写入：`~/Library/Logs/gemini-nexus.log`。
@@ -98,6 +117,11 @@ chrome.storage.local.set({ geminiNativeLogEnabled: true });
 | `ping` | `{ pong: true, ts }` |
 | `get_logs` | `{ logs: [...] }`（params: `limit`, `level`） |
 | `get_status` | `{ version, name, unpacked, nativeLogEnabled, logCount, ts }` |
+| `get_sessions` | `{ total, offset, limit, sessions }`（params: `limit`, `offset`, `query`, `id`, `includeMessages`, `includeAttachments`） |
+| `get_session` | `{ found, session }`（params: `id` 必填, `includeAttachments`） |
+| `get_groups` | `{ groups }` |
+| `get_storage_keys` | `{ keys, sizes }` |
+| `get_records` | `{ ts, sessions, groups, logs }`（params 同 sessions + `includeLogs`, `logLimit`） |
 
 可在 `background/index.js` 通过 `nativeLoggerSink.setRequestHandler(name, fn)` 继续扩展。
 

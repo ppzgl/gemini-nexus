@@ -10,6 +10,7 @@ import {
     hasNativeFunctionCalls,
 } from '../official_function_response.js';
 import { parseToolCommand, splitToolCallFromText } from '../../../../shared/text/tool_call_text.js';
+import { SnapshotManager } from '../../../control/snapshot/index.js';
 
 function createIntermediateAiResult(result) {
     const split = splitToolCallFromText(result?.text || '');
@@ -59,6 +60,10 @@ export function buildToolContinuationPrompt(toolName, output, language) {
 
 export function hasInlinePageSnapshot(output) {
     return typeof output === 'string' && output.includes('## Latest page snapshot');
+}
+
+export function isUidResolutionFailure(output) {
+    return SnapshotManager.isUidResolutionError(output);
 }
 
 export function getToolResultsFiles(toolResults) {
@@ -147,9 +152,15 @@ export async function injectBrowserControlSnapshot({
     controlManager,
 }) {
     const snapshotSkippedTools = ['take_snapshot', 'list_pages'];
+    // On success: always attach a fresh tree so the model continues from current DOM.
+    // On failure: only attach when the error is a stale/missing UID and the
+    // output does not already embed a recovery snapshot (e.g. from
+    // getObjectIdFromUid / run_steps). Generic failures stay as-is.
+    const failedUidRecovery =
+        toolResult.status === 'failed' && isUidResolutionFailure(outputForModel);
     if (
         toolResult.source !== 'browser_control' ||
-        toolResult.status === 'failed' ||
+        (toolResult.status === 'failed' && !failedUidRecovery) ||
         !request.enableBrowserControl ||
         !controlManager ||
         snapshotSkippedTools.includes(toolResult.toolName) ||

@@ -35,6 +35,11 @@ export class SnapshotManager {
     reset() {
         this.clear();
         this.backendNodeIdToUid.clear();
+        // Cross-document navigation empties the UID maps. Bump the version so
+        // subsequent lookups of pre-navigation UIDs throw "Stale Element
+        // Reference" (version mismatch) instead of the misleading
+        // "Element not found" (version still matches an empty map).
+        this.snapshotIdCount += 1;
     }
 
     _shouldResetStableIdsForEvent(method, params = {}) {
@@ -67,6 +72,20 @@ export class SnapshotManager {
         // If ID matches current version but not found in map, it's likely invalid or ephemeral
         throw new Error(
             `Element '${uid}' not found in current snapshot. Please verify the UID or take a new snapshot.`
+        );
+    }
+
+    /** True when an error indicates the model/action should re-snapshot. */
+    static isUidResolutionError(errorOrMessage) {
+        const message =
+            typeof errorOrMessage === 'string'
+                ? errorOrMessage
+                : errorOrMessage?.message || String(errorOrMessage || '');
+        return (
+            message.includes('not found in current snapshot') ||
+            message.includes('Stale Element Reference') ||
+            message.includes('is detached from the DOM') ||
+            message.includes('has no backend ID')
         );
     }
 

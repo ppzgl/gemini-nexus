@@ -3,10 +3,13 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+    collectPackagedAssetReferences,
     createPackagedManifest,
     findMissingPackagedAssetReferences,
     formatContentBundle,
     getUnbundledContentScriptFiles,
+    normalizePackagedAssetReference,
+    rewriteHtmlAssetPathsToRelative,
     shouldExcludeFromPackage,
 } from './package-extension.mjs';
 
@@ -195,5 +198,31 @@ describe('package-extension', () => {
         } finally {
             await rm(packageRoot, { recursive: true, force: true });
         }
+    });
+
+    it('normalizes absolute and relative asset references to package-root paths', () => {
+        expect(normalizePackagedAssetReference('/assets/a.js')).toBe('assets/a.js');
+        expect(normalizePackagedAssetReference('../assets/a.js')).toBe('assets/a.js');
+        expect(normalizePackagedAssetReference('./assets/a.js')).toBe('assets/a.js');
+        expect(normalizePackagedAssetReference('assets/a.js')).toBe('assets/a.js');
+        expect(normalizePackagedAssetReference('preload.js')).toBeNull();
+        expect(
+            collectPackagedAssetReferences(
+                '<script src="../assets/sandbox.js"></script><link href="/assets/x.css">'
+            )
+        ).toEqual(['assets/sandbox.js', 'assets/x.css']);
+    });
+
+    it('rewrites absolute /assets paths to relative paths for nested HTML pages', () => {
+        const html =
+            '<script type="module" src="/assets/sandbox.js"></script>\n' +
+            '<link rel="stylesheet" href="/assets/x.css">';
+        expect(rewriteHtmlAssetPathsToRelative(html, 'sandbox/index.html')).toBe(
+            '<script type="module" src="../assets/sandbox.js"></script>\n' +
+                '<link rel="stylesheet" href="../assets/x.css">'
+        );
+        expect(rewriteHtmlAssetPathsToRelative(html, 'sidepanel/index.html')).toContain(
+            '../assets/sandbox.js'
+        );
     });
 });

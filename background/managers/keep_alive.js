@@ -161,7 +161,16 @@ class KeepAliveManager {
             }
         } catch (error) {
             this.consecutiveErrors++;
-            console.error('[Gemini Nexus] Keep-Alive: Network error', error);
+            // Avoid flooding LogManager / console on sustained offline or
+            // blocked RotateCookies — backoff already slows retries.
+            if (this.consecutiveErrors <= 2) {
+                console.error('[Gemini Nexus] Keep-Alive: Network error', error);
+            } else if (this.consecutiveErrors === 3 || this.consecutiveErrors % 5 === 0) {
+                console.warn(
+                    `[Gemini Nexus] Keep-Alive: Network error (x${this.consecutiveErrors})`,
+                    error?.message || error
+                );
+            }
         } finally {
             this.isRotating = false;
         }
@@ -187,7 +196,10 @@ class KeepAliveManager {
             }
         }
 
-        // If 429 Too Many Requests, do nothing, just wait for next interval.
+        // 429: extra backoff so cookie rotation does not stack with chat retries.
+        if (status === 429) {
+            this.consecutiveErrors = Math.max(this.consecutiveErrors, 3);
+        }
     }
 }
 

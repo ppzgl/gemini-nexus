@@ -57,6 +57,42 @@ function createPromptHarness({ text = 'Hello', files = [], liveArtifactsEnabled 
     return { app, controller, imageManager, sessionManager, ui };
 }
 
+describe('PromptController generation recovery', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('forceClearGenerating resets isGenerating and loading UI', () => {
+        const { app, controller, ui } = createPromptHarness();
+        app.isGenerating = true;
+        app.generatingSessionId = 's1';
+        controller.generationStartedAt = Date.now() - 60_000;
+        controller.forceClearGenerating({ status: 'cleared' });
+        expect(app.isGenerating).toBe(false);
+        expect(app.generatingSessionId).toBeNull();
+        expect(ui.setLoading).toHaveBeenCalledWith(false);
+        expect(ui.updateStatus).toHaveBeenCalledWith('cleared');
+    });
+
+    it('isGenerationLikelyStuck after silence window', () => {
+        const { app, controller } = createPromptHarness();
+        app.isGenerating = true;
+        controller.generationStartedAt = Date.now() - 20_000;
+        controller.lastGenerationActivityAt = Date.now() - 20_000;
+        expect(controller.isGenerationLikelyStuck()).toBe(true);
+    });
+
+    it('cancel clears stuck generating even without an active flag edge case', () => {
+        const { app, controller, ui } = createPromptHarness();
+        app.isGenerating = true;
+        app.generatingSessionId = 's1';
+        controller.cancel();
+        expect(app.isGenerating).toBe(false);
+        expect(sendToBackground).toHaveBeenCalledWith({ action: 'CANCEL_PROMPT' });
+        expect(ui.setLoading).toHaveBeenCalledWith(false);
+    });
+});
+
 describe('PromptController.send', () => {
     beforeEach(() => {
         vi.clearAllMocks();

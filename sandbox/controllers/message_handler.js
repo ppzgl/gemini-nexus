@@ -138,6 +138,7 @@ export class MessageHandler {
 
     handleStreamUpdate(request) {
         if (!this.isGeneratingSessionMessage(request)) return;
+        this.app.prompt?.markGenerationActivity?.();
         const state = this.streamState.cache(request);
         const displayText = state?.text || '';
 
@@ -197,7 +198,19 @@ export class MessageHandler {
     }
 
     handleGeminiReply(request) {
-        if (!this.isGeneratingSessionMessage(request)) {
+        const matchesGenerating = this.isGeneratingSessionMessage(request);
+        // If the UI is still "generating" but generatingSessionId was lost
+        // (SW restart / partial cancel) while the reply is for the open
+        // session, still accept so the send button unsticks. Do NOT steal
+        // replies for a different session while a newer run is in flight.
+        const replySessionId = request?.sessionId || null;
+        const matchesCurrentWhileGenerating =
+            this.app.isGenerating === true &&
+            this.isCurrentSessionMessage(request) &&
+            (!this.app.generatingSessionId ||
+                this.app.generatingSessionId === replySessionId);
+
+        if (!matchesGenerating && !matchesCurrentWhileGenerating) {
             // A late GEMINI_REPLY can arrive after cancel() has already cleared
             // generatingSessionId. In that case the streaming bubble may still
             // be visible (clearActiveStream removed its content, but if the
@@ -217,10 +230,7 @@ export class MessageHandler {
             return;
         }
 
-        this.app.isGenerating = false;
-        this.app.generatingSessionId = null;
-        this.ui.setLoading(false);
-        this.app.sessionFlow.refreshHistoryUI();
+        this.app.prompt.forceClearGenerating();
         this.clearStreamState(this.getRequestSessionId(request));
 
         if (!this.isCurrentSessionMessage(request)) {

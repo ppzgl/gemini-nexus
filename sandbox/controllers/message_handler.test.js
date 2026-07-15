@@ -56,6 +56,13 @@ function createMessageHandlerHarness() {
         generatingSessionId: 'session-1',
         prompt: {
             isCancellationRecent: vi.fn(() => false),
+            forceClearGenerating: vi.fn(() => {
+                app.isGenerating = false;
+                app.generatingSessionId = null;
+                ui.setLoading(false);
+                app.sessionFlow.refreshHistoryUI();
+            }),
+            markGenerationActivity: vi.fn(),
         },
         sessionFlow: {
             refreshHistoryUI: vi.fn(),

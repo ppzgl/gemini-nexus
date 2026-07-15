@@ -150,6 +150,11 @@ function main() {
     console.log('    GET  /logs?limit=100  recent logs');
     console.log('    GET  /logs/stream     SSE real-time stream');
     console.log('    GET  /status          live extension status (RPC)');
+    console.log('    GET  /sessions        chat session list / search');
+    console.log('    GET  /sessions/:id    full session messages');
+    console.log('    GET  /records         sessions + groups + logs');
+    console.log('    GET  /groups          chat groups');
+    console.log('    GET  /storage/keys    storage key inventory');
     console.log('    POST /rpc             {"method","params"} → extension');
     console.log('  Env: GEMINI_NEXUS_BRIDGE_HOST / _PORT / _TOKEN');
     console.log(

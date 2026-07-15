@@ -232,21 +232,16 @@ export function bindInputEvents(app, ui, setResizeRef) {
 
         const handleSendClick = () => {
             if (app.isGenerating) {
+                // Stop path. If generation is stuck and the draft still has
+                // content, cancel then send instead of only stopping.
+                const stuck = app.prompt?.isGenerationLikelyStuck?.() === true;
+                const text = (ui?.inputFn || inputFn)?.value?.trim?.() || '';
+                const hasFiles =
+                    typeof app.imageManager?.getFiles === 'function'
+                        ? app.imageManager.getFiles().length > 0
+                        : false;
                 app.handleCancel();
-                return;
-            }
-            // Disabled buttons don't fire click in some browsers/paths; still
-            // guard so empty sends surface a status instead of a silent no-op.
-            const text = (ui?.inputFn || inputFn)?.value?.trim?.() || '';
-            const hasFiles =
-                typeof app.imageManager?.getFiles === 'function'
-                    ? app.imageManager.getFiles().length > 0
-                    : false;
-            if (!text && !hasFiles) {
-                // PromptController.send also guards; this path covers empty
-                // clicks when the button is kept enabled for feedback.
-                app.handleSendMessage();
-                return;
+                if (!stuck || (!text && !hasFiles)) return;
             }
             app.handleSendMessage();
         };

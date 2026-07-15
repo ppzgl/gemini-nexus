@@ -243,12 +243,7 @@ export class SessionFlowController {
         // streaming bubble (it belongs to a session that no longer exists),
         // but we must not leave the UI pinned to a dead generatingSessionId.
         if (this.app.generatingSessionId === sessionId) {
-            this.app.generatingSessionId = null;
-            if (this.app.isGenerating) {
-                this.app.isGenerating = false;
-                this.ui.setLoading(false);
-                this.app.messageHandler?.clearActiveStream?.();
-            }
+            this.app.prompt?.forceClearGenerating?.();
         }
 
         if (switchNeeded) {

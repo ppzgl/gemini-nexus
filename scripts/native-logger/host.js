@@ -16,6 +16,11 @@
 //   GET  /logs?limit=N    — recent buffered entries
 //   GET  /logs/stream     — SSE real-time stream
 //   GET  /status          — RPC to extension get_status
+//   GET  /sessions        — list/search chat sessions (RPC get_sessions)
+//   GET  /sessions/:id    — full single session (RPC get_session)
+//   GET  /records         — sessions + groups + logs dump (RPC get_records)
+//   GET  /groups          — chat groups (RPC get_groups)
+//   GET  /storage/keys    — chrome.storage.local key inventory
 //   POST /rpc             — {method, params} → extension, wait for response
 //
 // Env: GEMINI_NEXUS_BRIDGE_HOST (default 127.0.0.1),
@@ -365,6 +370,84 @@ export async function handleBridgeRequest(req, res, state, { token } = {}) {
         return true;
     }
 
+    if (req.method === 'GET' && path === '/sessions') {
+        try {
+            const result = await state.request('get_sessions', {
+                limit: url.searchParams.get('limit') || undefined,
+                offset: url.searchParams.get('offset') || undefined,
+                query: url.searchParams.get('q') || url.searchParams.get('query') || undefined,
+                includeMessages: parseBoolParam(url.searchParams.get('messages')),
+                includeAttachments: parseBoolParam(url.searchParams.get('attachments')),
+            });
+            sendJson(res, 200, { ok: true, ...result });
+        } catch (error) {
+            sendJson(res, 503, { ok: false, error: error?.message || String(error) });
+        }
+        return true;
+    }
+
+    const sessionMatch = path.match(/^\/sessions\/([^/]+)$/);
+    if (req.method === 'GET' && sessionMatch) {
+        try {
+            const result = await state.request('get_session', {
+                id: decodeURIComponent(sessionMatch[1]),
+                includeAttachments: parseBoolParam(url.searchParams.get('attachments')),
+            });
+            if (!result?.found) {
+                sendJson(res, 404, { ok: false, error: 'session not found', ...result });
+            } else {
+                sendJson(res, 200, { ok: true, ...result });
+            }
+        } catch (error) {
+            sendJson(res, 503, { ok: false, error: error?.message || String(error) });
+        }
+        return true;
+    }
+
+    if (req.method === 'GET' && path === '/records') {
+        try {
+            const result = await state.request('get_records', {
+                limit: url.searchParams.get('limit') || undefined,
+                offset: url.searchParams.get('offset') || undefined,
+                query: url.searchParams.get('q') || url.searchParams.get('query') || undefined,
+                id: url.searchParams.get('id') || undefined,
+                // Default full messages; ?messages=0 for summary-only.
+                includeMessages: url.searchParams.has('messages')
+                    ? parseBoolParam(url.searchParams.get('messages'))
+                    : true,
+                includeAttachments: parseBoolParam(url.searchParams.get('attachments')),
+                includeLogs: url.searchParams.has('logs')
+                    ? parseBoolParam(url.searchParams.get('logs'))
+                    : true,
+                logLimit: url.searchParams.get('logLimit') || undefined,
+            });
+            sendJson(res, 200, { ok: true, ...result });
+        } catch (error) {
+            sendJson(res, 503, { ok: false, error: error?.message || String(error) });
+        }
+        return true;
+    }
+
+    if (req.method === 'GET' && path === '/groups') {
+        try {
+            const result = await state.request('get_groups', {});
+            sendJson(res, 200, { ok: true, ...result });
+        } catch (error) {
+            sendJson(res, 503, { ok: false, error: error?.message || String(error) });
+        }
+        return true;
+    }
+
+    if (req.method === 'GET' && path === '/storage/keys') {
+        try {
+            const result = await state.request('get_storage_keys', {});
+            sendJson(res, 200, { ok: true, ...result });
+        } catch (error) {
+            sendJson(res, 503, { ok: false, error: error?.message || String(error) });
+        }
+        return true;
+    }
+
     if (req.method === 'POST' && path === '/rpc') {
         let body;
         try {
@@ -390,9 +473,29 @@ export async function handleBridgeRequest(req, res, state, { token } = {}) {
     sendJson(res, 404, {
         ok: false,
         error: 'not found',
-        endpoints: ['/health', '/logs', '/logs/stream', '/status', 'POST /rpc'],
+        endpoints: [
+            '/health',
+            '/logs',
+            '/logs/stream',
+            '/status',
+            '/sessions',
+            '/sessions/:id',
+            '/records',
+            '/groups',
+            '/storage/keys',
+            'POST /rpc',
+        ],
     });
     return true;
+}
+
+/** Accept 1/true/yes as true; 0/false/no as false; null/empty → false. */
+export function parseBoolParam(value) {
+    if (value == null || value === '') return false;
+    const s = String(value).trim().toLowerCase();
+    if (s === '1' || s === 'true' || s === 'yes' || s === 'on') return true;
+    if (s === '0' || s === 'false' || s === 'no' || s === 'off') return false;
+    return Boolean(value);
 }
 
 export function createBridgeServer(state, { host, port, token } = {}) {

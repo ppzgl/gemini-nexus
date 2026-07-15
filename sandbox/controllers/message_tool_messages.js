@@ -14,6 +14,7 @@ import {
 
 export function handleToolOutputMessage(handler, request) {
     if (!handler.isGeneratingSessionMessage(request)) return;
+    handler.app?.prompt?.markGenerationActivity?.();
     const sessionId = handler.getRequestSessionId(request);
     const toolCallText = handler.getRequestToolCallText(request, sessionId);
 
@@ -85,6 +86,7 @@ export function handleToolOutputMessage(handler, request) {
 
 export function handleToolCallStatusMessage(handler, request) {
     if (!handler.isGeneratingSessionMessage(request)) return;
+    handler.app?.prompt?.markGenerationActivity?.();
     if (!handler.isCurrentSessionMessage(request)) return;
 
     const sessionId = handler.getRequestSessionId(request);

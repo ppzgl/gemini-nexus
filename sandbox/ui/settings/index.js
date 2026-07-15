@@ -354,16 +354,15 @@ export class SettingsController {
     }
 
     updateImageTools(enabled) {
+        // Sandbox cannot use chrome.storage — blacklist is restored separately via
+        // RESTORE_IMAGE_TOOLS_BLACKLIST from the parent sidepanel bridge.
         this.imageToolsEnabled = enabled;
-        chrome.storage.local.get(['geminiImageToolsBlacklist'], (items) => {
-            this.imageToolsBlacklist = items.geminiImageToolsBlacklist || '';
-            this.view.setToggles(
-                this.textSelectionEnabled,
-                this.imageToolsEnabled,
-                this.generatedImageWatermarkRemovalEnabled,
-                this.imageToolsBlacklist
-            );
-        });
+        this.view.setToggles(
+            this.textSelectionEnabled,
+            this.imageToolsEnabled,
+            this.generatedImageWatermarkRemovalEnabled,
+            this.imageToolsBlacklist
+        );
     }
 
     updateImageToolsBlacklist(blacklist) {

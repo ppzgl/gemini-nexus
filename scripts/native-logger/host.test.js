@@ -264,5 +264,56 @@ describe('handleBridgeRequest', () => {
         );
         expect(res.statusCode).toBe(401);
     });
+
+    it('GET /sessions proxies get_sessions RPC', async () => {
+        const state = new BridgeState();
+        state.request = vi.fn(async (method, params) => {
+            expect(method).toBe('get_sessions');
+            expect(params.includeMessages).toBe(true);
+            return { total: 1, offset: 0, limit: 10, sessions: [{ id: 's1' }] };
+        });
+        const res = mockRes();
+        await handleBridgeRequest(
+            { method: 'GET', url: '/sessions?messages=1&limit=10', headers: {} },
+            res,
+            state
+        );
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body.ok).toBe(true);
+        expect(body.sessions[0].id).toBe('s1');
+    });
+
+    it('GET /sessions/:id proxies get_session RPC', async () => {
+        const state = new BridgeState();
+        state.request = vi.fn(async (method, params) => {
+            expect(method).toBe('get_session');
+            expect(params.id).toBe('abc-1');
+            return { found: true, session: { id: 'abc-1', messages: [] } };
+        });
+        const res = mockRes();
+        await handleBridgeRequest(
+            { method: 'GET', url: '/sessions/abc-1', headers: {} },
+            res,
+            state
+        );
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body.session.id).toBe('abc-1');
+    });
+
+    it('GET /records proxies get_records RPC', async () => {
+        const state = new BridgeState();
+        state.request = vi.fn(async (method) => {
+            expect(method).toBe('get_records');
+            return { sessions: { total: 0, sessions: [] }, groups: [], logs: [] };
+        });
+        const res = mockRes();
+        await handleBridgeRequest({ method: 'GET', url: '/records', headers: {} }, res, state);
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body.ok).toBe(true);
+        expect(body.groups).toEqual([]);
+    });
 });
 

@@ -69,10 +69,12 @@ export function initAppMode() {
 
             const app = new AppController(sessionManager, ui, imageManager);
 
+            // Bind click handlers before flushing queued parent messages so a
+            // restore-handler failure cannot leave the shell with dead buttons.
+            bindAppEvents(app, ui, (resizeCallback) => bridge.setResizeCallback(resizeCallback));
+
             bridge.setUI(ui);
             bridge.setApp(app);
-
-            bindAppEvents(app, ui, (resizeCallback) => bridge.setResizeCallback(resizeCallback));
 
             // Re-render restored sessions exactly when Markdown becomes available.
             window.addEventListener(MARKDOWN_READY_EVENT, () => {
@@ -86,14 +88,14 @@ export function initAppMode() {
             configureMarkdown();
             console.info('[Gemini Nexus] Sandbox app controllers ready');
         } catch (error) {
-            // Previously this async IIFE had no catch — a failed dynamic import
-            // left a painted shell with a permanently dead send button.
+            // A failed dynamic import previously left a painted shell with dead buttons.
             console.error('[Gemini Nexus] Failed to boot sandbox app:', error);
             const status = document.getElementById('status');
             if (status) {
                 status.textContent =
                     'UI failed to load. Reload the side panel. ' +
                     (error?.message || String(error));
+                status.style.color = 'var(--error, #c5221f)';
             }
         }
     })();

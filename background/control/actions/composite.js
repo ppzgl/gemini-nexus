@@ -43,7 +43,7 @@ export class CompositeActions extends BaseActionHandler {
                 // returning an Error string. Normalize to the same "step N failed"
                 // shape so isFailedToolOutput in the agent loop can flag it.
                 lines.push(`Step ${stepNumber} (${tool}): Error: ${error.message}`);
-                return `Error: step ${stepNumber} (${tool}) failed.\n${lines.join('\n')}`;
+                return await this._formatStepFailure(stepNumber, tool, lines);
             }
 
             // Atomic tools return either a string, a { text, image } screenshot
@@ -54,7 +54,7 @@ export class CompositeActions extends BaseActionHandler {
 
             if (isFailedOutput(text)) {
                 lines.push(`Step ${stepNumber} (${tool}): ${text}`);
-                return `Error: step ${stepNumber} (${tool}) failed.\n${lines.join('\n')}`;
+                return await this._formatStepFailure(stepNumber, tool, lines);
             }
 
             lines.push(`Step ${stepNumber} (${tool}): ${text}`);
@@ -161,6 +161,25 @@ export class CompositeActions extends BaseActionHandler {
         }
         return null;
     }
+
+    /** Fail-fast summary; attach a recovery tree if the error has none yet. */
+    async _formatStepFailure(stepNumber, tool, lines) {
+        let summary = `Error: step ${stepNumber} (${tool}) failed.\n${lines.join('\n')}`;
+        if (hasInlinePageSnapshot(summary)) {
+            return summary;
+        }
+        const snapshotText = this.connection.getDialog?.()
+            ? null
+            : await this._takeSnapshotSafely();
+        if (snapshotText) {
+            summary += `\n\n## Latest page snapshot\n${snapshotText}`;
+        }
+        return summary;
+    }
+}
+
+function hasInlinePageSnapshot(text) {
+    return typeof text === 'string' && text.includes('## Latest page snapshot');
 }
 
 function isFailedOutput(text) {

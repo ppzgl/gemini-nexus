@@ -220,7 +220,12 @@ export class PromptHandler {
 
                     if (!result || result.status !== 'success') {
                         // If error, notify UI and break loop
-                        if (result) chrome.runtime.sendMessage(result).catch(() => {});
+                        if (result) {
+                            chrome.runtime.sendMessage(result).catch(() => {});
+                            // Persist error rows so reload/history export matches what
+                            // the user saw (UI already saved the optimistic user message).
+                            await this.persistTerminalError(request, result);
+                        }
                         break;
                     }
 
@@ -325,16 +330,16 @@ export class PromptHandler {
                 console.error('Prompt loop error:', error);
                 if (!this.isRunCancelled(run)) {
                     const { kind: errorKind, retryable } = classifyProviderError(error);
-                    chrome.runtime
-                        .sendMessage({
-                            action: 'GEMINI_REPLY',
-                            sessionId: request.sessionId || null,
-                            text: 'Error: ' + error.message,
-                            status: 'error',
-                            errorKind,
-                            retryable,
-                        })
-                        .catch(() => {});
+                    const errorResult = {
+                        action: 'GEMINI_REPLY',
+                        sessionId: request.sessionId || null,
+                        text: 'Error: ' + error.message,
+                        status: 'error',
+                        errorKind,
+                        retryable,
+                    };
+                    chrome.runtime.sendMessage(errorResult).catch(() => {});
+                    await this.persistTerminalError(request, errorResult);
                 }
             } finally {
                 if (this.activeRun === run) {
@@ -344,5 +349,28 @@ export class PromptHandler {
             }
         })();
         return true;
+    }
+
+    /**
+     * Persist a terminal error as an AI history row so reloads / bridge
+     * /records match the bubble the user saw (user row is optimistic-saved
+     * before SEND_PROMPT).
+     */
+    async persistTerminalError(request, result) {
+        if (!request?.sessionId || !result || result.status !== 'error') return;
+        const text = typeof result.text === 'string' ? result.text.trim() : '';
+        if (!text) return;
+        try {
+            await appendAiMessage(request.sessionId, {
+                text,
+                thoughts: null,
+                sources: null,
+                images: null,
+                suppressCopy: true,
+                context: result.context || null,
+            });
+        } catch (error) {
+            console.warn('[PromptHandler] Failed to persist error history:', error);
+        }
     }
 }

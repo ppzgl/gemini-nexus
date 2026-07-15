@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sendWebMessage } from './web.js';
+import { classifyEmptyWebResponseBuffer, sendWebMessage } from './web.js';
 
 function makeStream(text) {
     const encoder = new TextEncoder();
@@ -424,5 +424,11 @@ describe('sendWebMessage', () => {
             )
         ).rejects.toThrow('Missing Gemini Web auth token: blValue');
         expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('classifies empty StreamGenerate buffers for clearer No valid response errors', () => {
+        expect(classifyEmptyWebResponseBuffer('')).toMatch(/Empty stream body/);
+        expect(classifyEmptyWebResponseBuffer('rate limit exceeded')).toMatch(/rate-limited/i);
+        expect(classifyEmptyWebResponseBuffer(')]}\'\n12\n[["wrb.fr"]]')).toMatch(/RPC metadata/);
     });
 });

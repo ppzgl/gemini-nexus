@@ -124,6 +124,8 @@ describe('CompositeActions.runSteps execution', () => {
             includeSnapshot: false,
         });
 
+        // Successful path with includeSnapshot:false — no trailing snapshot.
+        // (Failure path always attempts a recovery snapshot; this click succeeds.)
         expect(snapshotManager.takeSnapshot).not.toHaveBeenCalled();
         expect(result).not.toContain('## Latest page snapshot');
     });
@@ -146,8 +148,10 @@ describe('CompositeActions.runSteps execution', () => {
         expect(result).toContain('Error: stale UID 1_5');
         // Second step must never run.
         expect(actions.waitFor).not.toHaveBeenCalled();
-        // No trailing snapshot on failure.
-        expect(snapshotManager.takeSnapshot).not.toHaveBeenCalled();
+        // Recovery snapshot on failure so the agent can continue without an
+        // extra take_snapshot turn.
+        expect(snapshotManager.takeSnapshot).toHaveBeenCalledTimes(1);
+        expect(result).toContain('## Latest page snapshot');
     });
 
     it('converts a thrown atomic error into an Error string and stops', async () => {
@@ -169,7 +173,8 @@ describe('CompositeActions.runSteps execution', () => {
         expect(result).toMatch(/^Error: step 1 \(click\) failed\./);
         expect(result).toContain('Stale Element Reference: UID 1_5');
         expect(actions.waitFor).not.toHaveBeenCalled();
-        expect(snapshotManager.takeSnapshot).not.toHaveBeenCalled();
+        expect(snapshotManager.takeSnapshot).toHaveBeenCalledTimes(1);
+        expect(result).toContain('## Latest page snapshot');
     });
 });
 

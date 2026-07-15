@@ -440,20 +440,21 @@ export class AppController {
             }
             if (payload.action === 'BACKGROUND_REQUEST_ERROR') {
                 // SEND_PROMPT sets isGenerating before the parent forwards the
-                // message. If chrome.runtime.sendMessage fails, we must clear
-                // the loading/stop state or the next send clicks look dead
-                // (handleSendClick keeps calling cancel / send early-returns).
+                // message. Clear loading if sendMessage failed mid-flight.
+                this.prompt.forceClearGenerating({
+                    status: payload.error || 'Background request failed.',
+                    keepStatusMs: 3000,
+                });
+                return;
+            }
+            if (payload.action === 'SERVICE_WORKER_STARTED') {
+                // Side panel can outlive a SW restart with a zombie generating flag.
                 if (this.isGenerating) {
-                    this.isGenerating = false;
-                    this.generatingSessionId = null;
-                    this.ui.setLoading(false);
-                    this.messageHandler?.clearActiveStream?.();
-                    this.sessionFlow?.refreshHistoryUI?.();
+                    console.warn(
+                        '[Gemini Nexus] Clearing stuck generating state after service worker start'
+                    );
+                    this.prompt.forceClearGenerating();
                 }
-                this.ui.updateStatus(payload.error || 'Background request failed.');
-                setTimeout(() => {
-                    if (!this.isGenerating) this.ui.updateStatus('');
-                }, 3000);
                 return;
             }
             if (payload.action === 'OPEN_TABS_RESULT') {

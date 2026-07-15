@@ -24,6 +24,10 @@ function copySidepanelPreload(): Plugin {
 
 export default defineConfig(() => {
     return {
+        // Chrome extension pages (especially sandboxed ones) must load assets
+        // via relative URLs. Absolute `/assets/...` breaks sandbox module
+        // preloads → shell paints but no click handlers (dead send button).
+        base: './',
         server: {
             port: 3000,
             host: '0.0.0.0',

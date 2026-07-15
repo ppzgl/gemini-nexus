@@ -96,4 +96,48 @@ describe('AppMessageBridge settings restore', () => {
 
         expect(app.handleIncomingMessage).not.toHaveBeenCalled();
     });
+
+    it('restores image-tools blacklist without touching chrome.storage', () => {
+        const bridge = new AppMessageBridge();
+        const ui = {
+            settings: {
+                updateImageTools: vi.fn(),
+                updateImageToolsBlacklist: vi.fn(),
+            },
+        };
+        const app = { handleIncomingMessage: vi.fn() };
+
+        bridge.setUI(ui);
+        bridge.setApp(app);
+        bridge.dispatch('RESTORE_IMAGE_TOOLS', true, {});
+        bridge.dispatch('RESTORE_IMAGE_TOOLS_BLACKLIST', 'example.com', {});
+
+        expect(ui.settings.updateImageTools).toHaveBeenCalledWith(true);
+        expect(ui.settings.updateImageToolsBlacklist).toHaveBeenCalledWith('example.com');
+        expect(app.handleIncomingMessage).not.toHaveBeenCalled();
+    });
+
+    it('continues flushing when one queued restore handler throws', () => {
+        const bridge = new AppMessageBridge();
+        const ui = {
+            settings: {
+                updateImageTools: vi.fn(() => {
+                    throw new Error("Cannot read properties of undefined (reading 'local')");
+                }),
+                updateTextSelection: vi.fn(),
+            },
+        };
+        const app = { handleIncomingMessage: vi.fn() };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        // Queue before app/ui are ready.
+        bridge.handleMessage({ data: { action: 'RESTORE_IMAGE_TOOLS', payload: true } });
+        bridge.handleMessage({ data: { action: 'RESTORE_TEXT_SELECTION', payload: false } });
+        bridge.setUI(ui);
+        bridge.setApp(app);
+
+        expect(ui.settings.updateImageTools).toHaveBeenCalled();
+        expect(ui.settings.updateTextSelection).toHaveBeenCalledWith(false);
+        errorSpy.mockRestore();
+    });
 });

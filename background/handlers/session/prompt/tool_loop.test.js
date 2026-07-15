@@ -13,7 +13,7 @@ describe('browser-control tool loop handling', () => {
         vi.clearAllMocks();
     });
 
-    it('does not inject a fresh page snapshot into failed browser-control outputs', async () => {
+    it('does not inject a fresh page snapshot into generic failed browser-control outputs', async () => {
         const controlManager = {
             getSnapshot: vi.fn(() => Promise.resolve('snapshot')),
         };
@@ -24,15 +24,41 @@ describe('browser-control tool loop handling', () => {
                 toolName: 'click',
                 status: 'failed',
             },
-            outputForModel: 'Error: Element is detached.',
+            outputForModel: 'Error: Target tab is outside the controlled tab group.',
             request: {
                 enableBrowserControl: true,
             },
             controlManager,
         });
 
-        expect(output).toBe('Error: Element is detached.');
+        expect(output).toBe('Error: Target tab is outside the controlled tab group.');
         expect(controlManager.getSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('injects a recovery snapshot for UID-resolution failures', async () => {
+        const controlManager = {
+            getSnapshot: vi.fn(() => Promise.resolve('uid=9_1 RootWebArea "Home"')),
+            getTargetTabId: vi.fn(() => null),
+        };
+
+        const output = await injectBrowserControlSnapshot({
+            toolResult: {
+                source: 'browser_control',
+                toolName: 'click',
+                status: 'failed',
+            },
+            outputForModel:
+                "Error: Element '3_64' not found in current snapshot. Please verify the UID or take a new snapshot.",
+            request: {
+                enableBrowserControl: true,
+            },
+            controlManager,
+        });
+
+        expect(controlManager.getSnapshot).toHaveBeenCalled();
+        expect(output).toContain('not found in current snapshot');
+        expect(output).toContain('Updated Page Accessibility Tree');
+        expect(output).toContain('uid=9_1');
     });
 
     it('persists native function responses and UI tool output with the same batch id', async () => {

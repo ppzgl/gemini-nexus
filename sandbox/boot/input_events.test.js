@@ -256,6 +256,17 @@ describe('input events', () => {
         expect(app.handleSendMessage).not.toHaveBeenCalled();
     });
 
+    it('force-sends after cancel when generation is stuck and draft has text', () => {
+        const { app, sendBtn, inputFn } = bindHarness({ isGenerating: true });
+        inputFn.value = 'retry me';
+        app.prompt = {
+            isGenerationLikelyStuck: () => true,
+        };
+        sendBtn.click();
+        expect(app.handleCancel).toHaveBeenCalledTimes(1);
+        expect(app.handleSendMessage).toHaveBeenCalledTimes(1);
+    });
+
     it('cycles models with Tab from the prompt, not from arbitrary UI targets', () => {
         const { app, inputFn, modelSelect } = bindHarness();
         inputFn.focus();

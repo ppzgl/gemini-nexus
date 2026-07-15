@@ -130,6 +130,23 @@ export function getUnbundledContentScriptFiles(manifest) {
 }
 
 /**
+ * Normalize an HTML asset reference to a package-root-relative path.
+ * Accepts `/assets/x`, `./assets/x`, `../assets/x`, `assets/x`.
+ * @param {string} reference
+ * @returns {string | null}
+ */
+export function normalizePackagedAssetReference(reference) {
+    if (!reference || typeof reference !== 'string') return null;
+    if (/^(?:https?:|data:|chrome-extension:)/i.test(reference)) return null;
+    let clean = reference.split(/[?#]/)[0];
+    clean = clean.replace(/\\/g, '/');
+    // Strip leading ./ and any number of ../ so package-root assets resolve.
+    clean = clean.replace(/^(?:\.\.\/)+/, '').replace(/^\.\//, '').replace(/^\/+/, '');
+    if (!clean.startsWith('assets/')) return null;
+    return clean;
+}
+
+/**
  * @param {string} html
  * @returns {string[]}
  */
@@ -138,13 +155,27 @@ export function collectPackagedAssetReferences(html) {
     const attributePattern = /\b(?:href|src)=["']([^"']+)["']/g;
 
     for (const match of html.matchAll(attributePattern)) {
-        const cleanReference = match[1].split(/[?#]/)[0].replace(/^\/+/, '').replace(/^\.\//, '');
-        if (cleanReference.startsWith('assets/')) {
-            references.add(cleanReference);
-        }
+        const assetReference = normalizePackagedAssetReference(match[1]);
+        if (assetReference) references.add(assetReference);
     }
 
     return [...references].sort();
+}
+
+/**
+ * Rewrite absolute `/assets/...` references in packaged HTML to relative paths
+ * based on the HTML file's directory depth (sidepanel/ → ../assets/...).
+ * @param {string} html
+ * @param {string} htmlRelativePath e.g. 'sandbox/index.html'
+ * @returns {string}
+ */
+export function rewriteHtmlAssetPathsToRelative(html, htmlRelativePath) {
+    const depth = htmlRelativePath.split(/[/\\]/).length - 1;
+    const prefix = depth > 0 ? `${'../'.repeat(depth)}assets/` : 'assets/';
+    return html.replace(
+        /\b(href|src)=["']\/assets\/([^"']+)["']/g,
+        (_match, attr, rest) => `${attr}="${prefix}${rest}"`
+    );
 }
 
 /**
@@ -171,7 +202,25 @@ export async function findMissingPackagedAssetReferences(packageRoot, htmlRelati
     return missingReferences;
 }
 
+async function rewritePackagedHtmlAssetPaths() {
+    const htmlRelativePaths = [
+        'sidepanel/index.html',
+        'sandbox/index.html',
+        'settings/index.html',
+    ];
+    for (const htmlRelativePath of htmlRelativePaths) {
+        const absolutePath = path.join(packageDir, htmlRelativePath);
+        const original = await readFile(absolutePath, 'utf8');
+        const rewritten = rewriteHtmlAssetPathsToRelative(original, htmlRelativePath);
+        if (rewritten !== original) {
+            await writeFile(absolutePath, rewritten, 'utf8');
+        }
+    }
+}
+
 async function ensurePackagedHtmlAssetReferences() {
+    await rewritePackagedHtmlAssetPaths();
+
     const missingReferences = await findMissingPackagedAssetReferences(packageDir, [
         'sidepanel/index.html',
         'sandbox/index.html',

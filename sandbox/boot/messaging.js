@@ -37,7 +37,17 @@ export class AppMessageBridge {
         if (this.app && this.ui) {
             while (this.queue.length > 0) {
                 const { action, payload, event } = this.queue.shift();
-                this.dispatch(action, payload, event);
+                try {
+                    this.dispatch(action, payload, event);
+                } catch (error) {
+                    // A single bad restore message must not abort sandbox boot
+                    // (historically RESTORE_IMAGE_TOOLS threw on chrome.storage).
+                    console.error(
+                        '[Gemini Nexus] Failed to dispatch queued parent message:',
+                        action,
+                        error
+                    );
+                }
             }
         }
     }
@@ -90,6 +100,10 @@ export class AppMessageBridge {
         }
         if (action === 'RESTORE_IMAGE_TOOLS') {
             this.ui.settings.updateImageTools(payload);
+            return;
+        }
+        if (action === 'RESTORE_IMAGE_TOOLS_BLACKLIST') {
+            this.ui.settings.updateImageToolsBlacklist(payload);
             return;
         }
         if (action === 'RESTORE_GENERATED_IMAGE_WATERMARK_REMOVAL') {

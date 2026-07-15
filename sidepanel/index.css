@@ -41,6 +41,9 @@ iframe.loaded {
     flex-direction: column;
     z-index: 10;
     background: #ffffff;
+    /* Never trap clicks on the live iframe underneath, even if the
+       .hidden class fails to apply (boot race / partial UI_READY). */
+    pointer-events: none;
     transition:
         opacity 0.3s cubic-bezier(0.2, 0, 0, 1),
         visibility 0.3s cubic-bezier(0.2, 0, 0, 1);
@@ -49,8 +52,6 @@ iframe.loaded {
 #skeleton.hidden {
     opacity: 0;
     visibility: hidden;
-    /* Ensure the skeleton never intercepts clicks after UI_READY (some
-       browsers still hit-test visibility:hidden ancestors in edge cases). */
     pointer-events: none;
 }
 
