@@ -105,6 +105,17 @@ describe('ToolDispatcher includeSnapshot responses', () => {
         expect(BROWSER_CONTROL_PREAMBLE).toContain('latest snapshot');
     });
 
+    it('puts hard execution rules before the long tool catalog', () => {
+        const hard = BROWSER_CONTROL_PREAMBLE.indexOf('HARD RULES');
+        const tools = BROWSER_CONTROL_PREAMBLE.indexOf('**Tools**');
+        expect(hard).toBeGreaterThanOrEqual(0);
+        expect(tools).toBeGreaterThan(hard);
+        // Anti-narration must be explicit (zh + en) so models do not "plan only".
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('EXECUTE, DO NOT NARRATE');
+        expect(BROWSER_CONTROL_PREAMBLE).toMatch(/我将点击/);
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('exactly one tool-call JSON');
+    });
+
     it('documents navigation discipline, new-tab recovery, and download tools', () => {
         expect(BROWSER_CONTROL_PREAMBLE).toContain('DIRECT URLS OVER SEARCH CLICKS');
         expect(BROWSER_CONTROL_PREAMBLE).toContain('NEW TABS AFTER CLICK');
