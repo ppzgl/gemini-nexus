@@ -1,15 +1,21 @@
 # Changelog
 
-## v5.0.24 - 2026-07-15
+## v5.0.24 - 2026-07-17
 
 ### 侧栏可用性
 
 - 修复 sandbox 启动失败 `Cannot read properties of undefined (reading 'local')`：`updateImageTools` 不再调用 `chrome.storage`（sandbox 无 chrome API）；补齐 `RESTORE_IMAGE_TOOLS_BLACKLIST`；恢复消息 dispatch 失败不中断启动。
 - 修复侧栏大量按钮无响应：Vite `base: './'` + 打包把 HTML `/assets/` 改为相对路径，避免 sandbox 动态模块加载失败导致事件未绑定；骨架层默认 `pointer-events: none`。
 - 修复发送卡住：`forceClearGenerating` / 卡住后带正文再发；普通对话 watchdog 90s；SW 启动广播 `SERVICE_WORKER_STARTED` 清除僵尸生成态。
+- 生成态与 watchdog 改为 idle-only 清理（超时取消）；中间 agent 消息可展示；工具披露图标与控制按钮对齐。
 
 ### 浏览器控制与 Web
 
+- **新标签页跟随**：`target=_blank` / 下载页等 opener 关联标签自动切换控制权；attach 失败回滚；`run_steps` 切换后刷新快照，避免 SERP 点击后仍停在搜索页空转。
+- **下载观测**：新增 `list_downloads` / `wait_for_download`（lookback 感知 `ignoreExisting`），manifest 声明 `downloads` 权限。
+- 中文「将/会/就」等叙述意图收紧；模型只口述不发工具 JSON 时 nudge 一次。
+- a11y 快照隐藏扩展自有 UI（光标、overlay、工具栏、YouTube 摘要等）。
+- 缩短浏览器控制 system preamble：硬规则前置（必须发工具 JSON、禁止纯计划回复），压缩策略与工具目录。
 - UID 过期：导航 `reset` 递增版本号；`getObjectIdFromUid` 自动 re-snapshot 并重试；`run_steps` / tool loop 失败附带恢复快照。
 - Web 空响应：分类提示 + buffer 样本；stream 错误优先暴露；终端错误写入历史，避免只剩用户消息。
 - Keep-Alive：连续网络失败降噪日志；429 加大退避。
