@@ -86,10 +86,12 @@ describe('manifest content scripts', () => {
         });
     });
 
-    it('does not request the downloads permission when downloads use DOM anchors', async () => {
+    it('requests the downloads permission for browser-control download observation', async () => {
         const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
 
-        expect(manifest.permissions).not.toContain('downloads');
+        // Sidepanel session export still uses DOM anchors; chrome.downloads is for
+        // list_downloads / wait_for_download in the browser-control agent.
+        expect(manifest.permissions).toContain('downloads');
     });
 
     it('does not repeat host permissions already covered by all urls', async () => {

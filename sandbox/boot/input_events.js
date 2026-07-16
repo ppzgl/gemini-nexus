@@ -349,10 +349,3 @@ export function bindInputEvents(app, ui, setResizeRef) {
         cleanupHandlers.forEach((cleanup) => cleanup());
     };
 }
-
-// Exported for unit tests.
-export const __test__ = {
-    hasDismissibleOverlay,
-    isModelCycleFocusTarget,
-    hasActiveModal,
-};

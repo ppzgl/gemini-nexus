@@ -66,7 +66,7 @@ describe('ChatController send enablement', () => {
         document.body.innerHTML = '';
     });
 
-    it('disables send when empty and enables when text or attachments exist', () => {
+    it('marks empty send as is-empty while keeping the button clickable', () => {
         const sendBtn = document.createElement('button');
         const inputFn = document.createElement('textarea');
         const controller = new ChatController({
@@ -76,18 +76,25 @@ describe('ChatController send enablement', () => {
             statusDiv: document.createElement('div'),
         });
 
-        expect(sendBtn.disabled).toBe(true);
+        // Empty state stays enabled so click can show feedback (is-empty / aria-disabled).
+        expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('is-empty')).toBe(true);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('true');
 
         inputFn.value = 'hello';
         inputFn.dispatchEvent(new Event('input'));
         expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('is-empty')).toBe(false);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('false');
 
         inputFn.value = '   ';
         inputFn.dispatchEvent(new Event('input'));
-        expect(sendBtn.disabled).toBe(true);
+        expect(sendBtn.classList.contains('is-empty')).toBe(true);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('true');
 
         controller.setHasAttachments(true);
-        expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('is-empty')).toBe(false);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('false');
 
         controller.setLoading(true);
         expect(sendBtn.disabled).toBe(false);
@@ -96,9 +103,12 @@ describe('ChatController send enablement', () => {
         controller.setLoading(false);
         expect(sendBtn.classList.contains('generating')).toBe(false);
         expect(sendBtn.disabled).toBe(false);
+        expect(sendBtn.classList.contains('is-empty')).toBe(false);
 
         controller.setHasAttachments(false);
-        expect(sendBtn.disabled).toBe(true);
+        expect(sendBtn.classList.contains('is-empty')).toBe(true);
+        expect(sendBtn.getAttribute('aria-disabled')).toBe('true');
+        expect(sendBtn.disabled).toBe(false);
     });
 });
 
