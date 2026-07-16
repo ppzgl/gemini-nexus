@@ -12,6 +12,7 @@
         "debugger",
         "tabs",
         "tabGroups",
+        "downloads",
         "nativeMessaging"
     ],
     "host_permissions": ["<all_urls>"],

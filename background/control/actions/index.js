@@ -99,6 +99,14 @@ export class BrowserActions {
         return this.observation.takeScreenshot(args);
     }
 
+    async listDownloads(args) {
+        return this.observation.listDownloads(args);
+    }
+
+    async waitForDownload(args) {
+        return this.observation.waitForDownload(args);
+    }
+
     async runSteps(args) {
         return this.composite.runSteps(args);
     }

@@ -3,6 +3,7 @@ import { ScriptEvaluationActions } from './script_evaluation.js';
 import { WaitActions } from './wait.js';
 import { DialogActions } from './dialog.js';
 import { ScreenshotActions } from './screenshot.js';
+import { DownloadActions } from './downloads.js';
 
 export class ObservationActions extends BaseActionHandler {
     constructor(connection, snapshotManager, waitHelper) {
@@ -12,6 +13,7 @@ export class ObservationActions extends BaseActionHandler {
         this.wait = new WaitActions(connection, snapshotManager, waitHelper);
         this.dialog = new DialogActions(connection, snapshotManager, waitHelper);
         this.screenshot = new ScreenshotActions(connection, snapshotManager, waitHelper);
+        this.downloads = new DownloadActions();
     }
 
     async waitFor(args) {
@@ -40,5 +42,13 @@ export class ObservationActions extends BaseActionHandler {
 
     async handleDialog(args) {
         return this.dialog.handleDialog(args);
+    }
+
+    async listDownloads(args) {
+        return this.downloads.listDownloads(args);
+    }
+
+    async waitForDownload(args) {
+        return this.downloads.waitForDownload(args);
     }
 }

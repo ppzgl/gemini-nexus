@@ -21,6 +21,13 @@ describe('looksLikeUnexecutedBrowserActionPlan', () => {
         expect(looksLikeUnexecutedBrowserActionPlan(text)).toBe(true);
     });
 
+    it('detects Chinese 点击 + uid without an English tool name (Win11 SERP failure mode)', () => {
+        const text =
+            '已经点击了微软官方的 Windows 11 下载页面，现在我需要导航到微软官网。\n\n' +
+            '我将点击该官方链接 `uid=8_67`（"Download Windows 11"），进入该页面以获取 ISO 镜像下载选项。';
+        expect(looksLikeUnexecutedBrowserActionPlan(text)).toBe(true);
+    });
+
     it('detects English intent + tool name without tool JSON', () => {
         expect(
             looksLikeUnexecutedBrowserActionPlan(
@@ -38,6 +45,14 @@ describe('looksLikeUnexecutedBrowserActionPlan', () => {
         expect(looksLikeUnexecutedBrowserActionPlan('Hello, how can I help you today?')).toBe(
             false
         );
+    });
+
+    it('does not treat status text with bare 现在+下载 as an action plan', () => {
+        // Bare 「现在」 must not match intent; otherwise status descriptions nudge forever.
+        expect(
+            looksLikeUnexecutedBrowserActionPlan('页面现在显示了下载按钮，进度条在加载中。')
+        ).toBe(false);
+        expect(looksLikeUnexecutedBrowserActionPlan('现在下载进度显示为 50%。')).toBe(false);
     });
 
     it('ignores replies that already include a tool-call JSON block', () => {

@@ -60,11 +60,18 @@ export function buildToolContinuationPrompt(toolName, output, language) {
 
 // Tool names the agent is expected to emit as JSON when browser control is on.
 const BROWSER_TOOL_NAME_PATTERN =
-    /(?:navigate_page|new_page|close_page|list_pages|select_page|click|hover|fill_form|fill|press_key|type_text|attach_file|take_snapshot|take_screenshot|wait_for_url|wait_for_load_state|wait_for_timeout|wait_for|handle_dialog|evaluate_script|drag|scroll|run_steps)/i;
+    /(?:navigate_page|new_page|close_page|list_pages|select_page|click|hover|fill_form|fill|press_key|type_text|attach_file|take_snapshot|take_screenshot|wait_for_url|wait_for_load_state|wait_for_timeout|wait_for_download|wait_for|list_downloads|handle_dialog|evaluate_script|drag|scroll|run_steps)/i;
 
 // Future-tense / intent phrasing (zh + en) that often precedes a tool call.
+// Note: bare 「现在」 is NOT matched (avoids "页面现在显示了下载按钮" false positives);
+// require 现在会/将/就, or 我将 / 我现在, etc.
 const ACTION_INTENT_PATTERN =
-    /(?:我将|我现在|我先|接下来|现在(?:会|将|就)?|下一步|准备|立刻|立即|I(?:'ll| will)|I am going to|I'm going to|Next(?: step)?,?\s*I(?:'ll| will)|Let me)\b/i;
+    /(?:我将|我现在|我先|接下来|现在(?:会|将|就)|下一步|准备|立刻|立即|I(?:'ll| will)|I am going to|I'm going to|Next(?: step)?,?\s*I(?:'ll| will)|Let me)\b/i;
+
+// Chinese action verbs the model often uses instead of English tool names
+// (e.g. "我将点击 uid=8_67" without saying `click`).
+const ZH_ACTION_VERB_PATTERN =
+    /(?:点击|单击|双击|填写|填入|输入|选择|勾选|等待|滚动|悬停|打开|关闭|切换|导航|跳转|下载|上传|提交)/;
 
 // Explicit "use the X tool" phrasing, including backticked tool names.
 const TOOL_USAGE_PATTERN = new RegExp(
@@ -77,6 +84,8 @@ const TOOL_USAGE_PATTERN = new RegExp(
 // Clear completion / handoff language — do not nudge.
 const TASK_COMPLETE_PATTERN =
     /(?:任务(?:已)?完成|已(?:全部)?完成|下载(?:已)?开始|没有需要(?:再)?做|无需再|successfully completed|task (?:is )?complete|download (?:has )?started|nothing (?:else|more) to do|no further action)/i;
+
+const UID_PATTERN = /(?:\buid\s*=\s*[\w.-]+|`uid\s*=\s*[\w.-]+`|uid=\s*[\w.-]+)/i;
 
 /**
  * Detects browser-control replies that describe the next tool action but did
@@ -92,15 +101,18 @@ export function looksLikeUnexecutedBrowserActionPlan(text) {
     if (parseToolCommand(value)) return false;
     if (TASK_COMPLETE_PATTERN.test(value)) return false;
 
-    const mentionsTool = TOOL_USAGE_PATTERN.test(value) || BROWSER_TOOL_NAME_PATTERN.test(value);
-    if (!mentionsTool) return false;
+    const hasToolName = TOOL_USAGE_PATTERN.test(value) || BROWSER_TOOL_NAME_PATTERN.test(value);
+    const hasZhVerb = ZH_ACTION_VERB_PATTERN.test(value);
+    const hasIntent = ACTION_INTENT_PATTERN.test(value);
+    const hasUid = UID_PATTERN.test(value);
 
     // Prefer strong signal: intent + tool, or backticked/explicit tool usage.
     if (TOOL_USAGE_PATTERN.test(value)) return true;
-    if (ACTION_INTENT_PATTERN.test(value) && BROWSER_TOOL_NAME_PATTERN.test(value)) return true;
+    if (hasIntent && hasToolName) return true;
 
-    // "UID … then click/fill" style without clear "I will", still pending work.
-    if (/\buid\s*=\s*[\w.-]+/i.test(value) && ACTION_INTENT_PATTERN.test(value)) return true;
+    // Chinese: "我将点击 … uid=8_67" without an English tool name.
+    if (hasIntent && hasZhVerb) return true;
+    if (hasUid && (hasIntent || hasZhVerb)) return true;
 
     return false;
 }

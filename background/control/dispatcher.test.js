@@ -27,6 +27,8 @@ describe('ToolDispatcher local tool registry', () => {
             'wait_for_url',
             'wait_for_load_state',
             'wait_for_timeout',
+            'list_downloads',
+            'wait_for_download',
             'run_steps',
         ];
 
@@ -48,6 +50,11 @@ describe('ToolDispatcher local tool registry', () => {
         // is allowed mid-sequence.
         expect(ToolDispatcher.isTabSwitchingTool('navigate_page')).toBe(false);
         expect(ToolDispatcher.isTabSwitchingTool('click')).toBe(false);
+        // Download tools are debugger-optional but do not switch tabs.
+        expect(ToolDispatcher.isTabSwitchingTool('list_downloads')).toBe(false);
+        expect(ToolDispatcher.isTabSwitchingTool('wait_for_download')).toBe(false);
+        expect(ToolDispatcher.requiresDebugger('list_downloads')).toBe(false);
+        expect(ToolDispatcher.requiresDebugger('wait_for_download')).toBe(false);
     });
 
     it('does not treat retired browser-control tools as local tools', () => {
@@ -96,6 +103,14 @@ describe('ToolDispatcher includeSnapshot responses', () => {
     it('documents includeSnapshot in the browser-control prompt', () => {
         expect(BROWSER_CONTROL_PREAMBLE).toContain('"includeSnapshot": true');
         expect(BROWSER_CONTROL_PREAMBLE).toContain('latest snapshot');
+    });
+
+    it('documents navigation discipline, new-tab recovery, and download tools', () => {
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('DIRECT URLS OVER SEARCH CLICKS');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('NEW TABS AFTER CLICK');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('list_downloads');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('wait_for_download');
+        expect(BROWSER_CONTROL_PREAMBLE).toContain('Download ready');
     });
 
     it('documents batch fill and wait tools in the browser-control prompt', () => {

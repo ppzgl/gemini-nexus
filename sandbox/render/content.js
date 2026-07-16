@@ -32,6 +32,8 @@ const BROWSER_CONTROL_TOOL_NAMES = [
     'wait_for_url',
     'wait_for_load_state',
     'wait_for_timeout',
+    'list_downloads',
+    'wait_for_download',
     'handle_dialog',
     'evaluate_script',
     'drag',

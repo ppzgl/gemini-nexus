@@ -5,6 +5,16 @@ import { ToolDispatcher } from '../control/dispatcher.js';
 import { getTabControlAvailability, getTabUrl, toControlTabSummary } from '../control/tabs.js';
 import { cursorController } from '../control/cursor_controller.js';
 import { debugLog } from '../../shared/logging/debug.js';
+import {
+    NEW_TAB_FOLLOW_TOOL_NAMES,
+    captureNewTabWatchState,
+    detectNewTabsFromWatch,
+    formatNewTabFollowNote,
+    formatPossibleNewTabHint,
+    hasInlinePageSnapshot,
+    pickMostRecentTab,
+    replaceInlinePageSnapshot,
+} from '../control/new_tab_follow.js';
 
 export const DEFAULT_BROWSER_CONTROL_START_URL = 'https://www.google.com/search?q=';
 
@@ -20,7 +30,10 @@ export class BrowserControlManager {
             getControlledGroupId: () => this.getControlledGroupId(),
             getControlledWindowId: () => this.getControlledWindowId(),
         });
-        this.dispatcher = new ToolDispatcher(this.actions, this.snapshotManager, this.connection);
+        this.dispatcher = new ToolDispatcher(this.actions, this.snapshotManager, this.connection, {
+            beforeAction: (name) => this._beforeToolAction(name),
+            afterAction: (name, args, result, pre) => this._afterToolAction(name, args, result, pre),
+        });
         this.lockedTabId = null;
         this.ownerSidePanelTabId = null;
         this.controlGroupTabId = null;
@@ -423,6 +436,199 @@ export class BrowserControlManager {
             if (!success || !this.connection.attached) return null;
         }
         return await this.snapshotManager.takeSnapshot();
+    }
+
+    // --- New-tab follow (click / press_key / run_steps) ---
+
+    async _beforeToolAction(name) {
+        if (!NEW_TAB_FOLLOW_TOOL_NAMES.has(name)) return null;
+        const openerTabId = this.lockedTabId || this.connection.currentTabId || null;
+        return await captureNewTabWatchState({
+            openerTabId,
+            windowId: this.getControlledWindowId(),
+        });
+    }
+
+    /**
+     * Wait until a tab has a controllable URL (not about:blank / chrome://).
+     * @param {number} tabId
+     * @param {{ maxWaitMs?: number, pollMs?: number, sleep?: (ms: number) => Promise<void> }} [options]
+     * @returns {Promise<chrome.tabs.Tab|null>}
+     */
+    async _waitForControllableTab(tabId, options = {}) {
+        if (!Number.isInteger(tabId) || tabId <= 0) return null;
+        const maxWaitMs = options.maxWaitMs ?? 3000;
+        const pollMs = options.pollMs ?? 200;
+        const sleep =
+            typeof options.sleep === 'function'
+                ? options.sleep
+                : (ms) => new Promise((r) => setTimeout(r, ms));
+        const deadline = Date.now() + maxWaitMs;
+
+        while (Date.now() <= deadline) {
+            try {
+                const tab = await chrome.tabs.get(tabId);
+                const url = getTabUrl(tab) || '';
+                const availability = getTabControlAvailability(tab);
+                // Prefer a real http(s) document; about:blank while loading is not ready.
+                if (availability.controllable && url && !/^about:blank$/i.test(url)) {
+                    return tab;
+                }
+            } catch {
+                return null;
+            }
+            if (Date.now() + pollMs > deadline) break;
+            await sleep(pollMs);
+        }
+
+        try {
+            const tab = await chrome.tabs.get(tabId);
+            if (getTabControlAvailability(tab).controllable) return tab;
+        } catch {
+            /* ignore */
+        }
+        return null;
+    }
+
+    /**
+     * After auto-switch, run_steps (and any result that already embedded a
+     * snapshot) still carries the *opener* page tree. Refresh it on the new tab.
+     * @param {string} text
+     * @param {string} toolName
+     */
+    async _refreshSnapshotAfterTabSwitch(text, toolName) {
+        if (typeof text !== 'string') return text;
+        // Atomic click/press with includeSnapshot: dispatcher appends snapshot
+        // after afterAction — no embedded tree yet. Only rewrite when a tree
+        // was already baked in (run_steps default) or the tool name is run_steps.
+        const needsRefresh = toolName === 'run_steps' || hasInlinePageSnapshot(text);
+        if (!needsRefresh) return text;
+        try {
+            const snapshot = await this.snapshotManager.takeSnapshot();
+            if (typeof snapshot === 'string' && snapshot && !snapshot.startsWith('Error')) {
+                return replaceInlinePageSnapshot(text, snapshot);
+            }
+        } catch (error) {
+            debugLog('[ControlManager] Snapshot refresh after tab switch failed:', error);
+        }
+        return text;
+    }
+
+    /**
+     * After click-like tools: if a new tab was opened from the controlled page,
+     * claim it into the controlled group and switch control so the following
+     * includeSnapshot (if any) reflects the real destination page.
+     */
+    async _afterToolAction(name, _args, result, pre) {
+        if (!NEW_TAB_FOLLOW_TOOL_NAMES.has(name) || !pre) return result;
+
+        // Already switching via tool meta (new_page / select_page inside run_steps).
+        if (result && typeof result === 'object' && result._meta?.switchTabId) {
+            return result;
+        }
+
+        const baseText =
+            typeof result === 'string'
+                ? result
+                : result && typeof result === 'object' && typeof result.output === 'string'
+                  ? result.output
+                  : null;
+        if (baseText == null || baseText.startsWith('Error')) return result;
+
+        let follow;
+        try {
+            follow = await detectNewTabsFromWatch(pre);
+        } catch (error) {
+            debugLog('[ControlManager] new-tab detect failed:', error);
+            return result;
+        }
+
+        const appendNote = (note, textOverride = null) => {
+            if (typeof result === 'string') {
+                return `${textOverride != null ? textOverride : result}${note}`;
+            }
+            if (result && typeof result === 'object' && 'output' in result) {
+                const body = textOverride != null ? textOverride : result.output || '';
+                return { ...result, output: `${body}${note}` };
+            }
+            return result;
+        };
+
+        // Trusted: opener-linked tab only — safe to auto-switch.
+        if (follow.preferred?.id) {
+            const tabId = follow.preferred.id;
+            const previousTabId = this.lockedTabId;
+
+            const readyTab = await this._waitForControllableTab(tabId);
+            if (!readyTab) {
+                debugLog(
+                    `[ControlManager] New tab ${tabId} not controllable yet; skip auto-switch`
+                );
+                return appendNote(
+                    formatNewTabFollowNote(follow.preferred, {
+                        autoSwitched: false,
+                        attachFailed: true,
+                    })
+                );
+            }
+
+            try {
+                await this.actions.navigation.addTabToControlledGroup(tabId);
+            } catch {
+                // Grouping is best-effort.
+            }
+
+            // Allow tabs opened outside the group (common for target=_blank).
+            this.setTargetTab(tabId);
+
+            let attached = true;
+            if (ToolDispatcher.requiresDebugger(name) || name === 'run_steps') {
+                attached = await this.ensureConnection();
+            }
+
+            if (!attached) {
+                debugLog(
+                    `[ControlManager] Attach failed on new tab ${tabId}; rolling back to ${previousTabId}`
+                );
+                if (Number.isInteger(previousTabId) && previousTabId > 0) {
+                    this.setTargetTab(previousTabId);
+                    await this.ensureConnection().catch(() => false);
+                } else {
+                    this.setTargetTab(null);
+                }
+                return appendNote(
+                    formatNewTabFollowNote(follow.preferred, {
+                        autoSwitched: false,
+                        attachFailed: true,
+                    })
+                );
+            }
+
+            const note = formatNewTabFollowNote(follow.preferred, { autoSwitched: true });
+            debugLog(`[ControlManager] Auto-switched control to new tab ${tabId}`);
+
+            // Refresh stale run_steps snapshot that was taken on the opener.
+            let body = baseText;
+            body = await this._refreshSnapshotAfterTabSwitch(body, name);
+            return appendNote(note, body);
+        }
+
+        // Untrusted new tab(s): note only — do not steal control.
+        if (Array.isArray(follow.newTabs) && follow.newTabs.length > 0) {
+            const noted = pickMostRecentTab(follow.newTabs);
+            if (noted) {
+                return appendNote(formatNewTabFollowNote(noted, { autoSwitched: false }));
+            }
+        }
+
+        // Click with no same-tab navigation and no detected new tab: SERP /
+        // target=_blank links sometimes open too slowly for the poll window.
+        // Remind the model once; skip for press_key / run_steps (too noisy).
+        if (name === 'click' && !follow.openerNavigated && pre.openerUrl) {
+            return appendNote(formatPossibleNewTabHint());
+        }
+
+        return result;
     }
 
     // --- Execution Entry Point ---

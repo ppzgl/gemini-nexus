@@ -9,6 +9,9 @@ export class ToolDispatcher {
         'close_page',
         'list_pages',
         'select_page',
+        // chrome.downloads — no page debugger required
+        'list_downloads',
+        'wait_for_download',
     ]);
 
     static LOCAL_TOOL_NAMES = new Set([
@@ -39,6 +42,8 @@ export class ToolDispatcher {
         'wait_for_url',
         'wait_for_load_state',
         'wait_for_timeout',
+        'list_downloads',
+        'wait_for_download',
 
         // Composite
         'run_steps',
@@ -89,6 +94,8 @@ export class ToolDispatcher {
         wait_for_url: { method: 'waitForUrl' },
         wait_for_load_state: { method: 'waitForLoadState' },
         wait_for_timeout: { method: 'waitForTimeout' },
+        list_downloads: { method: 'listDownloads' },
+        wait_for_download: { method: 'waitForDownload' },
 
         // Composite
         run_steps: { method: 'runSteps' },
@@ -104,14 +111,29 @@ export class ToolDispatcher {
 
     // Tools that switch the locked tab (new_page/close_page/select_page) and so
     // can only be the FINAL step of a composite run — see CompositeActions.
+    // Download tools are debugger-optional but do not switch tabs.
     static isTabSwitchingTool(name) {
-        return ToolDispatcher.DEBUGGER_OPTIONAL_TOOL_NAMES.has(name) && name !== 'navigate_page';
+        return (
+            name === 'new_page' ||
+            name === 'close_page' ||
+            name === 'select_page'
+        );
     }
 
-    constructor(actions, snapshotManager, connection = null) {
+    /**
+     * @param {object} actions
+     * @param {object} snapshotManager
+     * @param {object|null} connection
+     * @param {{ beforeAction?: Function, afterAction?: Function }} [hooks]
+     *   Optional lifecycle hooks (used for new-tab follow after click).
+     *   beforeAction(name, args) → pre state
+     *   afterAction(name, args, result, pre) → result (string or {output,_meta})
+     */
+    constructor(actions, snapshotManager, connection = null, hooks = {}) {
         this.actions = actions;
         this.snapshotManager = snapshotManager;
         this.connection = connection;
+        this.hooks = hooks && typeof hooks === 'object' ? hooks : {};
     }
 
     getOpenDialogText() {
@@ -157,12 +179,23 @@ export class ToolDispatcher {
         let result;
         const entry = ToolDispatcher.TOOL_METHOD_MAP[name];
 
+        const pre =
+            typeof this.hooks.beforeAction === 'function'
+                ? await this.hooks.beforeAction(name, args)
+                : null;
+
         if (entry?.snapshot) {
             result = await this.snapshotManager.takeSnapshot(args);
         } else if (entry?.method) {
             result = await this.actions[entry.method](args);
         } else {
             return `Error: Unknown tool '${name}'`;
+        }
+
+        // Follow new tabs / enrich notes BEFORE snapshot so includeSnapshot
+        // reflects the tab we actually control after a target=_blank click.
+        if (typeof this.hooks.afterAction === 'function') {
+            result = await this.hooks.afterAction(name, args, result, pre);
         }
 
         result = await this.maybeAppendSnapshot(name, args, result);

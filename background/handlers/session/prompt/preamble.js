@@ -19,6 +19,9 @@ Operations may be throttled by the browser in background tabs.
    - If a tool reports stale UID, detached element, or UID not found, call \`take_snapshot\` before retrying; do not reuse the failed UID.
 3. **STATE VERIFICATION:** After navigation or a significant interaction, the page structure changes. You **MUST** get a new snapshot to interact with new elements.
 4. **SPEED & EFFICIENCY:** To complete tasks faster, frequently use **\`new_page\`** (to open relevant sites in new tabs) or **\`navigate_page\`** (to jump directly to URLs). Avoid clicking through navigation menus if you can go directly to the target page.
+4b. **DIRECT URLS OVER SEARCH CLICKS:** When you already know the official destination URL (from search snippets, user message, or prior knowledge), prefer **\`navigate_page\`** to that URL instead of clicking a search-engine result. SERP links often open \`target=_blank\` tabs; direct navigation stays on the controlled page and is more reliable.
+4c. **NEW TABS AFTER CLICK:** After a click, if the tool output says a new tab was detected (or that the URL was unchanged), continue on the controlled tab indicated by the tool note. If control did not auto-switch, call **\`list_pages\`** then **\`select_page\`** before interacting. Never reuse UIDs from the previous page after a tab switch.
+4d. **DOWNLOADS:** For file/ISO/installer download tasks, after triggering the download use **\`wait_for_download\`** (or **\`list_downloads\`**) to confirm the browser actually started the download. Treat "Download ready" / in_progress or complete as task progress; do not only narrate that a download should start.
 5. **INLINE SNAPSHOTS:** Prefer includeSnapshot on supported interaction tools (\`click\`, \`hover\`, \`fill\`, \`fill_form\`, \`press_key\`, \`type_text\`, \`attach_file\`, \`drag\`, and \`scroll\`) when you need the latest snapshot immediately after the action. This binds the action result and updated snapshot in one tool output.
    - If an interaction returns an Error, includeSnapshot will not provide a fresh snapshot; call \`take_snapshot\` if you need recovery context.
 6. **BATCH FORMS:** Prefer \`fill_form\` over multiple \`fill\` calls when you need to fill more than one field in the same form.
@@ -44,6 +47,8 @@ Operations may be throttled by the browser in background tabs.
 - If wait_for times out, take_snapshot or evaluate_script to inspect the current state before retrying.
 - If a click, navigation, or form submit appears stuck because a JavaScript dialog is open, call handle_dialog before retrying other actions.
 - Use list_pages before select_page or close_page when you do not know the page index.
+- Prefer navigate_page with a known official URL over clicking Google/Bing result links.
+- After triggering a browser download (Download / 立即下载 buttons), call wait_for_download or list_downloads to verify it started.
 - Use evaluate_script mainly for inspection, extraction, and calculations. Prefer click, fill, press_key, and type_text for user interactions.
 - Use drag to move an element onto another element (\`target_uid\`) or by a pixel offset (\`dx\`/\`dy\`); the starting point is always the uid element's center. Use \`"includeSnapshot": true\` to verify the drop result.
 - Use scroll (\`scroll_y\` positive = down, negative = up) to reveal off-screen content before interacting; follow with \`take_snapshot\` to get fresh UIDs for the newly visible elements.
@@ -181,7 +186,17 @@ To use a tool, output a **single** JSON block at the end of your response:
     - args: { "timeout": number }
     - Capped at 30000ms. Use sparingly, only when no content-based wait (\`wait_for\`, \`wait_for_url\`, \`wait_for_load_state\`) applies.
 
-23. **run_steps**: Run a fixed sequence of atomic tools in a single call.
+23. **list_downloads**: List recent browser downloads (filename, state, url).
+    - args: { "limit": number, "filenameContains": "string", "urlContains": "string", "status": "in_progress" | "complete" | "interrupted" }
+    - Use to inspect whether an ISO/installer download already started or finished.
+
+24. **wait_for_download**: Wait until a download starts (\`in_progress\`) or completes.
+    - args: { "timeout": number, "filenameContains": "string", "urlContains": "string", "ignoreExisting": boolean }
+    - Default ignoreExisting=true: accepts brand-new downloads, plus any download that started within ~15s before this call (covers click → wait). Older in-progress items are ignored so unrelated browser downloads do not false-trigger.
+    - Pass ignoreExisting:false (and optional filenameContains) to accept an already-listed download. Prefer calling wait_for_download immediately after the click that starts the download.
+    - On success the output includes \`Download ready.\` and file metadata. \`in_progress\` counts as success (download started); use list_downloads later if you need to confirm completion.
+
+25. **run_steps**: Run a fixed sequence of atomic tools in a single call.
     - args: { "steps": [{ "tool": "click", "args": { "uid": "1_5" } }, { "tool": "wait_for", "args": { "text": ["Saved"] } }], "includeSnapshot": boolean }
     - Each entry's \`tool\` is one of the atomic tools above (not \`run_steps\`); \`args\` are that tool's normal args.
     - Returns a combined summary plus one fresh snapshot at the end (set \`"includeSnapshot": false\` to skip).
