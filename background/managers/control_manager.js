@@ -32,7 +32,8 @@ export class BrowserControlManager {
         });
         this.dispatcher = new ToolDispatcher(this.actions, this.snapshotManager, this.connection, {
             beforeAction: (name) => this._beforeToolAction(name),
-            afterAction: (name, args, result, pre) => this._afterToolAction(name, args, result, pre),
+            afterAction: (name, args, result, pre) =>
+                this._afterToolAction(name, args, result, pre),
         });
         this.lockedTabId = null;
         this.ownerSidePanelTabId = null;

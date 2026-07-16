@@ -542,7 +542,10 @@ export function processExtensionMessage(msg, state, logFilePath = DEFAULT_LOG_PA
                 timestamp: msg.timestamp ?? Date.now(),
                 level: 'INFO',
                 context: msg.name || 'event',
-                message: typeof msg.payload === 'string' ? msg.payload : JSON.stringify(msg.payload ?? {}),
+                message:
+                    typeof msg.payload === 'string'
+                        ? msg.payload
+                        : JSON.stringify(msg.payload ?? {}),
             });
             return kind;
         case 'log':

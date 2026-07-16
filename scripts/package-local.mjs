@@ -65,7 +65,9 @@ async function main() {
     console.log(`  ${targetDir}`);
     console.log('');
     console.log('Chrome setup (once):');
-    console.log('  1. chrome://extensions → remove the old unpacked path if it points at /Volumes/…');
+    console.log(
+        '  1. chrome://extensions → remove the old unpacked path if it points at /Volumes/…'
+    );
     console.log('  2. Load unpacked → select the folder above');
     console.log('');
     console.log('Safer than clicking Reload when the browser is crashy:');

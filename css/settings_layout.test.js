@@ -45,14 +45,10 @@ describe('settings layout styles', () => {
             /\.settings-main\s+\.settings-header\s*{[^}]*position:\s*sticky/s
         );
         expect(settingsCss).toMatch(/\.settings-sidebar\s*{[^}]*width:\s*232px/s);
-        expect(controlsCss).toMatch(
-            /\.setting-panel\s*{[^}]*border-radius:\s*var\(--radius-sm\)/s
-        );
+        expect(controlsCss).toMatch(/\.setting-panel\s*{[^}]*border-radius:\s*var\(--radius-sm\)/s);
         expect(controlsCss).not.toMatch(/\.setting-panel\s*{[^}]*transform:/s);
         // Section groups read as soft cards
-        expect(settingsCss).toMatch(
-            /\.setting-group\s*{[^}]*border-radius:\s*var\(--radius-md\)/s
-        );
+        expect(settingsCss).toMatch(/\.setting-group\s*{[^}]*border-radius:\s*var\(--radius-md\)/s);
         expect(settingsCss).toMatch(/\.data-management-card-danger/s);
     });
 

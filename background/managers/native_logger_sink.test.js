@@ -82,7 +82,9 @@ describe('NativeLoggerSink', () => {
         // wait microtasks for async handler
         await Promise.resolve();
         await Promise.resolve();
-        const replies = port.postMessage.mock.calls.map((c) => c[0]).filter((m) => m.type === 'response');
+        const replies = port.postMessage.mock.calls
+            .map((c) => c[0])
+            .filter((m) => m.type === 'response');
         expect(replies).toHaveLength(1);
         expect(replies[0]).toMatchObject({ id: 'r1', ok: true, result: { pong: true } });
     });
@@ -94,7 +96,9 @@ describe('NativeLoggerSink', () => {
         await listeners.message({ type: 'request', id: 'r2', method: 'nope' });
         await Promise.resolve();
         await Promise.resolve();
-        const replies = port.postMessage.mock.calls.map((c) => c[0]).filter((m) => m.type === 'response');
+        const replies = port.postMessage.mock.calls
+            .map((c) => c[0])
+            .filter((m) => m.type === 'response');
         expect(replies[0]).toMatchObject({ id: 'r2', ok: false });
         expect(replies[0].error).toMatch(/unknown method/);
     });

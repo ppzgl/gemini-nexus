@@ -113,11 +113,7 @@ export class ToolDispatcher {
     // can only be the FINAL step of a composite run — see CompositeActions.
     // Download tools are debugger-optional but do not switch tabs.
     static isTabSwitchingTool(name) {
-        return (
-            name === 'new_page' ||
-            name === 'close_page' ||
-            name === 'select_page'
-        );
+        return name === 'new_page' || name === 'close_page' || name === 'select_page';
     }
 
     /**

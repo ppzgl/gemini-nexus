@@ -149,13 +149,13 @@ describe('isLoopbackHost / checkAuth', () => {
     });
 
     it('accepts bearer, query, or x-bridge-token', () => {
-        expect(
-            checkAuth({ headers: { authorization: 'Bearer secret' }, url: '/' }, 'secret')
-        ).toBe(true);
+        expect(checkAuth({ headers: { authorization: 'Bearer secret' }, url: '/' }, 'secret')).toBe(
+            true
+        );
         expect(checkAuth({ headers: {}, url: '/?token=secret' }, 'secret')).toBe(true);
-        expect(
-            checkAuth({ headers: { 'x-bridge-token': 'secret' }, url: '/' }, 'secret')
-        ).toBe(true);
+        expect(checkAuth({ headers: { 'x-bridge-token': 'secret' }, url: '/' }, 'secret')).toBe(
+            true
+        );
         expect(checkAuth({ headers: {}, url: '/' }, 'secret')).toBe(false);
     });
 });
@@ -256,12 +256,9 @@ describe('handleBridgeRequest', () => {
     it('rejects unauthorized when token set', async () => {
         const state = new BridgeState();
         const res = mockRes();
-        await handleBridgeRequest(
-            { method: 'GET', url: '/health', headers: {} },
-            res,
-            state,
-            { token: 'secret' }
-        );
+        await handleBridgeRequest({ method: 'GET', url: '/health', headers: {} }, res, state, {
+            token: 'secret',
+        });
         expect(res.statusCode).toBe(401);
     });
 
@@ -316,4 +313,3 @@ describe('handleBridgeRequest', () => {
         expect(body.groups).toEqual([]);
     });
 });
-

@@ -122,9 +122,9 @@ describe('new_tab_follow helpers', () => {
         );
         expect(note).toContain('## New tab detected');
         expect(note).toContain('auto-switched');
-        expect(formatNewTabFollowNote({ title: 'x', url: 'https://x' }, { autoSwitched: false })).toContain(
-            'not auto-switched'
-        );
+        expect(
+            formatNewTabFollowNote({ title: 'x', url: 'https://x' }, { autoSwitched: false })
+        ).toContain('not auto-switched');
         expect(
             formatNewTabFollowNote({ title: 'x', url: 'https://x' }, { attachFailed: true })
         ).toContain('not controllable');

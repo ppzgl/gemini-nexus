@@ -122,7 +122,11 @@ export function selectSessions(sessions, params = {}) {
             const title = String(s?.title || '').toLowerCase();
             if (title.includes(q)) return true;
             const msgs = Array.isArray(s?.messages) ? s.messages : [];
-            return msgs.some((m) => String(m?.text || '').toLowerCase().includes(q));
+            return msgs.some((m) =>
+                String(m?.text || '')
+                    .toLowerCase()
+                    .includes(q)
+            );
         });
     }
 
@@ -154,9 +158,7 @@ export function selectSessions(sessions, params = {}) {
  * Inject storage API for tests.
  */
 export function createBridgeRecordHandlers({ storageLocal, getLogs } = {}) {
-    const local =
-        storageLocal ||
-        (typeof chrome !== 'undefined' ? chrome.storage?.local : null);
+    const local = storageLocal || (typeof chrome !== 'undefined' ? chrome.storage?.local : null);
 
     async function getLocal(keys) {
         if (!local?.get) return {};

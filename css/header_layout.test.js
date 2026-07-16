@@ -56,13 +56,13 @@ describe('header layout styles', () => {
         expect(headerCss).toMatch(/\.model-native-select\s*{[^}]*position:\s*absolute/s);
         expect(headerCss).not.toContain('#model-select:hover');
         // Focus ring uses a real token (never the undefined --bg-primary).
-        expect(headerCss).toMatch(
-            /\.model-picker-trigger:focus-visible\s*{[^}]*var\(--bg-body\)/s
-        );
+        expect(headerCss).toMatch(/\.model-picker-trigger:focus-visible\s*{[^}]*var\(--bg-body\)/s);
         expect(headerCss).not.toContain('var(--bg-primary)');
         expect(headerCss).toMatch(
             /\.browser-control-status\s*{[^}]*color-mix\(in srgb,\s*var\(--primary\)/s
         );
-        expect(headerCss).toMatch(/\.browser-control-bar\.is-attached\s*{[^}]*var\(--success-border\)/s);
+        expect(headerCss).toMatch(
+            /\.browser-control-bar\.is-attached\s*{[^}]*var\(--success-border\)/s
+        );
     });
 });

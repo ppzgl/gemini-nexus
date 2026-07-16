@@ -8,9 +8,7 @@ describe('chat message layout styles', () => {
         const chatCss = await readCss('chat.css');
 
         // Base rule must not hard-set opacity (invisible if animation never runs).
-        expect(chatCss).toMatch(
-            /\.msg\s*{[^}]*animation:\s*fadeIn[^;]*both/s
-        );
+        expect(chatCss).toMatch(/\.msg\s*{[^}]*animation:\s*fadeIn[^;]*both/s);
         const msgRule = chatCss.match(/\.msg\s*{([^}]+(?:\{[^}]*\}[^}]*)*)}/s)?.[1] || '';
         // Strip comments before asserting — prose may mention opacity.
         const msgDecls = msgRule.replace(/\/\*[\s\S]*?\*\//g, '');

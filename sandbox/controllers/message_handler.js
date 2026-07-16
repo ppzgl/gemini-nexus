@@ -210,8 +210,7 @@ export class MessageHandler {
         const matchesCurrentWhileGenerating =
             this.app.isGenerating === true &&
             this.isCurrentSessionMessage(request) &&
-            (!this.app.generatingSessionId ||
-                this.app.generatingSessionId === replySessionId);
+            (!this.app.generatingSessionId || this.app.generatingSessionId === replySessionId);
 
         if (!matchesGenerating && !matchesCurrentWhileGenerating) {
             // A late GEMINI_REPLY can arrive after cancel() has already cleared

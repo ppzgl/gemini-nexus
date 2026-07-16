@@ -29,7 +29,11 @@ describe('SnapshotManager extension UI hiding', () => {
             sendCommand: vi.fn(async (method, params) => {
                 callOrder.push(method);
                 if (method === 'Runtime.evaluate') {
-                    callOrder.push(params?.expression?.includes('aria-hidden') ? 'eval-hide-or-restore' : 'eval-other');
+                    callOrder.push(
+                        params?.expression?.includes('aria-hidden')
+                            ? 'eval-hide-or-restore'
+                            : 'eval-other'
+                    );
                     return { result: { value: 1 } };
                 }
                 if (method === 'Accessibility.getFullAXTree') {

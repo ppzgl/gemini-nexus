@@ -22,7 +22,11 @@ function clampInt(value, min, max, fallback) {
 }
 
 function downloadsApiAvailable() {
-    return typeof chrome !== 'undefined' && chrome.downloads && typeof chrome.downloads.search === 'function';
+    return (
+        typeof chrome !== 'undefined' &&
+        chrome.downloads &&
+        typeof chrome.downloads.search === 'function'
+    );
 }
 
 /**
@@ -150,7 +154,9 @@ export class DownloadActions {
             urlContains: args.urlContains,
             status: args.status,
         };
-        const matched = items.filter((item) => downloadMatchesFilters(item, filters)).slice(0, limit);
+        const matched = items
+            .filter((item) => downloadMatchesFilters(item, filters))
+            .slice(0, limit);
 
         if (matched.length === 0) {
             return 'No matching downloads.';

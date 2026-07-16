@@ -32,18 +32,18 @@ npm run native-logger:install
 
 默认只绑定 **`127.0.0.1:17321`**（本机 loopback）。Host 在扩展 `connectNative` 时启动；扩展禁用 native 日志或 SW 断开后进程退出，HTTP 随之关闭。
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 桥是否在跑、扩展是否已连接 |
-| GET | `/logs?limit=100&level=error` | 内存环形缓冲中的最近日志 |
-| GET | `/logs/stream` | SSE 实时流（含近期 backlog） |
-| GET | `/status` | 经 RPC 查询扩展版本/日志数等 |
-| GET | `/sessions` | 会话列表。查询：`?q=`、`?limit=`、`?offset=`；`?messages=1` 返回全文；`?attachments=1` 保留 base64 附件 |
-| GET | `/sessions/:id` | 单会话完整消息（含 tool / thoughts / sources）。`?attachments=1` 保留附件 |
-| GET | `/records` | 一揽子导出：sessions（默认含全文）+ groups + logs。`?messages=0` 仅摘要；`?logs=0` 不要日志 |
-| GET | `/groups` | 会话分组 |
-| GET | `/storage/keys` | `chrome.storage.local` 键名与大致字节数 |
-| POST | `/rpc` | body: `{"method":"…","params":{}}`（见下表） |
+| 方法 | 路径                          | 说明                                                                                                    |
+| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| GET  | `/health`                     | 桥是否在跑、扩展是否已连接                                                                              |
+| GET  | `/logs?limit=100&level=error` | 内存环形缓冲中的最近日志                                                                                |
+| GET  | `/logs/stream`                | SSE 实时流（含近期 backlog）                                                                            |
+| GET  | `/status`                     | 经 RPC 查询扩展版本/日志数等                                                                            |
+| GET  | `/sessions`                   | 会话列表。查询：`?q=`、`?limit=`、`?offset=`；`?messages=1` 返回全文；`?attachments=1` 保留 base64 附件 |
+| GET  | `/sessions/:id`               | 单会话完整消息（含 tool / thoughts / sources）。`?attachments=1` 保留附件                               |
+| GET  | `/records`                    | 一揽子导出：sessions（默认含全文）+ groups + logs。`?messages=0` 仅摘要；`?logs=0` 不要日志             |
+| GET  | `/groups`                     | 会话分组                                                                                                |
+| GET  | `/storage/keys`               | `chrome.storage.local` 键名与大致字节数                                                                 |
+| POST | `/rpc`                        | body: `{"method":"…","params":{}}`（见下表）                                                            |
 
 > **体积提示**：图片 / data URL 默认替换为 `[omitted base64 N chars]`，避免 Native Messaging 1MB 帧限制。需要原图时再加 `attachments=1`（可能失败或很慢）。
 
@@ -84,11 +84,11 @@ curl -s -X POST http://127.0.0.1:17321/rpc \
 
 ## 环境变量
 
-| 变量 | 默认 | 说明 |
-|------|------|------|
-| `GEMINI_NEXUS_BRIDGE_HOST` | `127.0.0.1` | 监听地址。非 loopback 时**必须**设 token |
-| `GEMINI_NEXUS_BRIDGE_PORT` | `17321` | 端口 |
-| `GEMINI_NEXUS_BRIDGE_TOKEN` | _(空)_ | 鉴权。请求头 `Authorization: Bearer <token>`、`X-Bridge-Token` 或 `?token=` |
+| 变量                        | 默认        | 说明                                                                        |
+| --------------------------- | ----------- | --------------------------------------------------------------------------- |
+| `GEMINI_NEXUS_BRIDGE_HOST`  | `127.0.0.1` | 监听地址。非 loopback 时**必须**设 token                                    |
+| `GEMINI_NEXUS_BRIDGE_PORT`  | `17321`     | 端口                                                                        |
+| `GEMINI_NEXUS_BRIDGE_TOKEN` | _(空)_      | 鉴权。请求头 `Authorization: Bearer <token>`、`X-Bridge-Token` 或 `?token=` |
 
 若要从局域网访问，可在安装 host 后编辑 `~/.gemini-nexus/native-logger.js` 启动环境，或用 wrapper 设置：
 
@@ -112,16 +112,16 @@ chrome.storage.local.set({ geminiNativeLogEnabled: true });
 
 ## 内置 RPC methods
 
-| method | 返回 |
-|--------|------|
-| `ping` | `{ pong: true, ts }` |
-| `get_logs` | `{ logs: [...] }`（params: `limit`, `level`） |
-| `get_status` | `{ version, name, unpacked, nativeLogEnabled, logCount, ts }` |
-| `get_sessions` | `{ total, offset, limit, sessions }`（params: `limit`, `offset`, `query`, `id`, `includeMessages`, `includeAttachments`） |
-| `get_session` | `{ found, session }`（params: `id` 必填, `includeAttachments`） |
-| `get_groups` | `{ groups }` |
-| `get_storage_keys` | `{ keys, sizes }` |
-| `get_records` | `{ ts, sessions, groups, logs }`（params 同 sessions + `includeLogs`, `logLimit`） |
+| method             | 返回                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `ping`             | `{ pong: true, ts }`                                                                                                      |
+| `get_logs`         | `{ logs: [...] }`（params: `limit`, `level`）                                                                             |
+| `get_status`       | `{ version, name, unpacked, nativeLogEnabled, logCount, ts }`                                                             |
+| `get_sessions`     | `{ total, offset, limit, sessions }`（params: `limit`, `offset`, `query`, `id`, `includeMessages`, `includeAttachments`） |
+| `get_session`      | `{ found, session }`（params: `id` 必填, `includeAttachments`）                                                           |
+| `get_groups`       | `{ groups }`                                                                                                              |
+| `get_storage_keys` | `{ keys, sizes }`                                                                                                         |
+| `get_records`      | `{ ts, sessions, groups, logs }`（params 同 sessions + `includeLogs`, `logLimit`）                                        |
 
 可在 `background/index.js` 通过 `nativeLoggerSink.setRequestHandler(name, fn)` 继续扩展。
 

@@ -141,7 +141,10 @@ export function normalizePackagedAssetReference(reference) {
     let clean = reference.split(/[?#]/)[0];
     clean = clean.replace(/\\/g, '/');
     // Strip leading ./ and any number of ../ so package-root assets resolve.
-    clean = clean.replace(/^(?:\.\.\/)+/, '').replace(/^\.\//, '').replace(/^\/+/, '');
+    clean = clean
+        .replace(/^(?:\.\.\/)+/, '')
+        .replace(/^\.\//, '')
+        .replace(/^\/+/, '');
     if (!clean.startsWith('assets/')) return null;
     return clean;
 }
@@ -203,11 +206,7 @@ export async function findMissingPackagedAssetReferences(packageRoot, htmlRelati
 }
 
 async function rewritePackagedHtmlAssetPaths() {
-    const htmlRelativePaths = [
-        'sidepanel/index.html',
-        'sandbox/index.html',
-        'settings/index.html',
-    ];
+    const htmlRelativePaths = ['sidepanel/index.html', 'sandbox/index.html', 'settings/index.html'];
     for (const htmlRelativePath of htmlRelativePaths) {
         const absolutePath = path.join(packageDir, htmlRelativePath);
         const original = await readFile(absolutePath, 'utf8');
