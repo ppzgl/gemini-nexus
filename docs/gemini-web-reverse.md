@@ -1,6 +1,6 @@
 # Gemini Web Reverse Contract
 
-Last verified with `js-reverse`: 2026-05-26, `https://gemini.google.com/app`, locale `zh-CN`.
+Last verified: 2026-07-22 (model hashes cross-checked against public reverse catalogs after Gemini 3.6 Flash / 3.5 Flash-Lite GA; protocol tokens last captured with `js-reverse` on 2026-05-26, `https://gemini.google.com/app`, locale `zh-CN`).
 
 This document records the Gemini Web assumptions used by the reverse provider. Gemini Web is not a public API, so these details should be treated as a contract that can drift.
 
@@ -15,8 +15,8 @@ Supported:
 - Upload image attachments through the current push upload endpoint before `StreamGenerate`.
 - Parse streamed text, thoughts, continuation ids, and hosted generated-image URLs.
 - Expose the current Gemini Web chat modes:
-    - `8c46e95b1a07cecc` -> `3.1 Flash-Lite`
-    - `56fdd199312815e2` -> `3.5 Flash`
+    - `fbb127bbb056c959` -> `3.6 Flash` (default)
+    - `cf41b0e0dd7d53e5` -> `3.5 Flash-Lite`
     - `e6fa609c3fa255c0` -> `3.1 Pro`
 
 Not claimed as complete:

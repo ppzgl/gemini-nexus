@@ -277,7 +277,7 @@ describe('AppController session restore behavior', () => {
 
     it('toggles Gemini Web thinking between high and the model fast level', () => {
         const { app, ui } = createAppHarness();
-        ui.modelSelect.value = '8c46e95b1a07cecc';
+        ui.modelSelect.value = 'cf41b0e0dd7d53e5';
         ui.settings.connectionData = { provider: 'web', webThinkingLevel: 'high' };
 
         app.handleWebThinkingToggle();

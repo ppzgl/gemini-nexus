@@ -258,7 +258,7 @@ describe('ToolbarActions', () => {
             'summarize',
             'Long text',
             { x: 1, y: 2 },
-            '8c46e95b1a07cecc'
+            'cf41b0e0dd7d53e5'
         );
 
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
@@ -378,7 +378,7 @@ describe('ToolbarActions', () => {
             'summarize',
             'Long text',
             { x: 1, y: 2 },
-            '8c46e95b1a07cecc'
+            'cf41b0e0dd7d53e5'
         );
         chrome.runtime.sendMessage.mockClear();
         ui.getProvider.mockReturnValue('official');

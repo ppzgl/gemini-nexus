@@ -20,8 +20,8 @@ describe('toolbar web model helper', () => {
 
     it('lists only current Web chat models', () => {
         expect(window.GeminiWebModels.createOptions()).toEqual([
-            { value: '56fdd199312815e2', label: '3.5 Flash' },
-            { value: '8c46e95b1a07cecc', label: '3.1 Flash-Lite' },
+            { value: 'fbb127bbb056c959', label: '3.6 Flash' },
+            { value: 'cf41b0e0dd7d53e5', label: '3.5 Flash-Lite' },
             { value: 'e6fa609c3fa255c0', label: '3.1 Pro' },
         ]);
         expect(window.GeminiWebModels.createOptionMarkup()).not.toContain(
@@ -30,6 +30,8 @@ describe('toolbar web model helper', () => {
         expect(window.GeminiWebModels.createOptionMarkup()).not.toContain(
             'gemini-3.1-flash-image-preview'
         );
+        expect(window.GeminiWebModels.createOptionMarkup()).not.toContain('56fdd199312815e2');
+        expect(window.GeminiWebModels.createOptionMarkup()).not.toContain('8c46e95b1a07cecc');
     });
 
     it('keeps non-generation image analysis on the selected model', () => {

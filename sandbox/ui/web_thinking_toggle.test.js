@@ -18,7 +18,7 @@ describe('web thinking toggle UI', () => {
     });
 
     it('defaults Flash to the active fast state when no thinking level is stored', () => {
-        syncWebThinkingToggle(button, { provider: 'web' }, '56fdd199312815e2');
+        syncWebThinkingToggle(button, { provider: 'web' }, 'fbb127bbb056c959');
 
         expect(button.hidden).toBe(false);
         expect(button.classList.contains('is-fast')).toBe(true);
@@ -30,7 +30,7 @@ describe('web thinking toggle UI', () => {
         syncWebThinkingToggle(
             button,
             { provider: 'web', webThinkingLevel: 'minimal' },
-            '8c46e95b1a07cecc'
+            'cf41b0e0dd7d53e5'
         );
 
         expect(button.hidden).toBe(false);
@@ -73,7 +73,7 @@ describe('web thinking toggle UI', () => {
         syncWebThinkingToggle(
             button,
             { provider: 'official', webThinkingLevel: 'minimal' },
-            '8c46e95b1a07cecc'
+            'cf41b0e0dd7d53e5'
         );
 
         expect(button.hidden).toBe(true);

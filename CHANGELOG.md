@@ -1,5 +1,16 @@
 # Changelog
 
+## v5.1.0 - 2026-07-22
+
+### Models
+
+- Updated reverse Gemini Web model catalog for the 2026-07-21 GA lineup: default **3.6 Flash** (`fbb127bbb056c959`), **3.5 Flash-Lite** (`cf41b0e0dd7d53e5`), and **3.1 Pro** (`e6fa609c3fa255c0`). Removed **3.5 Flash** and legacy **3.1 Flash-Lite**.
+- Updated Official API defaults to `gemini-3.6-flash`, `gemini-3.5-flash-lite`, and `gemini-3.1-pro-preview`. Dropped `gemini-3-flash` / `gemini-3-flash-preview` aliases.
+
+### Removed
+
+- Removed the experimental **Browser MCP server** surface (`mcp-server/`, `npm run mcp:http`, extension `browser_mcp` RPC bridge). Side-panel browser control remains internal (`ControlManager`); external MCP **client** settings for third-party tools are unchanged.
+
 ## v5.0.24 - 2026-07-17
 
 ### 侧栏可用性

@@ -99,7 +99,8 @@ export const translations = {
         modelListFailed: 'Failed to fetch models',
         modelIds: 'Model IDs',
         modelIdsCommaSeparated: 'Model IDs (comma separated)',
-        officialModelPlaceholder: 'e.g. gemini-3-flash-preview, gemini-3.1-pro-preview',
+        officialModelPlaceholder:
+            'e.g. gemini-3.6-flash, gemini-3.5-flash-lite, gemini-3.1-pro-preview',
         thinkingLevel: 'Thinking Level',
         thinkingLevelGemini3: 'Thinking Level (Gemini 3)',
         thinkingMinimal: 'Minimal',
@@ -402,7 +403,8 @@ export const translations = {
         modelListFailed: '获取模型列表失败',
         modelIds: '模型 IDs',
         modelIdsCommaSeparated: '模型 IDs（逗号分隔）',
-        officialModelPlaceholder: '例如 gemini-3-flash-preview, gemini-3.1-pro-preview',
+        officialModelPlaceholder:
+            '例如 gemini-3.6-flash, gemini-3.5-flash-lite, gemini-3.1-pro-preview',
         thinkingLevel: '思考级别',
         thinkingLevelGemini3: '思考级别（Gemini 3）',
         thinkingMinimal: 'Minimal',

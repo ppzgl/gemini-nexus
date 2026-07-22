@@ -1,33 +1,35 @@
 (function () {
-    const DEFAULT_WEB_MODEL = '56fdd199312815e2';
+    // Web model hashes verified against Gemini Web reverse catalogs (Gemi2Api-Server 2026-07-22
+    // custom_models examples + free/Plus otAQ7b mode ids). Labels follow the public GA lineup.
+    const DEFAULT_WEB_MODEL = 'fbb127bbb056c959';
 
     const WEB_MODEL_OPTIONS = Object.freeze(
         [
-            { value: '56fdd199312815e2', label: '3.5 Flash' },
-            { value: '8c46e95b1a07cecc', label: '3.1 Flash-Lite' },
+            { value: 'fbb127bbb056c959', label: '3.6 Flash' },
+            { value: 'cf41b0e0dd7d53e5', label: '3.5 Flash-Lite' },
             { value: 'e6fa609c3fa255c0', label: '3.1 Pro' },
         ].map((option) => Object.freeze(option))
     );
 
     const LEGACY_WEB_MODEL_ALIASES = Object.freeze({
-        'gemini-2.5-flash': '8c46e95b1a07cecc',
-        'gemini-3.1-flash-lite': '8c46e95b1a07cecc',
-        'gemini-3-flash': '8c46e95b1a07cecc',
-        'gemini-3.5-flash': '56fdd199312815e2',
-        'gemini-3-flash-thinking': '56fdd199312815e2',
+        'gemini-3.6-flash': 'fbb127bbb056c959',
+        'gemini-3-flash-thinking': 'fbb127bbb056c959',
+        'gemini-3.5-flash-lite': 'cf41b0e0dd7d53e5',
         'gemini-3.1-pro': 'e6fa609c3fa255c0',
         'gemini-3-pro': 'e6fa609c3fa255c0',
     });
 
     const WEB_MODEL_HEADER_CONFIGS = Object.freeze({
-        '8c46e95b1a07cecc': Object.freeze({
-            hash: '8c46e95b1a07cecc',
-            mode: 6,
+        // Current free-tier / GA Flash workhorse (Gemini 3.6 Flash).
+        fbb127bbb056c959: Object.freeze({
+            hash: 'fbb127bbb056c959',
+            mode: 1,
             fastThinkingLevel: 'minimal',
         }),
-        '56fdd199312815e2': Object.freeze({
-            hash: '56fdd199312815e2',
-            mode: 1,
+        // Current free-tier / GA Flash-Lite (Gemini 3.5 Flash-Lite).
+        cf41b0e0dd7d53e5: Object.freeze({
+            hash: 'cf41b0e0dd7d53e5',
+            mode: 6,
             fastThinkingLevel: 'minimal',
         }),
         e6fa609c3fa255c0: Object.freeze({
