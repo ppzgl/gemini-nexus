@@ -285,7 +285,7 @@ export async function sendOfficialMessage(
 
     // Apply Thinking Config if requested or user has configured it level
     // Specifically enable thinking for "Thinking" model variant
-    if (modelName === 'gemini-3-flash-thinking' || thinkingLevel) {
+    if (thinkingLevel) {
         payload.generationConfig.thinkingConfig = {
             includeThoughts: true, // Ensure thoughts are returned in response
             thinkingLevel: normalizeThinkingLevelForModel(

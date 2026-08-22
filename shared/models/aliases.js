@@ -3,7 +3,6 @@
  * Externalized so model renames don't require code changes.
  */
 export const OFFICIAL_MODEL_ALIASES = Object.freeze({
-    'gemini-3-flash-thinking': 'gemini-3.6-flash',
     'gemini-3-pro': 'gemini-3.1-pro-preview',
     'gemini-3-pro-preview': 'gemini-3.1-pro-preview',
 });

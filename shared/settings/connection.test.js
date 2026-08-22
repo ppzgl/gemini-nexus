@@ -14,13 +14,14 @@ describe('connection settings helpers', () => {
         expect(createConnectionSettingsPayload({})).toEqual({
             provider: 'web',
             useOfficialApi: false,
-            selectedModel: 'fbb127bbb056c959',
+            selectedModel: '56fdd199312815e2',
             webThinkingLevel: 'minimal',
             webTemporaryChat: false,
             openaiSelectedModel: '',
             officialBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
             apiKey: '',
-            officialModel: 'gemini-3.6-flash, gemini-3.5-flash-lite, gemini-3.1-pro-preview',
+            officialModel:
+                'gemini-3.7-flash, gemini-3.5-flash-lite, gemini-3.1-pro-preview',
             thinkingLevel: 'low',
             officialWebSearch: false,
             openaiBaseUrl: '',
@@ -123,7 +124,7 @@ describe('connection settings helpers', () => {
         expect(getConnectionProvider({})).toBe('web');
         expect(getSelectedModelForProvider({}, 'openai')).toBe('openai_custom');
         expect(getSelectedModelForProvider({}, 'deepseek')).toBe('deepseek-v4-pro');
-        expect(getSelectedModelForProvider({}, 'web')).toBe('fbb127bbb056c959');
+        expect(getSelectedModelForProvider({}, 'web')).toBe('56fdd199312815e2');
     });
 
     it('declares the storage keys needed for connection restore', () => {

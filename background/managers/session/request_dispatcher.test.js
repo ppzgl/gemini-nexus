@@ -100,12 +100,12 @@ describe('RequestDispatcher response mapping', () => {
         const dispatcher = new RequestDispatcher({});
 
         await dispatcher.dispatch(
-            { text: 'hello', model: 'fbb127bbb056c959', sessionId: null },
+            { text: 'hello', model: '56fdd199312815e2', sessionId: null },
             {
                 provider: 'official',
                 apiKey: 'key',
                 officialBaseUrl: 'https://api.example.test',
-                officialModel: 'gemini-3.6-flash, gemini-3.1-pro-preview',
+                officialModel: 'gemini-3.7-flash, gemini-3.1-pro-preview',
             },
             [],
             vi.fn(),
@@ -117,8 +117,8 @@ describe('RequestDispatcher response mapping', () => {
             'system',
             [],
             expect.objectContaining({
-                model: 'gemini-3.6-flash',
-                configuredModels: 'gemini-3.6-flash, gemini-3.1-pro-preview',
+                model: 'gemini-3.7-flash',
+                configuredModels: 'gemini-3.7-flash, gemini-3.1-pro-preview',
             }),
             undefined,
             [],
@@ -216,7 +216,7 @@ describe('RequestDispatcher response mapping', () => {
         const dispatcher = new RequestDispatcher({});
 
         await dispatcher.dispatch(
-            { text: 'hello', model: 'fbb127bbb056c959', sessionId: null },
+            { text: 'hello', model: '56fdd199312815e2', sessionId: null },
             {
                 provider: 'openai',
                 openaiBaseUrl: 'https://api.openai.com/v1',
@@ -1189,7 +1189,7 @@ describe('RequestDispatcher response mapping', () => {
         await dispatcher.dispatch(
             {
                 text: 'hello',
-                model: 'fbb127bbb056c959',
+                model: '56fdd199312815e2',
                 sessionId: 'session-web',
             },
             { provider: 'web', webTemporaryChat: true },
@@ -1201,7 +1201,7 @@ describe('RequestDispatcher response mapping', () => {
         expect(sendWebMessage).toHaveBeenCalledWith(
             'hello',
             expect.any(Object),
-            'fbb127bbb056c959',
+            '56fdd199312815e2',
             [],
             null,
             expect.any(Function),
@@ -1227,7 +1227,7 @@ describe('RequestDispatcher response mapping', () => {
         await dispatcher.dispatch(
             {
                 text: 'hello',
-                model: 'fbb127bbb056c959',
+                model: '56fdd199312815e2',
                 sessionId: 'session-web',
                 webTemporaryChat: true,
             },
@@ -1240,7 +1240,7 @@ describe('RequestDispatcher response mapping', () => {
         expect(sendWebMessage).toHaveBeenCalledWith(
             'hello',
             expect.any(Object),
-            'fbb127bbb056c959',
+            '56fdd199312815e2',
             [],
             null,
             expect.any(Function),
