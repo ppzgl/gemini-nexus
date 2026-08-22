@@ -63,15 +63,15 @@ The Web provider sends these side-channel headers:
 
 Current field observations from `BardChatUi`:
 
-| Zero-based index | Meaning                                    |
-| :--------------- | :----------------------------------------- |
-| `4`              | Selected model hash                        |
-| `7`              | Temporary-chat flag                        |
+| Zero-based index | Meaning                                                           |
+| :--------------- | :---------------------------------------------------------------- |
+| `4`              | Selected model hash                                               |
+| `7`              | Temporary-chat flag                                               |
 | `8`              | Client capabilities; 3.7 Flash currently uses `[4,5,6,8,4,5,6,8]` |
-| `11`             | Legacy model/mode value retained by Nexus  |
-| `14`             | Native mode category                       |
-| `15`             | Native thinking level                      |
-| `16`             | Request UUID                               |
+| `11`             | Legacy model/mode value retained by Nexus                         |
+| `14`             | Native mode category                                              |
+| `15`             | Native thinking level                                             |
+| `16`             | Request UUID                                                      |
 
 The native Gemini Web thinking enum is:
 
