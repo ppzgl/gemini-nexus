@@ -1,5 +1,19 @@
 # Changelog
 
+## v5.2.0 - 2026-08-22
+
+### Models
+
+- Removed **Gemini 3.6 Flash** (`fbb127bbb056c959`) from Web model catalog; default now **3.7 Flash** (`56fdd199312815e2`) with `legacyMode: 2` and extended capabilities, `DEFAULT_STORED_GEMINI_MODEL` updated and `DEFAULT_OFFICIAL_MODELS` now `gemini-3.7-flash, gemini-3.5-flash-lite, gemini-3.1-pro-preview`; removed `gemini-3-flash-thinking` alias and its thinking check.
+
+### UI
+
+- Aligned toolbar **Generate Image** icon to Cherry Studio `lucide Image` (`m21 15-3.086-3.086...`).
+- Aligned **Live Artifacts** icon to AMC-WebUI `Wand2/WandSparkles` (`m21.64 3.64...`).
+- Aligned **Explain** icon to AMC `FileQuestion` (`M12 17h.01 / M15 2H6... / M9.1 9a3...`).
+- Aligned **New Chat** icon to AMC/Cherry Studio `IconNewChat` (bubble + plus `M13 4H6a2...` with `scale(1.1)`).
+- Added **quick hover tooltip** for toolbar buttons: custom `data-tooltip` appears in 0.12s centered above button, suppressing native delayed `title` via `WidgetView.initTooltips`.
+
 ## v5.1.0 - 2026-07-22
 
 ### Models
