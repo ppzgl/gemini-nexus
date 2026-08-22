@@ -13,44 +13,44 @@
         initTooltips() {
             const toolbar = this.elements.toolbar;
             if (!toolbar) return;
-            const show = (btn) => {
-                if (!btn || btn.dataset.tooltip) return;
-                const title = btn.getAttribute('title');
+            const show = (targetButton) => {
+                if (!targetButton || targetButton.dataset.tooltip) return;
+                const title = targetButton.getAttribute('title');
                 if (!title) return;
-                btn.dataset.tooltip = title;
-                btn.setAttribute('data-original-title', title);
-                btn.removeAttribute('title');
+                targetButton.dataset.tooltip = title;
+                targetButton.setAttribute('data-original-title', title);
+                targetButton.removeAttribute('title');
             };
-            const hide = (btn) => {
-                if (!btn) return;
-                const orig = btn.getAttribute('data-original-title');
+            const hide = (targetButton) => {
+                if (!targetButton) return;
+                const orig = targetButton.getAttribute('data-original-title');
                 if (orig) {
-                    btn.setAttribute('title', orig);
-                    btn.removeAttribute('data-original-title');
-                    btn.removeAttribute('data-tooltip');
+                    targetButton.setAttribute('title', orig);
+                    targetButton.removeAttribute('data-original-title');
+                    targetButton.removeAttribute('data-tooltip');
                 }
             };
-            toolbar.addEventListener('mouseover', (e) => {
-                const btn = e.target.closest('.btn');
-                if (!btn || !toolbar.contains(btn)) return;
-                show(btn);
+            toolbar.addEventListener('mouseover', (event) => {
+                const targetButton = event.target.closest('.btn');
+                if (!targetButton || !toolbar.contains(targetButton)) return;
+                show(targetButton);
             });
-            toolbar.addEventListener('mouseout', (e) => {
-                const btn = e.target.closest('.btn');
-                if (!btn) return;
+            toolbar.addEventListener('mouseout', (event) => {
+                const targetButton = event.target.closest('.btn');
+                if (!targetButton) return;
                 // Only hide when leaving the button itself, not bubbling from child
-                if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
-                hide(btn);
+                if (event.relatedTarget && targetButton.contains(event.relatedTarget)) return;
+                hide(targetButton);
             });
-            toolbar.addEventListener('focusin', (e) => {
-                const btn = e.target.closest('.btn');
-                if (!btn || !toolbar.contains(btn)) return;
-                show(btn);
+            toolbar.addEventListener('focusin', (event) => {
+                const targetButton = event.target.closest('.btn');
+                if (!targetButton || !toolbar.contains(targetButton)) return;
+                show(targetButton);
             });
-            toolbar.addEventListener('focusout', (e) => {
-                const btn = e.target.closest('.btn');
-                if (!btn) return;
-                hide(btn);
+            toolbar.addEventListener('focusout', (event) => {
+                const targetButton = event.target.closest('.btn');
+                if (!targetButton) return;
+                hide(targetButton);
             });
         }
 
