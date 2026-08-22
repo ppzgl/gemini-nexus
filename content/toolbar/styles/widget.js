@@ -49,6 +49,36 @@
             display: none;
         }
 
+        .btn {
+            position: relative;
+        }
+        .btn[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #2f3036;
+            color: #e8eaed;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.12s ease, transform 0.12s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.36), 0 0 0 1px rgba(255,255,255,0.08);
+            z-index: 9999999;
+            will-change: opacity, transform;
+        }
+        .btn[data-tooltip]:hover::after,
+        .btn[data-tooltip]:focus-visible::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
         .toolbar-logo {
             width: 20px;
             height: 20px;

@@ -7,6 +7,51 @@
     class WidgetView {
         constructor(elements) {
             this.elements = elements;
+            this.initTooltips();
+        }
+
+        initTooltips() {
+            const toolbar = this.elements.toolbar;
+            if (!toolbar) return;
+            const show = (btn) => {
+                if (!btn || btn.dataset.tooltip) return;
+                const title = btn.getAttribute('title');
+                if (!title) return;
+                btn.dataset.tooltip = title;
+                btn.setAttribute('data-original-title', title);
+                btn.removeAttribute('title');
+            };
+            const hide = (btn) => {
+                if (!btn) return;
+                const orig = btn.getAttribute('data-original-title');
+                if (orig) {
+                    btn.setAttribute('title', orig);
+                    btn.removeAttribute('data-original-title');
+                    btn.removeAttribute('data-tooltip');
+                }
+            };
+            toolbar.addEventListener('mouseover', (e) => {
+                const btn = e.target.closest('.btn');
+                if (!btn || !toolbar.contains(btn)) return;
+                show(btn);
+            });
+            toolbar.addEventListener('mouseout', (e) => {
+                const btn = e.target.closest('.btn');
+                if (!btn) return;
+                // Only hide when leaving the button itself, not bubbling from child
+                if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
+                hide(btn);
+            });
+            toolbar.addEventListener('focusin', (e) => {
+                const btn = e.target.closest('.btn');
+                if (!btn || !toolbar.contains(btn)) return;
+                show(btn);
+            });
+            toolbar.addEventListener('focusout', (e) => {
+                const btn = e.target.closest('.btn');
+                if (!btn) return;
+                hide(btn);
+            });
         }
 
         showToolbar(rect, mousePoint) {

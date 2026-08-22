@@ -59,9 +59,10 @@ describe('TemplateIcons', () => {
         expect(TemplateIcons.PAGE_CONTEXT).toContain('M15 2H6a2 2 0 0 0-2 2v16');
         expect(TemplateIcons.PAGE_CONTEXT).toContain('M16 13H8');
         expect(TemplateIcons.PAGE_CONTEXT).not.toContain('x1="9" y1="3" x2="9" y2="21"');
-        // Artifacts: app window panes (not raw code brackets).
-        expect(TemplateIcons.ARTIFACTS).toContain('M3 9h18');
-        expect(TemplateIcons.ARTIFACTS).toContain('M9 21V9');
+        // Artifacts: Wand sparkles aligned with AMC (not window panes).
+        expect(TemplateIcons.ARTIFACTS).toContain('m21.64 3.64');
+        expect(TemplateIcons.ARTIFACTS).toContain('m14 7 3 3');
+        expect(TemplateIcons.ARTIFACTS).not.toContain('M3 9h18');
         // Capture-as-image is distinct from the crop menu trigger.
         expect(TemplateIcons.CAPTURE_IMAGE).toContain('m21 15-3.086-3.086');
         expect(TemplateIcons.SNIP).toContain('M6 2v14a2 2 0 0 0 2 2h14');

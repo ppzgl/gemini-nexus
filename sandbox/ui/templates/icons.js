@@ -159,8 +159,11 @@ export const TemplateIcons = {
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
+            <g transform="translate(12 12) scale(1.1) translate(-12 -12)">
+                <path d="M13 4H6a2 2 0 0 0-2 2v13l4-3h10a2 2 0 0 0 2-2v-3"/>
+                <path d="M18 3.5v5"/>
+                <path d="M15.5 6h5"/>
+            </g>
         </svg>
     `,
     NEW_GROUP: icon`
