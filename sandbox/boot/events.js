@@ -3,17 +3,14 @@ import { bindToolButtonEvents } from './tool_button_events.js';
 import { LIVE_ARTIFACT_FOLLOWUP_EVENT } from '../core/live_artifacts.js';
 
 export function bindAppEvents(app, ui, setResizeRef) {
-    const newChatHeaderBtn = document.getElementById('new-chat-header-btn');
-    if (newChatHeaderBtn) {
-        newChatHeaderBtn.addEventListener('click', () => app.handleNewChat());
-    }
-
-    ['new-chat-sidebar-btn', 'collapsed-new-chat-btn'].forEach((buttonId) => {
-        const newChatSidebarBtn = document.getElementById(buttonId);
-        if (newChatSidebarBtn) {
-            newChatSidebarBtn.addEventListener('click', () => app.handleNewChat());
+    ['new-chat-composer-btn', 'new-chat-sidebar-btn', 'collapsed-new-chat-btn'].forEach(
+        (buttonId) => {
+            const newChatBtn = document.getElementById(buttonId);
+            if (newChatBtn) {
+                newChatBtn.addEventListener('click', () => app.handleNewChat());
+            }
         }
-    });
+    );
 
     const newGroupSidebarBtn = document.getElementById('new-group-sidebar-btn');
     if (newGroupSidebarBtn) {

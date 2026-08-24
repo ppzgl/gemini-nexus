@@ -336,6 +336,7 @@ body:not(.has-page-context) .context-aware {
 }
 
 #upload-btn,
+#new-chat-composer-btn,
 #send {
     width: 40px;
     height: 40px;
@@ -353,18 +354,21 @@ body:not(.has-page-context) .context-aware {
         box-shadow var(--duration-fast) var(--ease-standard);
 }
 
-#upload-btn {
+#upload-btn,
+#new-chat-composer-btn {
     color: var(--text-secondary);
     background: transparent;
     outline: none;
 }
 
-#upload-btn:hover {
+#upload-btn:hover,
+#new-chat-composer-btn:hover {
     color: var(--text-primary);
     background: var(--btn-hover);
 }
 
-#upload-btn:focus-visible {
+#upload-btn:focus-visible,
+#new-chat-composer-btn:focus-visible {
     color: var(--text-primary);
     background: var(--btn-hover);
     box-shadow:
@@ -372,10 +376,16 @@ body:not(.has-page-context) .context-aware {
         0 0 0 4px var(--border-focus);
 }
 
-.input-wrapper:focus-within #upload-btn:focus-visible {
+.input-wrapper:focus-within #upload-btn:focus-visible,
+.input-wrapper:focus-within #new-chat-composer-btn:focus-visible {
     box-shadow:
         0 0 0 2px var(--bg-input-focus),
         0 0 0 4px var(--border-focus);
+}
+
+#new-chat-composer-btn svg {
+    width: 20px;
+    height: 20px;
 }
 
 #send {

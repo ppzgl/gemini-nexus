@@ -15,6 +15,10 @@ export const FooterTemplate = `
 
             <div class="composer-actions">
                 <div class="composer-actions-left">
+                    <button id="new-chat-composer-btn" type="button" data-i18n-title="newChatTooltip" title="New Chat" aria-label="New Chat">
+                        ${TemplateIcons.NEW_CHAT}
+                    </button>
+
                     <label id="upload-btn" tabindex="0" role="button" data-i18n-title="uploadImageTooltip" title="Upload File" aria-label="Upload File">
                         ${TemplateIcons.PAPERCLIP}
                         <input type="file" id="image-input" class="file-input-hidden" tabindex="-1" multiple accept="image/*, .pdf, .txt, .js, .py, .html, .css, .json, .csv, .md">

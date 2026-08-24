@@ -10,7 +10,7 @@ vi.mock('../../shared/messaging/index.js', () => ({
 
 function installFooterDom() {
     document.body.innerHTML = `
-        <button id="new-chat-header-btn"></button>
+        <button id="new-chat-composer-btn"></button>
         <button id="tab-switcher-btn"></button>
         <button id="open-full-page-btn"></button>
         <div class="tools-container">
@@ -149,6 +149,28 @@ describe('app events', () => {
             { action: 'OPEN_SETTINGS_PAGE' },
             '*'
         );
+    });
+
+    it('starts a new chat from the composer action bar', () => {
+        const app = {
+            handleNewChat: vi.fn(),
+            handleTabSwitcher: vi.fn(),
+            toggleBrowserControl: vi.fn(),
+            setCaptureMode: vi.fn(),
+            togglePageContext: vi.fn(),
+            handleModelChange: vi.fn(),
+            handleSendMessage: vi.fn(),
+            isGenerating: false,
+        };
+        const ui = {
+            inputFn: document.getElementById('prompt'),
+            updateStatus: vi.fn(),
+        };
+
+        bindAppEvents(app, ui);
+        document.getElementById('new-chat-composer-btn').click();
+
+        expect(app.handleNewChat).toHaveBeenCalledTimes(1);
     });
 
     it('starts a new chat from the sidebar action row', () => {

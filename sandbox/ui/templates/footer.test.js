@@ -19,6 +19,14 @@ describe('FooterTemplate', () => {
         expect(uploadBtn).not.toBeNull();
         expect(uploadBtn.getAttribute('tabindex')).toBe('0');
         expect(uploadBtn.getAttribute('role')).toBe('button');
+        const newChatBtn = leftActions.querySelector('#new-chat-composer-btn');
+        expect(newChatBtn).not.toBeNull();
+        expect(newChatBtn.getAttribute('type')).toBe('button');
+        expect(newChatBtn.getAttribute('data-i18n-title')).toBe('newChatTooltip');
+        // AMC-style placement: new chat is the first icon in the composer action row.
+        expect(
+            newChatBtn.compareDocumentPosition(uploadBtn) & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         expect(leftActions.querySelector('.tools-container')).not.toBeNull();
         expect(leftActions.querySelector('#live-artifacts-btn')).not.toBeNull();
         expect(leftActions.querySelector('#youtube-summary-btn')).toBeNull();

@@ -37,7 +37,14 @@ describe('input layout styles', () => {
         expect(inputCss).toMatch(/\.composer-actions\s*{[^}]*justify-content:\s*space-between/s);
         expect(inputCss).toMatch(/\.composer-textarea-shell\s*{[^}]*cursor:\s*text/s);
         expect(inputCss).toMatch(/#prompt\s*{[^}]*min-height:\s*26px/s);
-        expect(inputCss).toMatch(/#upload-btn,\s*#send\s*{[^}]*width:\s*40px/s);
+        expect(inputCss).toMatch(
+            /#upload-btn,\s*#new-chat-composer-btn,\s*#send\s*{[^}]*width:\s*40px/s
+        );
+        // Composer new-chat button shares the upload button's icon-button treatment.
+        expect(inputCss).toMatch(
+            /#upload-btn,\s*#new-chat-composer-btn\s*{[^}]*color:\s*var\(--text-secondary\)/s
+        );
+        expect(inputCss).toMatch(/#new-chat-composer-btn svg\s*{[^}]*width:\s*20px/s);
         expect(inputCss).not.toContain('.input-row');
 
         expect(attachmentsCss).toMatch(/\.image-preview\s*{[^}]*padding:\s*0 4px 8px/s);

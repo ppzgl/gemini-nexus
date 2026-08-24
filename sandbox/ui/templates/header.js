@@ -37,9 +37,6 @@ export const HeaderTemplate = `
             <button id="open-full-page-btn" class="icon-btn" data-i18n-title="openFullPageTooltip" title="Open in Full Page">
                 ${TemplateIcons.EXTERNAL_OPEN}
             </button>
-            <button id="new-chat-header-btn" class="icon-btn" data-i18n-title="newChatTooltip" title="New Chat">
-                ${TemplateIcons.NEW_CHAT}
-            </button>
         </div>
     </div>
 `;
