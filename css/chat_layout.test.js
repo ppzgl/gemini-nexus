@@ -33,10 +33,10 @@ describe('chat message layout styles', () => {
             /\.msg\.user\s+\.message-content-container\s*{[^}]*max-width:\s*80%/s
         );
         expect(chatCss).toMatch(
-            /\.msg\.user\s+\.message-content-container\s*{[^}]*padding:\s*14px 18px/s
+            /\.msg\.user\s+\.message-content-container\s*{[^}]*padding:\s*12px 16px/s
         );
         expect(chatCss).toMatch(
-            /\.msg\.user\s+\.message-content-container\s*{[^}]*border-radius:\s*var\(--radius-md\) 4px var\(--radius-md\) var\(--radius-md\)/s
+            /\.msg\.user\s+\.message-content-container\s*{[^}]*border-radius:\s*(?:16px|var\(--radius-bubble\))/s
         );
         expect(chatCss).toMatch(
             /\.msg\.user\s+\.message-content-container\s*{[^}]*box-shadow:\s*var\(--shadow-sm\)/s
@@ -45,7 +45,7 @@ describe('chat message layout styles', () => {
         expect(chatCss).toMatch(
             /\.msg\.ai\s+\.message-content-container\s*{[^}]*background:\s*transparent/s
         );
-        expect(chatCss).toMatch(/\.message-action-rail\s*{[^}]*width:\s*40px/s);
+        expect(chatCss).toMatch(/\.message-action-rail\s*{[^}]*width:\s*32px/s);
         // Coarse pointers keep actions visible; fine+hover may hide until hover.
         expect(chatCss).toMatch(/\.message-actions\s*{[^}]*opacity:\s*1/s);
         expect(chatCss).toMatch(

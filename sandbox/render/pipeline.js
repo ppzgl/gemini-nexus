@@ -64,6 +64,7 @@ const TAG_ATTRS = {
         'stroke-linejoin',
         'stroke-width',
         'viewbox',
+        'viewBox',
         'width',
         'xmlns',
     ]),
@@ -72,8 +73,7 @@ const TAG_ATTRS = {
 };
 
 const URI_ATTRS = new Set(['href', 'src']);
-const SAFE_URI_PATTERN =
-    /^(https?:|data:image\/(?:png|gif|jpe?g|webp|svg\+xml);base64,|blob:|#|\/)/i;
+const SAFE_URI_PATTERN = /^(https?:|data:image\/(?:png|gif|jpe?g|webp);base64,|blob:|#|\/)/i;
 const FENCED_CODE_BLOCK_START_REGEX = /^\s*```/;
 const HTML_DOCUMENT_REGEX = /^(?:<!doctype\s+html\b[^>]*>\s*)?<html\b[\s\S]*<\/html>$/i;
 const HTML_FRAGMENT_TAG_NAMES = [
@@ -127,9 +127,13 @@ function escapeHtml(text) {
 }
 
 function isAllowedAttribute(tagName, attrName) {
-    if (attrName.startsWith('on')) return false;
-    if (attrName.startsWith('data-')) return true;
-    return GLOBAL_ATTRS.has(attrName) || TAG_ATTRS[tagName]?.has(attrName) === true;
+    const lower = attrName.toLowerCase();
+    if (lower.startsWith('on')) return false;
+    if (lower.startsWith('data-')) {
+        // Only allow safe data-* values: alphanum, dash, underscore
+        return /^[a-z0-9_-]+$/.test(lower.slice(5)) && lower.length < 64;
+    }
+    return GLOBAL_ATTRS.has(lower) || TAG_ATTRS[tagName]?.has(lower) === true;
 }
 
 function isSafeAttributeValue(attrName, value) {

@@ -22,11 +22,11 @@ export const SettingsContentTemplate = `
                     <span class="tab-label" data-i18n="general">General</span>
                 </li>
                 <li class="settings-tab" data-tab="appearance" role="button" tabindex="0" aria-selected="false">
-                    <span class="tab-icon">${TemplateIcons.PALETTE}</span>
+                    <span class="tab-icon">${TemplateIcons.LAYOUT_PANEL_LEFT}</span>
                     <span class="tab-label" data-i18n="appearance">Appearance</span>
                 </li>
                 <li class="settings-tab" data-tab="shortcuts" role="button" tabindex="0" aria-selected="false">
-                    <span class="tab-icon">${TemplateIcons.KEYBOARD}</span>
+                    <span class="tab-icon">${TemplateIcons.COMMAND}</span>
                     <span class="tab-label" data-i18n="keyboardShortcuts">Shortcuts</span>
                 </li>
                 <li class="settings-tab" data-tab="data" role="button" tabindex="0" aria-selected="false">

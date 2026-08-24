@@ -4,6 +4,7 @@
     --radius-md: 12px;
     --radius-lg: 20px;
     --radius-xl: 26px;
+    --radius-bubble: 16px;
     --radius-pill: 999px;
 
     /* --- Layout (sidepanel / composer) --- */
@@ -26,7 +27,7 @@
     --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.12);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
 
-    /* --- Semantic --- */
+    /* Semantic */
     --danger: #c62828;
     --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
     --danger-border: color-mix(in srgb, var(--danger) 28%, transparent);
@@ -36,6 +37,8 @@
     --warning: #b45309;
     --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
     --warning-border: color-mix(in srgb, var(--warning) 42%, transparent);
+    /* Starred / favorite accent (only gold in the palette — keep tokenized) */
+    --accent-gold: #f59e0b;
 
     /* --- Light Theme (Default) --- */
     --bg-body: #ffffff;

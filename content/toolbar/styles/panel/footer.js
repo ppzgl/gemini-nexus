@@ -5,7 +5,7 @@
 
         .window-footer {
             flex-shrink: 0;
-            background: #fff;
+            background: var(--gnx-bg);
             padding: 8px 16px;
             min-height: 48px;
             display: flex;
@@ -37,15 +37,15 @@
             cursor: pointer;
             padding: 6px;
             border-radius: 4px;
-            color: #5e5e5e;
+            color: var(--gnx-fg-subtle);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: background 0.2s, color 0.2s;
         }
         .footer-btn:hover {
-            background: #f0f4f9;
-            color: #0b57d0;
+            background: var(--gnx-surface);
+            color: var(--gnx-primary);
         }
 
         .footer-btn.text-btn {
@@ -56,21 +56,20 @@
         }
 
         .footer-btn.text-btn.primary {
-            background: #0b57d0;
-            color: #fff;
+            background: var(--gnx-primary);
+            color: var(--gnx-on-primary);
         }
         .footer-btn.text-btn.primary:hover {
-            background: #0842a0;
+            background: var(--gnx-primary-hover);
         }
 
         #btn-insert, #btn-replace {
-            background: #e8f0fe;
-            color: #0b57d0;
-            border: 1px solid #0b57d0;
-            border: 1px solid #0b57d0;
+            background: var(--gnx-chip-bg);
+            color: var(--gnx-primary);
+            border: 1px solid var(--gnx-primary);
         }
         #btn-insert:hover, #btn-replace:hover {
-            background: #d2e3fc;
+            background: var(--gnx-chip-bg-hover);
         }
 
         .footer-stop {
@@ -81,9 +80,9 @@
         .footer-stop.hidden { display: none; }
 
         .stop-pill-btn {
-            background: #ffffff;
-            color: #1f1f1f;
-            border: 1px solid #e1e3e1;
+            background: var(--gnx-bg);
+            color: var(--gnx-fg);
+            border: 1px solid var(--gnx-border);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             padding: 6px 16px;
             border-radius: 20px;
@@ -93,10 +92,10 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s;
+            transition: background 0.2s, box-shadow 0.2s;
         }
         .stop-pill-btn:hover {
-            background: #f8f9fa;
+            background: var(--gnx-surface);
             box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
     `;

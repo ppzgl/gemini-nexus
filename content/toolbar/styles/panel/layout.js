@@ -4,8 +4,8 @@
         /* Ask Window Styles - Layout */
         .ask-window {
             position: fixed;
-            background: #ffffff;
-            border: 1px solid #e1e3e1;
+            background: var(--gnx-bg);
+            border: 1px solid var(--gnx-border);
             border-radius: 12px;
             width: 400px;
             height: 400px;
@@ -17,11 +17,12 @@
             max-height: 90vh;
             box-sizing: border-box;
 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+            box-shadow: var(--gnx-shadow-panel);
             display: flex;
             flex-direction: column;
             z-index: 1000000;
             font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--gnx-fg);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -71,7 +72,7 @@
             top: 50%;
             width: 4px;
             height: 48px;
-            background-color: #0b57d0;
+            background-color: var(--gnx-primary);
             border-radius: 4px;
             transform: translateY(-50%);
             opacity: 0.8;

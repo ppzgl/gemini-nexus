@@ -141,15 +141,14 @@ export class MessageHandler {
 
     handleStreamUpdate(request) {
         if (!this.isGeneratingSessionMessage(request)) return;
-        this.app.prompt?.markGenerationActivity?.();
-        const state = this.streamState.cache(request);
-        const displayText = state?.text || '';
-
-        // Prevent race condition: Ignore stream updates arriving shortly after user cancelled
+        // Check cancellation before caching to avoid polluting streamState with stale data
         if (this.app.prompt.isCancellationRecent()) {
             this.clearStreamState(this.getRequestSessionId(request));
             return;
         }
+        this.app.prompt?.markGenerationActivity?.();
+        const state = this.streamState.cache(request);
+        const displayText = state?.text || '';
 
         if (!this.isCurrentSessionMessage(request)) return;
 
@@ -160,8 +159,13 @@ export class MessageHandler {
         this.streamingBubble.update(displayText, request.thoughts, { isStreaming: true });
 
         if (!this.app.isGenerating) {
-            this.app.isGenerating = true;
-            this.ui.setLoading(true);
+            // Use the prompt controller's canonical state setter so the watchdog is armed
+            if (typeof this.app.prompt?.setGeneratingState === 'function') {
+                this.app.prompt.setGeneratingState(true, this.getRequestSessionId(request));
+            } else {
+                this.app.isGenerating = true;
+                this.ui.setLoading(true);
+            }
         }
     }
 
@@ -220,7 +224,6 @@ export class MessageHandler {
             // arrived before clearActiveStream ran — the bubble is dangling).
             // Only remove a ghost bubble that belongs to THIS late reply, and
             // never while a newer generation is in flight.
-            const replySessionId = request?.sessionId || null;
             if (
                 replySessionId &&
                 this.streamingBubble &&

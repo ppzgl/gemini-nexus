@@ -6,6 +6,8 @@ import { getMessageSpacingKind, isToolMessageKind, syncMessageSpacing } from './
 import { cleanupStructuredSourceText, createSourcesElement } from './sources.js';
 import { createThoughtsBlock } from './thoughts_block.js';
 import { hasDisplayableText } from '../core/displayable_content.js';
+import { t } from '../core/i18n.js';
+import { TemplateIcons } from '../ui/templates/icons.js';
 
 const ASSISTANT_AVATAR_SRC = new URL('../../assets/assistant-avatar.png', import.meta.url).href;
 
@@ -45,7 +47,7 @@ export function appendMessage(
         row.appendChild(actionsHost);
         row.appendChild(contentHost);
     } else {
-        actionsHost = createMessageActionRail(role);
+        actionsHost = createMessageActionRail(role, { onEdit: options.onEdit });
 
         if (role === 'user') {
             row.appendChild(contentHost);
@@ -202,6 +204,66 @@ export function appendMessage(
 
             getMessageActionsHost()?.appendChild(editController.button);
         }
+
+        // AMC-like additional actions: delete (both), retry (model)
+        const createDeleteButton = () => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'delete-btn';
+            btn.title = t('delete');
+            btn.setAttribute('aria-label', t('delete'));
+            btn.innerHTML = TemplateIcons.TRASH;
+            btn.addEventListener('click', () => {
+                if (typeof options.onDelete === 'function') {
+                    options.onDelete(messageElement);
+                } else {
+                    messageElement.remove();
+                    const prev = messageElement.previousElementSibling;
+                    const next = messageElement.nextElementSibling;
+                    if (prev?.__messageController) prev.__messageController.syncCompactSpacing();
+                    if (next?.__messageController) next.__messageController.syncCompactSpacing();
+                }
+            });
+            return btn;
+        };
+
+        const createRetryButton = () => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'retry-btn';
+            btn.title = t('retryButtonTitle') || 'Retry';
+            btn.setAttribute('aria-label', t('retryButtonTitle') || 'Retry');
+            btn.innerHTML = TemplateIcons.REFRESH || TemplateIcons.HISTORY;
+            btn.addEventListener('click', () => {
+                if (typeof options.onRetry === 'function') {
+                    options.onRetry(messageElement, currentText);
+                }
+            });
+            return btn;
+        };
+
+        if (!isToolMessage) {
+            const actionsHostEl = getMessageActionsHost();
+            if (actionsHostEl) {
+                // Delete for both
+                const deleteBtn = createDeleteButton();
+                actionsHostEl.appendChild(deleteBtn);
+
+                // Retry for model
+                if (role === 'ai') {
+                    const retryBtn = createRetryButton();
+                    // Insert retry before delete, after copy
+                    const copyEl = actionsHostEl.querySelector('.copy-btn');
+                    if (copyEl && copyEl.nextSibling) {
+                        actionsHostEl.insertBefore(retryBtn, copyEl.nextSibling);
+                    } else if (copyEl) {
+                        actionsHostEl.appendChild(retryBtn);
+                    } else {
+                        actionsHostEl.insertBefore(retryBtn, deleteBtn);
+                    }
+                }
+            }
+        }
     }
 
     container.appendChild(messageElement);
@@ -349,22 +411,31 @@ function createToolMessageRail() {
     return rail;
 }
 
-function createMessageActionRail(role) {
+function createActionButton({ iconHtml, title, ariaLabel, onClick, extraClass = '' }) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `copy-btn ${extraClass}`.trim();
+    btn.title = title;
+    btn.setAttribute('aria-label', ariaLabel || title);
+    btn.innerHTML = iconHtml;
+    if (typeof onClick === 'function') {
+        btn.addEventListener('click', onClick);
+    }
+    return btn;
+}
+
+function createMessageActionRail(role, { onEdit } = {}) {
     const rail = document.createElement('div');
     rail.className = 'message-action-rail';
 
-    const avatar = document.createElement('div');
-    avatar.className = `message-avatar message-avatar-${role === 'ai' ? 'ai' : 'user'}`;
-    avatar.setAttribute('aria-hidden', 'true');
-
-    if (role === 'ai') {
-        const image = document.createElement('img');
-        image.src = ASSISTANT_AVATAR_SRC;
-        image.alt = '';
-        image.width = 29;
-        image.height = 29;
-        avatar.appendChild(image);
-    } else {
+    let avatar;
+    const canEdit = typeof onEdit === 'function' && role === 'user';
+    if (canEdit) {
+        avatar = document.createElement('button');
+        avatar.type = 'button';
+        avatar.className = `message-avatar message-avatar-${role === 'ai' ? 'ai' : 'user'} message-avatar-btn`;
+        avatar.title = t('editMessage');
+        avatar.setAttribute('aria-label', t('editMessage'));
         avatar.innerHTML = `
             <svg viewBox="0 0 24 24" width="29" height="29" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -372,7 +443,36 @@ function createMessageActionRail(role) {
                 <path d="M20 21a8 8 0 0 0-16 0"></path>
                 <circle cx="12" cy="7" r="4"></circle>
             </svg>
+            <span class="avatar-edit-overlay" aria-hidden="true">${TemplateIcons.EDIT}</span>
         `;
+        avatar.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Trigger the edit button if present, otherwise call onEdit directly
+            const editBtn = rail.querySelector('.edit-btn');
+            if (editBtn) editBtn.click();
+        });
+    } else {
+        avatar = document.createElement('div');
+        avatar.className = `message-avatar message-avatar-${role === 'ai' ? 'ai' : 'user'}`;
+        avatar.setAttribute('aria-hidden', 'true');
+        if (role === 'ai') {
+            const image = document.createElement('img');
+            image.src = ASSISTANT_AVATAR_SRC;
+            image.alt = '';
+            image.width = 29;
+            image.height = 29;
+            avatar.appendChild(image);
+        } else {
+            avatar.innerHTML = `
+                <svg viewBox="0 0 24 24" width="29" height="29" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            `;
+        }
     }
 
     const actions = document.createElement('div');

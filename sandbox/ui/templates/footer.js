@@ -33,7 +33,7 @@ export const FooterTemplate = `
                             </button>
                             <button id="live-artifacts-btn" class="tool-btn tool-toggle" data-i18n-title="liveArtifactsTooltip" title="Toggle Live Artifacts responses" aria-pressed="false">
                                 ${TemplateIcons.ARTIFACTS}
-                                <span data-i18n="liveArtifacts">Artifacts</span>
+                                <span data-i18n="liveArtifacts">Live Artifacts</span>
                             </button>
                         </div>
 

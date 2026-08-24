@@ -21,8 +21,56 @@ export class ChatController {
         this.hasAttachments = false;
 
         this.initListeners();
+        this.initEmptyTips();
         this.initFooterOffsetSync();
         this.syncSendEnabled();
+    }
+
+    initEmptyTips() {
+        const emptyEl = document.getElementById('chat-empty');
+        if (!emptyEl) return;
+        emptyEl.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-empty-action]');
+            if (!trigger) return;
+            const action = trigger.getAttribute('data-empty-action');
+            if (action === 'page-context') {
+                const button = document.getElementById('page-context-btn');
+                if (button) {
+                    if (button.getAttribute('aria-pressed') !== 'true') button.click();
+                    else this.inputFn?.focus();
+                }
+            } else if (action === 'capture') {
+                const button = document.getElementById('capture-menu-btn');
+                // Open the Capture dropdown directly — tool_button_events handles toggleMenu
+                if (button) button.click();
+            } else if (action === 'browser-control') {
+                const button = document.getElementById('browser-control-btn');
+                if (button) {
+                    if (button.getAttribute('aria-pressed') !== 'true') button.click();
+                    else this.inputFn?.focus();
+                }
+            } else if (action === 'github-star') {
+                const browserButton = document.getElementById('browser-control-btn');
+                if (browserButton?.getAttribute('aria-pressed') !== 'true') browserButton?.click();
+                setTimeout(() => {
+                    if (!this.inputFn || !this.sendBtn) return;
+                    const isEn = (document.documentElement.lang || '')
+                        .toLowerCase()
+                        .startsWith('en');
+                    const prompt = isEn
+                        ? 'Please use browser control to open https://github.com/yeahhe365/Gemini-Nexus and click the Star button to star this project. If already starred, confirm the status.'
+                        : '请使用浏览器控制打开 https://github.com/yeahhe365/Gemini-Nexus 并点击 Star 按钮为本项目点 Star，如果已 Star 请确认状态。';
+                    this.inputFn.value = prompt;
+                    this.inputFn.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.inputFn.style.height = 'auto';
+                    this.inputFn.style.height = `${this.inputFn.scrollHeight}px`;
+                    this.updateFooterOffset?.();
+                    this.syncSendEnabled?.();
+                    this.inputFn.focus();
+                    setTimeout(() => this.sendBtn?.click(), 120);
+                }, 450);
+            }
+        });
     }
 
     initListeners() {

@@ -9,7 +9,7 @@
             flex-direction: column;
             padding: 4px 16px 16px 16px;
             overflow: hidden; /* Crucial for internal scroll */
-            background: #fff;
+            background: var(--gnx-bg);
             position: relative;
             min-height: 0;
         }
@@ -24,24 +24,24 @@
             width: 100%;
             padding: 10px 12px;
             font-size: 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--gnx-border);
             border-radius: 8px;
             outline: none;
-            color: #1f1f1f;
-            background: #fff;
+            color: var(--gnx-fg);
+            background: var(--gnx-bg);
             box-sizing: border-box;
             transition: border-color 0.2s;
             font-family: inherit;
         }
         input[type="text"]#ask-input:focus {
-            border-color: #0b57d0;
-            box-shadow: 0 0 0 2px rgba(11, 87, 208, 0.1);
+            border-color: var(--gnx-primary);
+            box-shadow: 0 0 0 2px var(--gnx-primary-ring);
         }
 
         .context-preview {
             font-size: 12px;
-            color: #444746;
-            background: #f0f4f9;
+            color: var(--gnx-fg-muted);
+            background: var(--gnx-surface);
             padding: 8px 12px;
             border-radius: 8px;
             margin-bottom: 12px;
@@ -57,12 +57,12 @@
             content: "Context:";
             font-weight: 600;
             margin-right: 6px;
-            color: #0b57d0;
+            color: var(--gnx-primary);
         }
 
         .gemini-error-card {
             padding: 12px 0;
-            color: #d93025;
+            color: var(--gnx-error);
         }
         .gemini-error-title {
             display: flex;
@@ -74,7 +74,7 @@
         .gemini-error-text {
             font-size: 14px;
             line-height: 1.5;
-            color: #1f1f1f;
+            color: var(--gnx-fg);
         }
         .gemini-error-link {
             color: inherit;
@@ -83,7 +83,7 @@
 
         .gemini-loading-message {
             margin-top: 10px;
-            color: #888;
+            color: var(--gnx-fg-subtle);
             font-style: italic;
         }
 
@@ -133,7 +133,7 @@
             border: none;
             border-radius: 999px;
             background: rgba(255, 255, 255, 0.92);
-            color: #202124;
+            color: var(--gnx-fg);
             cursor: pointer;
             pointer-events: auto;
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);

@@ -99,8 +99,8 @@ export const TemplateIcons = {
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"></path>
-            <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
         </svg>
     `,
     EDIT: icon`
@@ -115,9 +115,10 @@ export const TemplateIcons = {
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 3h6v6"/>
-            <path d="M10 14 21 3"/>
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
         </svg>
     `,
     FIT_TO_SCREEN: icon`
@@ -188,6 +189,35 @@ export const TemplateIcons = {
             <circle cx="12" cy="12" r="1"></circle>
             <circle cx="19" cy="12" r="1"></circle>
             <circle cx="5" cy="12" r="1"></circle>
+        </svg>
+    `,
+    REFRESH: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+            <path d="M3 8v5h5"></path>
+        </svg>
+    `,
+    FORK: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="18" r="3"></circle>
+            <circle cx="6" cy="6" r="3"></circle>
+            <circle cx="18" cy="6" r="3"></circle>
+            <path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"></path>
+            <path d="M12 12v3"></path>
+        </svg>
+    `,
+    CONTINUE: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="10 8 16 12 10 16 10 8"></polygon>
         </svg>
     `,
     TRASH: icon`
@@ -277,7 +307,7 @@ export const TemplateIcons = {
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
     `,
-    /* Monitor with lens mark: capture another screen/window. */
+    /* Monitor: capture another screen/window — clean version without central lens dot (was <circle r=2.5>). */
     SCREEN_CAPTURE: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -285,7 +315,6 @@ export const TemplateIcons = {
             <rect x="2" y="3" width="20" height="14" rx="2"></rect>
             <path d="M8 21h8"></path>
             <path d="M12 17v4"></path>
-            <circle cx="12" cy="10" r="2.5"></circle>
         </svg>
     `,
     SEND: icon`
@@ -450,6 +479,23 @@ export const TemplateIcons = {
             <circle cx="15.5" cy="14.5" r="1.5" stroke="none" fill="currentColor"></circle>
         </svg>
     `,
+    /* AMC SettingsSidebar: interface LayoutPanelLeft, shortcuts Command — lucide */
+    LAYOUT_PANEL_LEFT: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="18" x="3" y="3" rx="1"></rect>
+            <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+            <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+        </svg>
+    `,
+    COMMAND: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
+        </svg>
+    `,
     KEYBOARD: icon`
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -479,8 +525,8 @@ export const TemplateIcons = {
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            <path d="M12 16v-4"></path>
+            <path d="M12 8h.01"></path>
         </svg>
     `,
     PIN: icon`
