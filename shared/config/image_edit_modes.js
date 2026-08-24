@@ -5,5 +5,3 @@ export const IMAGE_EDIT_MODES = new Set([
     'remove_bg',
     'remove_watermark',
 ]);
-
-export const IMAGE_EDIT_MODES_ARRAY = [...IMAGE_EDIT_MODES];
