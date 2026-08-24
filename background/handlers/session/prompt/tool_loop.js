@@ -190,8 +190,18 @@ function buildNativeToolResult(toolResults, responseBatchId) {
     };
 }
 
+let __batchCounter = 0;
 function createFunctionResponseBatchId(sessionId, loopCount) {
-    return ['official-tools', sessionId || 'no-session', Date.now(), loopCount].join('|');
+    __batchCounter = (__batchCounter + 1) % 1000000;
+    const rand = Math.random().toString(36).slice(2, 6);
+    return [
+        'official-tools',
+        sessionId || 'no-session',
+        Date.now(),
+        loopCount,
+        __batchCounter,
+        rand,
+    ].join('|');
 }
 
 export async function executePendingToolResult({
@@ -255,6 +265,7 @@ export async function injectBrowserControlSnapshot({
         return outputForModel;
     }
 
+    let snapshotError = null;
     try {
         const targetTabId = controlManager.getTargetTabId();
         let urlInfo = '';
@@ -271,10 +282,20 @@ export async function injectBrowserControlSnapshot({
         if (snapshot && typeof snapshot === 'string' && !snapshot.startsWith('Error')) {
             return `${outputForModel}\n\n${urlInfo}[Updated Page Accessibility Tree]:\n\`\`\`text\n${snapshot}\n\`\`\`\n`;
         }
+        if (typeof snapshot === 'string' && snapshot.startsWith('Error')) {
+            snapshotError = snapshot;
+        }
     } catch (error) {
         console.warn('Auto-snapshot injection failed:', error);
+        snapshotError = error?.message || String(error);
     }
 
+    if (failedUidRecovery) {
+        const hint = snapshotError
+            ? ` Snapshot error: ${snapshotError}`
+            : ' Snapshot unavailable. Use take_snapshot to refresh.';
+        return `${outputForModel}\n\n[Snapshot auto-injection failed.${hint}]`;
+    }
     return outputForModel;
 }
 
@@ -388,6 +409,11 @@ export async function persistToolOutputMessages({
         return '';
     }
 
+    // For non-official, persist all tool outputs (not just primary) via appendRawMessages to avoid history loss in multi-tool batch
+    if (toolOutputMessages.length > 1) {
+        await appendRawMessages(request.sessionId, toolOutputMessages);
+        return toolOutputMessages[0]?.text || '';
+    }
     const primaryMessage = toolOutputMessages[0];
     if (!primaryMessage) return '';
 

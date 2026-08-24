@@ -18,6 +18,8 @@ import {
 } from '../../../shared/settings/dedicated_providers.js';
 import { debugLog } from '../../../shared/logging/debug.js';
 
+let pointerRotationQueue = Promise.resolve();
+
 function normalizeProviderOverride(provider) {
     const normalized = String(provider || '').trim();
     return normalized === 'web' ||
@@ -62,14 +64,18 @@ export async function getConnectionSettings(options = {}) {
             activeApiKey = apiKeys[pointer];
 
             const nextPointer = (pointer + 1) % apiKeys.length;
-            try {
-                await chrome.storage.local.set({ geminiApiKeyPointer: nextPointer });
-            } catch (error) {
-                console.warn(
-                    '[Gemini Nexus] Failed to persist Official API key rotation pointer:',
-                    error
-                );
-            }
+            // Serialize pointer writes to avoid concurrent read-modify-write races
+            const toWrite = nextPointer;
+            const writeTask = pointerRotationQueue
+                .then(() => chrome.storage.local.set({ geminiApiKeyPointer: toWrite }))
+                .catch((error) => {
+                    console.warn(
+                        '[Gemini Nexus] Failed to persist Official API key rotation pointer:',
+                        error
+                    );
+                });
+            pointerRotationQueue = writeTask.catch(() => {});
+            await writeTask.catch(() => {});
 
             debugLog(`[Gemini Nexus] Rotating Official API Key (Index: ${pointer})`);
         }

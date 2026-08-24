@@ -155,13 +155,15 @@ describe('QuickAskHandler', () => {
                 includePageContext: true,
                 systemInstruction: expect.stringContaining('reference only'),
             }),
-            expect.any(Function)
+            expect.any(Function),
+            expect.anything()
         );
         expect(sessionManager.handleSendPrompt).toHaveBeenCalledWith(
             expect.objectContaining({
                 systemInstruction: expect.stringContaining('Page headline\nPage body'),
             }),
-            expect.any(Function)
+            expect.any(Function),
+            expect.anything()
         );
     });
 
@@ -320,7 +322,8 @@ describe('QuickAskHandler', () => {
                     },
                 ],
             }),
-            expect.any(Function)
+            expect.any(Function),
+            expect.anything()
         );
     });
 
@@ -417,7 +420,8 @@ describe('QuickAskHandler', () => {
                     },
                 ],
             }),
-            expect.any(Function)
+            expect.any(Function),
+            expect.anything()
         );
         expect(saveToHistory).not.toHaveBeenCalled();
         expect(appendTurnToHistory).toHaveBeenCalledWith(

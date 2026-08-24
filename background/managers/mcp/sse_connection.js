@@ -14,7 +14,9 @@ export async function connectSse(conn, sseUrlStr, { onRpcMessage, clearPending }
         conn._sseEndpointTimer = null;
     }
 
+    let endpointReject;
     const endpointPromise = new Promise((resolve, reject) => {
+        endpointReject = reject;
         const timeout = setTimeout(() => {
             conn._sseEndpointTimer = null;
             reject(new Error('MCP SSE endpoint handshake timeout'));
@@ -29,23 +31,51 @@ export async function connectSse(conn, sseUrlStr, { onRpcMessage, clearPending }
         };
     });
 
-    const response = await fetch(sseUrl.toString(), {
-        method: 'GET',
-        headers: mergeHeaders(
-            { Accept: 'text/event-stream', 'Cache-Control': 'no-cache' },
-            conn.headers
-        ),
-        signal: abort.signal,
-    });
+    let response;
+    try {
+        response = await fetch(sseUrl.toString(), {
+            method: 'GET',
+            headers: mergeHeaders(
+                { Accept: 'text/event-stream', 'Cache-Control': 'no-cache' },
+                conn.headers
+            ),
+            signal: abort.signal,
+        });
+    } catch (error) {
+        if (conn._sseEndpointTimer) {
+            clearTimeout(conn._sseEndpointTimer);
+            conn._sseEndpointTimer = null;
+        }
+        endpointReject?.(error);
+        throw error;
+    }
 
-    if (!response.ok)
+    if (!response.ok) {
+        if (conn._sseEndpointTimer) {
+            clearTimeout(conn._sseEndpointTimer);
+            conn._sseEndpointTimer = null;
+        }
+        endpointReject?.(
+            new Error(`MCP SSE connect failed (${response.status}): ${response.statusText}`)
+        );
         throw new Error(`MCP SSE connect failed (${response.status}): ${response.statusText}`);
-    if (!response.body) throw new Error('MCP SSE response has no body');
+    }
+    if (!response.body) {
+        if (conn._sseEndpointTimer) {
+            clearTimeout(conn._sseEndpointTimer);
+            conn._sseEndpointTimer = null;
+        }
+        const err = new Error('MCP SSE response has no body');
+        endpointReject?.(err);
+        throw err;
+    }
 
     conn.sseReaderTask = readSseStream(conn, response.body.getReader(), sseUrl, {
         resolvePendingRpcMessage: (message) => onRpcMessage(conn, message),
         clearPending: (error) => clearPending(conn, error),
-    }).catch(() => {});
+    }).catch((error) => {
+        console.warn('[MCP] SSE stream error:', error?.message || error);
+    });
 
     conn.ssePostUrl = await endpointPromise;
 }

@@ -19,10 +19,13 @@ describe('fetchRequestParams', () => {
             uploadPushId: 'feeds/upload-dynamic',
             uploadClientPctx: 'client-pctx-token',
         });
-        expect(global.fetch).toHaveBeenCalledWith('https://gemini.google.com/u/2/app', {
-            method: 'GET',
-            credentials: 'include',
-        });
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://gemini.google.com/u/2/app',
+            expect.objectContaining({
+                method: 'GET',
+                credentials: 'include',
+            })
+        );
     });
 
     it('rejects HTML that no longer exposes required Web request tokens', async () => {

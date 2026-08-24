@@ -124,7 +124,22 @@
         isTextInput(element) {
             if (!element || typeof element.value !== 'string') return false;
             const tagName = element.tagName;
-            return tagName === 'TEXTAREA' || tagName === 'INPUT';
+            if (tagName === 'TEXTAREA') return true;
+            if (tagName !== 'INPUT') {
+                // contenteditable elements are handled via window.getSelection path
+                return false;
+            }
+            const allowedInputTypes = new Set([
+                'text',
+                'search',
+                'url',
+                'tel',
+                'password',
+                'number',
+                'email',
+            ]);
+            const type = String(element.type || 'text').toLowerCase();
+            return allowedInputTypes.has(type);
         }
 
         getEventPoint(pointerEvent) {

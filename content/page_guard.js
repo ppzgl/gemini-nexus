@@ -3,12 +3,19 @@
         return typeof url === 'string' && /\.(?:mhtml|mht)(?:[?#].*)?$/i.test(url);
     }
 
-    const href = window.location && window.location.href;
-    const isDisabled = isMhtmlArchiveUrl(href);
+    function computeDisabled() {
+        const href = window.location && window.location.href;
+        return isMhtmlArchiveUrl(href);
+    }
 
     window.GeminiNexusPageGuard = {
-        isDisabled,
-        reason: isDisabled ? 'mhtml' : null,
+        get isDisabled() {
+            return computeDisabled();
+        },
+        get reason() {
+            return computeDisabled() ? 'mhtml' : null;
+        },
         isMhtmlArchiveUrl,
+        isDisabledValue: computeDisabled(),
     };
 })();

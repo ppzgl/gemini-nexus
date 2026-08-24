@@ -46,10 +46,22 @@
         return locationLike && typeof locationLike.href === 'string' ? locationLike.href : '';
     }
 
+    const ruleCache = new Map();
+
+    function getCachedRules(value) {
+        const raw = Array.isArray(value) ? value.join('\n') : String(value || '');
+        if (ruleCache.has(raw)) return ruleCache.get(raw);
+        const rules = normalizeRules(value);
+        // Bound cache size to avoid unbounded growth
+        if (ruleCache.size > 100) ruleCache.clear();
+        ruleCache.set(raw, rules);
+        return rules;
+    }
+
     function matchesLocation(locationLike, value) {
         try {
             const url = new URL(getHref(locationLike), window.location.href);
-            return normalizeRules(value).some((rule) => matchesRule(url, rule));
+            return getCachedRules(value).some((rule) => matchesRule(url, rule));
         } catch {
             return false;
         }

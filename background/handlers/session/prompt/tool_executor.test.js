@@ -316,20 +316,21 @@ describe('ToolExecutor routing', () => {
                 '{"tool":"click","args":{"uid":"1_3"}}'
             );
 
-            expect(first.statusKey).toBe('session-1|click|local:1');
+            expect(first.statusKey).toMatch(/^session-1\|click\|local:/);
             expect(first.durationMs).toBe(40);
-            expect(second.statusKey).toBe('session-1|click|local:2');
+            expect(second.statusKey).toMatch(/^session-1\|click\|local:/);
+            expect(second.statusKey).not.toBe(first.statusKey);
             expect(second.durationMs).toBe(75);
             expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    statusKey: 'session-1|click|local:1',
+                    statusKey: expect.stringMatching(/^session-1\|click\|local:/),
                     status: 'running',
                     startedAt: 100,
                 })
             );
             expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    statusKey: 'session-1|click|local:2',
+                    statusKey: expect.stringMatching(/^session-1\|click\|local:/),
                     status: 'completed',
                     durationMs: 75,
                 })

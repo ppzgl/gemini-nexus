@@ -27,7 +27,9 @@ export async function initializeMcpHandshake(
     { clientName, clientVersion, sendRpc, sleep = defaultSleep }
 ) {
     let lastError = null;
-    for (const protocolVersion of DEFAULT_PROTOCOL_VERSIONS) {
+    let firstError = null;
+    for (let i = 0; i < DEFAULT_PROTOCOL_VERSIONS.length; i++) {
+        const protocolVersion = DEFAULT_PROTOCOL_VERSIONS[i];
         try {
             const result = await sendRpc('initialize', {
                 protocolVersion,
@@ -59,10 +61,19 @@ export async function initializeMcpHandshake(
             return;
         } catch (error) {
             lastError = error;
+            if (!firstError) firstError = error;
             if (isStreamableHttpFallbackError(error)) throw error;
             if (isUnsupportedProtocolError(error)) throw error;
-            await sleep(150);
+            // Don't retry on 4xx client errors (except protocol mismatch handled above)
+            const msg = String(error?.message || '');
+            if (/\(4\d{2}\)/.test(msg) && !msg.includes('Unsupported MCP protocol version')) {
+                throw error;
+            }
+            if (i < DEFAULT_PROTOCOL_VERSIONS.length - 1) {
+                const backoff = 150 * Math.pow(2, i) + Math.random() * 100;
+                await sleep(Math.min(backoff, 2000));
+            }
         }
     }
-    throw lastError || new Error('Failed to initialize MCP connection');
+    throw firstError || lastError || new Error('Failed to initialize MCP connection');
 }

@@ -272,7 +272,8 @@ export class ToolExecutor {
             return `call:${toolCommand.id.trim()}`;
         }
         this.invocationCounter += 1;
-        return `local:${this.invocationCounter}`;
+        // Include random to survive SW restart counter reset (avoid Date.now to keep Date.now mock deterministic)
+        return `local:${this.invocationCounter}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
     createToolStatusKey(

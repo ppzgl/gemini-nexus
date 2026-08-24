@@ -31,14 +31,7 @@ import {
     isUnavailableWebAuthError,
     withProviderRetry,
 } from './error_classifier.js';
-
-const WEB_IMAGE_EDIT_MODES = new Set([
-    'upscale',
-    'expand',
-    'remove_text',
-    'remove_bg',
-    'remove_watermark',
-]);
+import { IMAGE_EDIT_MODES as WEB_IMAGE_EDIT_MODES } from '../../../shared/config/image_edit_modes.js';
 const WEB_IMAGE_EDIT_INTENT_PATTERN =
     /\b(edit|modify|change|alter|retouch|upscale|expand|remove|replace|recolor)\b|修图|编辑|修改|改成|改为|改一下|换成|替换|变成|去掉|移除|删除|抠图|抠除|去背景|去水印|扩图|放大|重绘|生成.*图/i;
 

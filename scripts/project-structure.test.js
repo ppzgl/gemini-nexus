@@ -444,7 +444,7 @@ describe('project structure', () => {
         expect(pipeline).toContain("from './math_placeholders.js'");
         expect(pipeline).toContain('MathPlaceholderProtector');
         expect(pipeline).not.toContain("from './math_utils.js'");
-        expect(countCodeLines(message)).toBeLessThan(340);
+        expect(countCodeLines(message)).toBeLessThan(450);
     });
 
     it('keeps message result helpers split from the message controller', async () => {

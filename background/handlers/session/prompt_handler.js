@@ -28,6 +28,22 @@ const MAX_NARRATION_NUDGES = 1;
 
 // Spaces out looped requests to avoid rate-limit bursts.
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function cancellableDelay(ms, run, handler) {
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+            clearInterval(checkTimer);
+            resolve();
+        }, ms);
+        const checkTimer = setInterval(() => {
+            if (handler.isRunCancelled(run)) {
+                clearTimeout(timer);
+                clearInterval(checkTimer);
+                resolve();
+            }
+        }, 100);
+    });
+}
 const REQUEST_CANCELLED_TEXT = 'Request cancelled.';
 
 async function getStoredProvider() {
@@ -43,8 +59,8 @@ async function getStoredProvider() {
 async function sendRuntimeMessage(message) {
     try {
         await chrome.runtime.sendMessage(message);
-    } catch {
-        // 静默忽略:消息发送失败时接收方可能已销毁,无法记录
+    } catch (error) {
+        console.warn('[PromptHandler] sendRuntimeMessage failed:', error?.message || error);
     }
 }
 
@@ -83,7 +99,18 @@ export class PromptHandler {
         if (!run || run.cancelled) return false;
 
         run.cancelled = true;
-        this.sessionManager?.cancelCurrentRequest?.();
+        // Only abort the prompt bucket, not quick-ask tabs
+        if (this.sessionManager?.cancelCurrentRequest) {
+            try {
+                this.sessionManager.cancelCurrentRequest('prompt');
+            } catch {}
+            // Fallback: if manager expects no arg, try default
+            try {
+                if (this.sessionManager.abortControllers?.size === 0) {
+                    this.sessionManager.cancelCurrentRequest();
+                }
+            } catch {}
+        }
         if (notify) {
             sendRuntimeMessage(this.createCancellationReply(run.request));
         }
@@ -193,6 +220,9 @@ export class PromptHandler {
                 const continuationLanguage = detectPromptLanguage(request.text);
 
                 let currentFiles = request.files;
+                // Avoid mutating the original request object across loop iterations
+                let mutableOfficialParts = request.officialUserParts || null;
+                let mutableBatchId = request.officialFunctionResponseBatchId || null;
 
                 let loopCount = 0;
                 let narrationNudges = 0;
@@ -216,12 +246,15 @@ export class PromptHandler {
                     const result = await this.sessionManager.handleSendPrompt(
                         {
                             ...request,
+                            officialUserParts: mutableOfficialParts,
+                            officialFunctionResponseBatchId: mutableBatchId,
                             text: currentPromptText,
                             historyPromptText: currentHistoryText,
                             systemInstruction,
                             files: currentFiles,
                         },
-                        onUpdate
+                        onUpdate,
+                        'prompt'
                     );
 
                     if (this.isRunCancelled(run)) break;
@@ -248,6 +281,7 @@ export class PromptHandler {
                     if (this.isRunCancelled(run)) break;
 
                     if (toolResult) {
+                        if (this.isRunCancelled(run)) break;
                         // Feed tool output back to the model and continue the loop.
                         loopCount++;
                         const allToolFiles = getToolResultsFiles(
@@ -258,7 +292,11 @@ export class PromptHandler {
                         const outputForModel = await injectBrowserControlSnapshot({
                             toolResult,
                             outputForModel: toolResult.outputForModel,
-                            request,
+                            request: {
+                                ...request,
+                                officialUserParts: mutableOfficialParts,
+                                officialFunctionResponseBatchId: mutableBatchId,
+                            },
                             controlManager: this.controlManager,
                         });
 
@@ -282,6 +320,7 @@ export class PromptHandler {
 
                         // Save "User" message (Tool Output) to history to keep context in sync
                         // NOTE: We do NOT save the massive auto-snapshot text to the user history to keep the UI clean.
+                        if (this.isRunCancelled(run)) break;
                         const persistedHistoryText = await persistToolOutputMessages({
                             request,
                             result,
@@ -296,18 +335,17 @@ export class PromptHandler {
 
                         if (isOfficialFunctionResponse) {
                             currentFiles = [];
-                            request.officialUserParts = nextToolResult.officialResponseParts;
-                            request.officialFunctionResponseBatchId =
-                                nextToolResult.officialResponseBatchId;
+                            mutableOfficialParts = nextToolResult.officialResponseParts;
+                            mutableBatchId = nextToolResult.officialResponseBatchId;
                         } else {
-                            request.officialUserParts = null;
-                            request.officialFunctionResponseBatchId = null;
+                            mutableOfficialParts = null;
+                            mutableBatchId = null;
                         }
 
                         // === RATE LIMIT MITIGATION ===
                         // Wait 2-4 seconds before sending the next request.
                         // This prevents "No valid response" errors caused by rapid-fire requests.
-                        await delay(2000 + Math.random() * 2000);
+                        await cancellableDelay(2000 + Math.random() * 2000, run, this);
 
                         if (this.isRunCancelled(run)) break;
                     } else if (
@@ -337,10 +375,10 @@ export class PromptHandler {
                         currentPromptText = buildNarrationNudgePrompt(continuationLanguage);
                         currentHistoryText = intermediate.text || result?.text || '';
                         currentFiles = [];
-                        request.officialUserParts = null;
-                        request.officialFunctionResponseBatchId = null;
+                        mutableOfficialParts = null;
+                        mutableBatchId = null;
 
-                        await delay(1500 + Math.random() * 1500);
+                        await cancellableDelay(1500 + Math.random() * 1500, run, this);
                         if (this.isRunCancelled(run)) break;
                     } else {
                         // No tool execution, final answer reached.

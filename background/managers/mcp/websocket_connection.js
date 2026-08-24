@@ -47,13 +47,34 @@ export async function ensureWebSocketConnected({
         const ws = new WebSocket(wsUrl);
         conn.ws = ws;
         let opened = false;
+        let settled = false;
+        const safeResolve = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(connectTimer);
+            resolve();
+        };
+        const safeReject = (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(connectTimer);
+            reject(err);
+        };
+        const connectTimer = setTimeout(() => {
+            if (!opened) {
+                try {
+                    ws.close();
+                } catch {}
+                safeReject(new Error(`MCP WebSocket connect timeout: ${wsUrl}`));
+            }
+        }, 10000);
 
         const onOpen = () => {
             opened = true;
-            resolve();
+            safeResolve();
         };
         const onError = () => {
-            if (!opened) reject(new Error(`Failed to connect to MCP WebSocket: ${wsUrl}`));
+            if (!opened) safeReject(new Error(`Failed to connect to MCP WebSocket: ${wsUrl}`));
         };
         const onClose = () => {
             // Only act if this socket is still the active one; otherwise the
@@ -67,7 +88,7 @@ export async function ensureWebSocketConnected({
             conn.initialized = false;
             conn.configKey = null;
             conn.transport = null;
-            if (!opened) reject(error);
+            if (!opened) safeReject(error);
         };
         const onMessage = (event) => {
             if (conn.ws !== ws) return;

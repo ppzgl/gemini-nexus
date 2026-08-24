@@ -15,19 +15,41 @@ export class GeminiSessionManager {
     constructor() {
         this.auth = new AuthManager();
         this.dispatcher = new RequestDispatcher(this.auth);
-        this.abortController = null;
+        this.abortControllers = new Map();
+        // legacy single field kept for direct property access in tests
+        this._legacyAbortController = null;
+    }
+
+    _abortByKey(key) {
+        const controller = this.abortControllers.get(key);
+        if (controller) {
+            try {
+                controller.abort();
+            } catch {}
+            this.abortControllers.delete(key);
+            if (key === 'default' || key === 'prompt') {
+                this._legacyAbortController = null;
+            }
+            return true;
+        }
+        return false;
     }
 
     async ensureInitialized() {
         await this.auth.ensureInitialized();
     }
 
-    async handleSendPrompt(request, onUpdate) {
-        // Cancel previous if exists
-        this.cancelCurrentRequest();
+    async handleSendPrompt(request, onUpdate, abortKey = null) {
+        const key = abortKey || 'default';
+        // Cancel only previous request for same key (sequential prompt handling)
+        // instead of aborting every in-flight request globally.
+        this._abortByKey(key);
 
         const abortController = new AbortController();
-        this.abortController = abortController;
+        this.abortControllers.set(key, abortController);
+        if (key === 'default' || key === 'prompt') {
+            this._legacyAbortController = abortController;
+        }
         const signal = abortController.signal;
         let thoughtsStartedAt = null;
         let thoughtsDurationSeconds = null;
@@ -134,8 +156,11 @@ export class GeminiSessionManager {
                 retryable,
             };
         } finally {
-            if (this.abortController === abortController) {
-                this.abortController = null;
+            if (this.abortControllers.get(key) === abortController) {
+                this.abortControllers.delete(key);
+                if (key === 'default' || key === 'prompt') {
+                    this._legacyAbortController = null;
+                }
             }
             // Always disarm the heartbeat, whether the stream completed, was
             // cancelled, or errored. Without this the alarm fires forever.
@@ -143,13 +168,19 @@ export class GeminiSessionManager {
         }
     }
 
-    cancelCurrentRequest() {
-        if (this.abortController) {
-            this.abortController.abort();
-            this.abortController = null;
-            return true;
+    cancelCurrentRequest(abortKey = null) {
+        if (abortKey) {
+            return this._abortByKey(abortKey);
         }
-        return false;
+        if (this.abortControllers.size === 0) return false;
+        for (const [, controller] of this.abortControllers) {
+            try {
+                controller.abort();
+            } catch {}
+        }
+        this.abortControllers.clear();
+        this._legacyAbortController = null;
+        return true;
     }
 
     async setContext(context, model) {
@@ -167,5 +198,19 @@ export class GeminiSessionManager {
         }
         // Fallback: clear memory only (older AuthManager without clearContext).
         this.auth.forceContextRefresh?.();
+    }
+
+    // Legacy getter/setter for tests that directly read/write .abortController
+    get abortController() {
+        return this._legacyAbortController;
+    }
+
+    set abortController(value) {
+        this._legacyAbortController = value;
+        if (value) {
+            this.abortControllers.set('default', value);
+        } else {
+            this.abortControllers.delete('default');
+        }
     }
 }

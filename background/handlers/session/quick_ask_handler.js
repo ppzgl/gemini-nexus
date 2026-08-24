@@ -1,14 +1,7 @@
 import { appendTurnToHistory, saveToHistory } from '../../managers/history_manager.js';
 import { getActiveTabContent } from './active_tab_content.js';
 import { classifyProviderError } from '../../managers/session/error_classifier.js';
-
-const IMAGE_EDIT_MODES = new Set([
-    'upscale',
-    'expand',
-    'remove_text',
-    'remove_bg',
-    'remove_watermark',
-]);
+import { IMAGE_EDIT_MODES } from '../../../shared/config/image_edit_modes.js';
 
 function appendSystemInstruction(request, instruction) {
     const existing = String(request.systemInstruction || '').trim();
@@ -30,24 +23,32 @@ export class QuickAskHandler {
     constructor(sessionManager, imageHandler) {
         this.sessionManager = sessionManager;
         this.imageHandler = imageHandler;
-        // tabId of the content-script tab currently streaming a quick-ask run,
-        // so chrome.tabs.onRemoved can abort that run when the tab closes.
-        this.activeTabId = null;
+        // Track multiple concurrent quick-ask tabs instead of a single id
+        this.activeTabIds = new Set();
     }
 
     trackActiveTab(sender) {
-        this.activeTabId = sender?.tab?.id ?? null;
+        const tabId = sender?.tab?.id;
+        if (tabId != null) this.activeTabIds.add(tabId);
     }
 
     clearActiveTab(sender) {
-        const tabId = sender?.tab?.id ?? null;
-        if (this.activeTabId === tabId) {
-            this.activeTabId = null;
-        }
+        const tabId = sender?.tab?.id;
+        if (tabId != null) this.activeTabIds.delete(tabId);
     }
 
     isActiveTab(tabId) {
-        return this.activeTabId !== null && this.activeTabId === tabId;
+        return this.activeTabIds.has(tabId);
+    }
+
+    // legacy single field for tests
+    get activeTabId() {
+        return this.activeTabIds.size === 1 ? [...this.activeTabIds][0] : null;
+    }
+
+    set activeTabId(value) {
+        this.activeTabIds.clear();
+        if (value != null) this.activeTabIds.add(value);
     }
 
     _sendToTab(tabId, payload) {
@@ -117,7 +118,12 @@ export class QuickAskHandler {
             }
 
             const onUpdate = this._createStreamUpdateHandler(tabId, request);
-            const result = await this.sessionManager.handleSendPrompt(promptRequest, onUpdate);
+            const abortKey = tabId != null ? `quickAsk:${tabId}` : 'quickAsk';
+            const result = await this.sessionManager.handleSendPrompt(
+                promptRequest,
+                onUpdate,
+                abortKey
+            );
             const savedSession = await this._saveSuccessfulResult(
                 request.text,
                 result,
@@ -175,7 +181,12 @@ export class QuickAskHandler {
             }
 
             const onUpdate = this._createStreamUpdateHandler(tabId, request);
-            const result = await this.sessionManager.handleSendPrompt(promptRequest, onUpdate);
+            const abortKey = tabId != null ? `quickAsk:${tabId}` : 'quickAsk';
+            const result = await this.sessionManager.handleSendPrompt(
+                promptRequest,
+                onUpdate,
+                abortKey
+            );
             const normalizedResult = this._normalizeImageQuickAskResult(request, result);
             const savedSession = await this._saveSuccessfulResult(
                 request.text,

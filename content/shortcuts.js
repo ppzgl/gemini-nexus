@@ -139,6 +139,7 @@
             this.toolbarController = null;
             this.handleStorageChange = this.handleStorageChange.bind(this);
             this.handleDocumentKeydown = (event) => this.handleKeydown(event);
+            this.boundRefreshChromeCommandShortcuts = this.refreshChromeCommandShortcuts.bind(this);
             this.init();
         }
 
@@ -168,7 +169,7 @@
             // Re-read Chrome command mappings if the user changes them in
             // chrome://extensions/shortcuts (no direct change event exists,
             // but the focus listener catches a return from that tab).
-            window.addEventListener('focus', this.refreshChromeCommandShortcuts.bind(this));
+            window.addEventListener('focus', this.boundRefreshChromeCommandShortcuts);
 
             document.addEventListener('keydown', this.handleDocumentKeydown, true);
         }
@@ -210,7 +211,7 @@
         destroy() {
             document.removeEventListener('keydown', this.handleDocumentKeydown, true);
             chrome.storage?.onChanged?.removeListener?.(this.handleStorageChange);
-            window.removeEventListener('focus', this.refreshChromeCommandShortcuts.bind(this));
+            window.removeEventListener('focus', this.boundRefreshChromeCommandShortcuts);
             this.toolbarController = null;
         }
 

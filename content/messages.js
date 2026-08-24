@@ -121,11 +121,16 @@
 
             if (request.action === 'CROP_SCREENSHOT') {
                 if (this.captureSource === 'sidepanel') {
-                    // Forward back to sidepanel via background
+                    // Forward back to sidepanel via background – only minimal fields
+                    const { action, area, image, mode, imageType } = request;
                     forwardSidePanelCaptureMessage({
                         action: 'PROCESS_CROP_IN_SIDEPANEL',
                         payload: {
-                            ...request,
+                            action,
+                            area,
+                            image,
+                            mode,
+                            imageType,
                             tabId: this.captureTargetSidePanelTabId,
                         },
                     });

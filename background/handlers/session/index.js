@@ -44,7 +44,7 @@ export class SessionMessageHandler {
 
         // --- CONTROL ---
         if (request.action === 'CANCEL_PROMPT') {
-            const cancelled = this.sessionManager.cancelCurrentRequest();
+            const cancelled = this.sessionManager.cancelCurrentRequest('prompt');
             // Ensure the prompt loop logic also stops
             this.promptHandler.cancel();
             sendResponse({ status: cancelled ? 'cancelled' : 'no_active_request' });
@@ -68,7 +68,7 @@ export class SessionMessageHandler {
     // panel, and stops the prompt loop. (Side-panel SEND_PROMPT runs are not
     // tied to a content-script tab, so tab-close does not cover them.)
     cancelSidePanelRun() {
-        this.sessionManager.cancelCurrentRequest();
+        this.sessionManager.cancelCurrentRequest('prompt');
         this.promptHandler.cancel();
     }
 
@@ -76,8 +76,7 @@ export class SessionMessageHandler {
     // upstream fetch for that run so it does not stream into a dead tab.
     cancelQuickAskForTab(tabId) {
         if (this.quickAskHandler.isActiveTab(tabId)) {
-            this.sessionManager.cancelCurrentRequest();
-            this.promptHandler.cancel();
+            this.sessionManager.cancelCurrentRequest(`quickAsk:${tabId}`);
         }
     }
 }

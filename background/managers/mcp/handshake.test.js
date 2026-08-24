@@ -84,7 +84,9 @@ describe('MCP handshake helpers', () => {
             '2025-03-26',
         ]);
         expect(sleep).toHaveBeenCalledTimes(2);
-        expect(sleep).toHaveBeenCalledWith(150);
+        expect(sleep.mock.calls[0][0]).toBeGreaterThanOrEqual(150);
+        expect(sleep.mock.calls[0][0]).toBeLessThan(300);
+        expect(sleep.mock.calls[1][0]).toBeGreaterThanOrEqual(300);
         expect(conn.initialized).toBe(true);
     });
 
