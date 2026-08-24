@@ -1,5 +1,54 @@
 # Changelog
 
+## v5.2.4 - 2026-08-24
+
+### Style
+
+- **内容脚本暗色自适应**：新增 `--gnx-*` token 层（`styles/core.js`），`.toolbar` / `.ask-window` / `.image-btn` 全部接通 `prefers-color-scheme: dark` —— 悬浮面板、AI 菜单、markdown 正文/代码块/hljs 高亮在暗色系统下不再是刺眼纯白；浅色下工具条由永久黑改为白底描边，与页面融合。
+- **统一三代蓝**：侧栏拖拽高亮 `var(--accent-color,#1a73e8)` → `var(--primary)`，面板芯片 `#e8f0fe/#d2e3fc` 与各处 `#0b57d0/#0842a0` 收敛为 `--gnx-primary/-hover/-chip` 单一来源。
+- **一致性清理**：合并 `widget.js` 重复 `.btn` 块、删除 `footer.js` 重复 border 行、`transition: all` 改具体属性并补 easing、菜单项补 `:focus-visible` 焦点环、拖拽把手灰阶入 token、`.ai-tool-menu` 字体栈对齐 toolbar、hljs 增加暗色配色。
+- **token 化**：`--radius-bubble`（用户气泡 16px 入册）、`--accent-gold`（星标金）、空态标题 `font-weight 650→600`（CJK 稳定）、提示字号 `12.5→13px`、消息容器 transition 对齐 `--ease-standard`。
+
+### Chore
+
+- 版本号 `5.2.3` → `5.2.4`。
+
+## v5.2.3 - 2026-08-24
+
+### Fixed
+
+- **朗读用粤语**：`speech_reader` 之前 `utterance.lang = navigator.language` 且 Gemini `locale` 透传，导致 `zh-HK/yue/zh-MO` 系统直接读粤语。现含中文一律 `zh-CN`（普通话）、`hasHan` 文本检测、`pickMandarinVoice` 显式选 `zh-CN` 非粤语 voice（排除 粤语/Cantonese/Sin-ji/HK），Gemini 端同样 `resolveTtsLocale(text)`。
+
+### Chore
+
+- 版本号 `5.2.2` → `5.2.3`。
+
+## v5.2.2 - 2026-08-24
+
+### Fixed
+
+- **朗读（TTS）总是报错**：`speech_reader` 此前 Gemini TTS 失败直接抛错（未登录/限流/自动播放被拦均显示“错误”）。现改为：失败自动回退到系统 `speechSynthesis`、预创建 `Audio` 保留用户手势、`NotAllowedError` 中文提示、`supported` 兼容 `globalThis/window`、 voices 就绪与 `onerror` 日志；`gemini_tts` 兼容 `)]}'` 前缀、`tts_handler` 追加 429/Session expired 可重试判断。
+
+### Chore
+
+- 版本号 `5.2.1` → `5.2.2`。
+
+## v5.2.1 - 2026-08-24
+
+### Fixed
+
+- **并发/取消**：`session_manager` 改为按 `Map<key,AbortController>` 管理请求（`prompt` / `quickAsk:${tabId}`），`prompt_handler` / `quick_ask_handler` 透传 `abortKey` + `cancellableDelay`，避免切标签页/并发 QuickAsk 误取消及 `payload already prepared` 后的泄漏。
+- **SSE 解析**：`services/providers/sse.js` 支持 `\r\n|\n|\r` 分割、`data:` 多行拼接、`event/id/retry/:comment`、`[DONE]`、`MAX_BUFFER 5MB`、尾部 flush、`AbortSignal` 透传并 `releaseLock`，Web/Official 流不再丢事件/泄漏 reader。
+- **XSS/渲染**：`pipeline.js` 移除 `data:image/svg+xml` 放行、大小写不敏感属性校验、`data-*` 严格正则、SVG `viewBox` 白名单；`crop_global.js` 校验 `NaN/负数/0`、`scale∈[0.5,3]`、`MAX_PIXELS 16M`、base64 20MB 限长、10s 加载超时。
+- **设置持久化**：`settings_store` 指针轮转加 `pointerRotationQueue` 串行化；`auth.js` 加 8s 超时、`ok` 校验、`Map` 去重并发、`data-index` 单引号兼容。
+- **MCP 连接**：`sse_connection` / `websocket_connection` 加超时/正确清理 `endpointPromise` 与 `fetch` 定时器；`handshake` 指数退避 `150*2^i+jitter`、首错保留、4xx 快速失败。
+- **工具链**：`tool_loop` 修复 `batchId` 碰撞（`counter+random`）、多工具 `appendRawMessages` 全量落盘、`browserControl` 快照失败显式提示；`tool_executor` `statusKey` 加随机避免 SW 重启重复；`content` 侧 `page_guard`/`selection`/`blacklist`/`shortcuts`/`messages` 修复静态/缓存/最小化负载等问题。
+- **UI**：对齐 Cherry Studio/AMC 图标与聊天气泡样式，修复工具栏 tooltip 与侧栏生成态卡死清理。
+
+### Chore
+
+- 版本号 `5.2.0` → `5.2.1`（`package.json` / `manifest.json` / `package-lock.json`）。
+
 ## v5.2.0 - 2026-08-22
 
 ### Models
