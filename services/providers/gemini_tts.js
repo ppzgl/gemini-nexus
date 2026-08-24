@@ -46,9 +46,10 @@ function buildRequestBody(text, locale, atValue, audioFormat = TTS_AUDIO_FORMAT_
 }
 
 function getBatchJsonLine(responseText) {
-    return String(responseText || '')
-        .split('\n')
-        .find((line) => line.startsWith('[['));
+    const text = String(responseText || '');
+    // batchexecute 标准前缀是 )]}'\n[[... 需兼容
+    const cleaned = text.replace(/^\)\]\}'\n?/, '');
+    return cleaned.split('\n').find((line) => line.trim().startsWith('[['));
 }
 
 function parseTtsBatchResponse(responseText) {

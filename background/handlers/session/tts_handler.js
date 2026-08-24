@@ -6,8 +6,10 @@ function isRefreshableTtsError(message = '') {
         message.includes('Gemini TTS network error: 400') ||
         message.includes('Gemini TTS network error: 401') ||
         message.includes('Gemini TTS network error: 403') ||
+        message.includes('429') ||
         message.includes('Sign in') ||
-        message.includes('未登录')
+        message.includes('未登录') ||
+        message.includes('Session expired')
     );
 }
 
