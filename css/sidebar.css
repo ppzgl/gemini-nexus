@@ -7,7 +7,7 @@
     height: 100%;
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
-    z-index: 200;
+    z-index: var(--z-sidebar);
     transform: translateX(-100%);
     transition:
         transform var(--duration-normal) var(--ease-standard),
@@ -151,7 +151,7 @@ body.layout-wide .sidebar-overlay {
     border-radius: var(--radius-sm);
     background: var(--bg-modal);
     box-shadow: var(--shadow-lg);
-    z-index: 9999;
+    z-index: var(--z-collapsed-popover);
 }
 
 .collapsed-recent-popover[hidden] {
@@ -209,7 +209,7 @@ body.layout-wide .sidebar-overlay {
     height: 40px;
     padding: 0 6px 0 0;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-primary);
     cursor: pointer;
@@ -219,8 +219,8 @@ body.layout-wide .sidebar-overlay {
     font: inherit;
     text-align: left;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .sidebar-brand:hover {
@@ -246,7 +246,7 @@ body.layout-wide .sidebar-overlay {
     width: 40px;
     height: 40px;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -254,8 +254,8 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     justify-content: center;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .sidebar-icon-btn:hover {
@@ -276,7 +276,7 @@ body.layout-wide .sidebar-overlay {
     height: 32px;
     padding: 0 12px;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -285,8 +285,8 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     gap: 12px;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
     text-align: left;
 }
 
@@ -316,7 +316,7 @@ body.layout-wide .sidebar-overlay {
     height: 36px;
     padding: 0 12px;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--bg-modal);
     color: var(--text-secondary);
 }
@@ -392,33 +392,12 @@ body.layout-wide .sidebar-overlay {
     padding: 0 8px 8px;
 }
 
-.history-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.history-list::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.12);
-    border-radius: 3px;
-}
-
-.history-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
-}
-
-[data-theme='dark'] .history-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-[data-theme='dark'] .history-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
 .history-group,
 .history-ungrouped-dropzone {
     border-radius: var(--radius-sm);
     transition:
-        background-color 0.15s,
-        box-shadow 0.15s;
+        background-color var(--duration-fast),
+        box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .history-group {
@@ -447,8 +426,8 @@ body.layout-wide .sidebar-overlay {
     color: var(--text-secondary);
     list-style: none;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .history-group-summary::-webkit-details-marker {
@@ -465,7 +444,7 @@ body.layout-wide .sidebar-overlay {
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     flex: 1;
 }
 
@@ -474,7 +453,7 @@ body.layout-wide .sidebar-overlay {
     height: 16px;
     flex: 0 0 auto;
     color: var(--text-secondary);
-    transition: transform 0.15s;
+    transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .history-group-details[open] .history-group-chevron {
@@ -550,8 +529,8 @@ body.layout-wide .sidebar-overlay {
     gap: 10px;
     color: var(--text-secondary);
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 .empty-list-state {
@@ -631,9 +610,9 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     justify-content: center;
     transition:
-        opacity 0.15s,
-        background-color 0.15s,
-        color 0.15s;
+        opacity var(--duration-fast),
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -717,7 +696,7 @@ body.layout-wide .sidebar-overlay {
     position: fixed;
     inset: 0;
     background: var(--bg-overlay);
-    z-index: 190;
+    z-index: var(--z-sidebar-overlay);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--duration-normal) var(--ease-standard);
@@ -748,8 +727,8 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     gap: 12px;
     transition:
-        background-color 0.15s,
-        color 0.15s;
+        background-color var(--duration-fast),
+        color var(--duration-fast) var(--ease-standard);
     text-align: left;
 }
 

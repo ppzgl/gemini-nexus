@@ -5,7 +5,7 @@
     right: 0;
     padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
     background: linear-gradient(to top, var(--footer-gradient-start) 72%, transparent);
-    z-index: 100;
+    z-index: var(--z-composer);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -33,7 +33,7 @@ body.layout-wide .input-wrapper {
     margin-bottom: 8px;
     min-height: 18px;
     font-weight: 500;
-    transition: color 0.3s;
+    transition: color var(--duration-normal) var(--ease-standard);
 }
 
 .input-wrapper {
@@ -291,7 +291,7 @@ body:not(.has-page-context) .context-aware {
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
     padding: 4px;
-    z-index: 1000;
+    z-index: var(--z-composer-menu);
     display: flex;
     flex-direction: column;
     gap: 2px;

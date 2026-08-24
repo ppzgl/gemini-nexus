@@ -1,7 +1,7 @@
 .image-viewer {
     display: flex;
     position: fixed;
-    z-index: 2000;
+    z-index: var(--z-image-viewer);
     left: 0;
     top: 0;
     width: 100%;
@@ -13,8 +13,8 @@
     visibility: hidden;
     pointer-events: none;
     transition:
-        opacity 0.2s ease,
-        visibility 0.2s ease;
+        opacity var(--duration-normal) var(--ease-standard),
+        visibility var(--duration-normal) var(--ease-standard);
     overflow: hidden;
 }
 
@@ -67,11 +67,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    z-index: 2001;
+    z-index: var(--z-image-viewer-toolbar);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     transition:
-        transform 0.3s cubic-bezier(0.2, 0, 0, 1),
-        opacity 0.3s;
+        transform var(--duration-normal) var(--ease-standard),
+        opacity var(--duration-normal);
     opacity: 0;
 }
 
@@ -91,7 +91,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition:
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard),
+        transform var(--duration-normal) var(--ease-standard);
 }
 
 .viewer-toolbar button:hover {

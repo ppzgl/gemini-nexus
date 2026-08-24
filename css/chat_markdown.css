@@ -41,7 +41,7 @@
 
 .code-block-wrapper {
     margin: 16px 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: var(--code-bg);
     overflow: hidden;
@@ -82,7 +82,9 @@
     gap: 4px;
     padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.2s;
+    transition:
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard);
 }
 
 .copy-code-btn:hover {
@@ -135,11 +137,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 7px 12px;
+    padding: 6px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-tertiary);
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.2;
 }
 

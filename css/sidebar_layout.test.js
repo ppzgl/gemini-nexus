@@ -27,7 +27,9 @@ describe('sidebar layout styles', () => {
         );
         expect(sidebarCss).toMatch(/\.history-item-menu\s*{[^}]*position:\s*absolute/s);
         expect(sidebarCss).toMatch(/\.collapsed-recent-popover\s*{[^}]*position:\s*fixed/s);
-        expect(sidebarCss).toMatch(/\.collapsed-recent-popover\s*{[^}]*z-index:\s*9999/s);
+        expect(sidebarCss).toMatch(
+            /\.collapsed-recent-popover\s*{[^}]*z-index:\s*var\(--z-collapsed-popover\)/s
+        );
         expect(sidebarCss).toMatch(/\.sidebar-history\s*{[^}]*cursor:\s*ew-resize/s);
         expect(sidebarCss).toMatch(/\.collapsed-sidebar-rail\s*{[^}]*cursor:\s*ew-resize/s);
         expect(sidebarCss).not.toContain('text-transform: uppercase');

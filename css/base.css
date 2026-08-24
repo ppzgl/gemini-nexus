@@ -16,6 +16,20 @@
     --header-offset: 80px;
     --browser-control-header-offset: 126px;
 
+    /* --- Z-layers (global stack, low → high; local component layering stays inline) --- */
+    --z-browser-bar: 9;
+    --z-header: 10;
+    --z-header-flyout: 80;
+    --z-composer: 100;
+    --z-sidebar-overlay: 190;
+    --z-sidebar: 200;
+    --z-composer-menu: 1000;
+    --z-image-viewer: 2000;
+    --z-image-viewer-toolbar: 2001;
+    --z-settings-modal: 2100;
+    --z-settings-popover: 2200;
+    --z-collapsed-popover: 9999;
+
     /* --- Motion --- */
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -79,7 +93,6 @@
 
     /* Toolbar / Tools */
     --tool-bg: rgba(255, 255, 255, 0.8);
-    --tool-hover: #f0f4f9;
 
     /* Icon Buttons (Floating/Header) */
     --icon-btn-bg: rgba(255, 255, 255, 0.85);
@@ -93,6 +106,10 @@
 
     /* Inputs */
     --input-placeholder: #8e918f;
+
+    /* Scrollbars */
+    --scrollbar-thumb: rgba(0, 0, 0, 0.16);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.28);
 
     /* Footer Gradient */
     --footer-gradient-start: #ffffff;
@@ -136,7 +153,10 @@
     --brand-glow: color-mix(in srgb, var(--brand) 26%, transparent);
 
     --tool-bg: rgba(45, 46, 47, 0.8);
-    --tool-hover: #3c3d3f;
+
+    /* Scrollbars */
+    --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
 
     --icon-btn-bg: rgba(45, 46, 47, 0.85);
     --icon-btn-hover: rgba(60, 61, 63, 0.95);
@@ -192,4 +212,31 @@ body {
 
 * {
     box-sizing: border-box;
+}
+
+/* --- Unified app scrollbars (chat / settings / sidebar history) --- */
+#chat-history,
+.settings-body,
+.history-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+#chat-history::-webkit-scrollbar,
+.settings-body::-webkit-scrollbar,
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-history::-webkit-scrollbar-thumb,
+.settings-body::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-pill);
+}
+
+#chat-history::-webkit-scrollbar-thumb:hover,
+.settings-body::-webkit-scrollbar-thumb:hover,
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
 }

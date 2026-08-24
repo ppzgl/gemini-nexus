@@ -112,9 +112,9 @@ body.layout-wide.sidebar-collapsed .chat-empty {
     cursor: pointer;
     pointer-events: auto;
     transition:
-        background-color 0.15s var(--ease-standard),
-        border-color 0.15s var(--ease-standard),
-        color 0.15s var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard),
         transform 0.12s var(--ease-standard);
 }
 
@@ -191,15 +191,6 @@ body.layout-wide .msg.ai {
     max-width: 100%;
 }
 
-#chat-history::-webkit-scrollbar {
-    width: 6px;
-}
-
-#chat-history::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 3px;
-}
-
 .msg {
     position: relative;
     width: 100%;
@@ -212,7 +203,8 @@ body.layout-wide .msg.ai {
      * if the animation is dropped (invalid timing token, reduced-motion UA
      * policy, frozen timeline), messages must stay visible.
      */
-    animation: fadeIn 0.3s var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+    animation: fadeIn var(--duration-normal) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both
+        var(--ease-standard);
 }
 
 .msg-row {
@@ -295,7 +287,7 @@ body.layout-wide .msg.ai {
     background: rgba(0, 0, 0, 0.6);
     border-radius: 50%;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity var(--duration-normal) var(--ease-standard);
     backdrop-filter: blur(1px);
 }
 
@@ -332,8 +324,8 @@ body.layout-wide .msg.ai {
     transform: translateY(0);
     pointer-events: auto;
     transition:
-        opacity 0.2s,
-        transform 0.2s;
+        opacity var(--duration-normal),
+        transform var(--duration-normal) var(--ease-standard);
 }
 
 /* Fine pointer + hover: hide until hover/focus to reduce chrome density. */
@@ -364,16 +356,16 @@ body.layout-wide .msg.ai {
     justify-content: center;
     padding: 6px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-tertiary);
     cursor: pointer;
     opacity: 0.8;
     transition:
-        background-color 0.2s var(--ease-standard),
-        color 0.2s var(--ease-standard),
-        opacity 0.2s var(--ease-standard),
-        transform 0.2s var(--ease-standard);
+        background-color var(--duration-normal) var(--ease-standard),
+        color var(--duration-normal) var(--ease-standard),
+        opacity var(--duration-normal) var(--ease-standard),
+        transform var(--duration-normal) var(--ease-standard);
 }
 
 .message-actions .copy-btn:hover,
@@ -419,7 +411,8 @@ body.layout-wide .msg.ai {
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
-    animation: fadeIn 0.3s var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+    animation: fadeIn var(--duration-normal) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both
+        var(--ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {

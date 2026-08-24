@@ -7,7 +7,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 6px 12px 6px 8px;
-    z-index: 10;
+    z-index: var(--z-header);
     pointer-events: none; /* Let clicks pass through empty space */
 }
 
@@ -29,7 +29,7 @@ body.host-tab:not(.has-page-context) #open-full-page-btn {
     top: 48px;
     left: 8px;
     right: 12px;
-    z-index: 9;
+    z-index: var(--z-browser-bar);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
@@ -116,7 +116,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 
 .browser-control-title {
     font-size: 13px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.2;
 }
 
@@ -131,7 +131,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     align-items: center;
     gap: 6px;
     height: 26px;
-    padding: 0 9px;
+    padding: 0 8px;
     border-radius: var(--radius-pill);
     background: color-mix(in srgb, var(--primary) 10%, transparent);
     color: var(--primary);
@@ -264,7 +264,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 
     .browser-control-status {
         height: 24px;
-        padding: 0 7px;
+        padding: 0 8px;
         font-size: 10px;
     }
 }
@@ -318,7 +318,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     gap: 8px;
     font: inherit;
     font-size: 16px;
-    font-weight: 650;
+    font-weight: 600;
     outline: none;
     transition:
         background-color var(--duration-normal) var(--ease-standard),
@@ -352,7 +352,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 .web-thinking-toggle svg {
     width: 18px;
     height: 18px;
-    transition: fill 0.2s;
+    transition: fill var(--duration-normal) var(--ease-standard);
 }
 
 .web-thinking-toggle:hover {
@@ -412,7 +412,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     background: var(--bg-modal);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
-    z-index: 80;
+    z-index: var(--z-header-flyout);
 }
 
 .model-picker-menu[hidden] {
@@ -472,7 +472,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     max-width: 240px;
     color: inherit;
     font-size: 14px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;

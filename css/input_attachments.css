@@ -10,7 +10,7 @@
 
 .image-preview.has-image {
     display: flex;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) var(--ease-standard);
 }
 
 .preview-item {
@@ -18,7 +18,7 @@
     flex-shrink: 0;
     width: 64px;
     height: 64px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: var(--bg-modal);
     display: flex;
@@ -51,7 +51,7 @@
 }
 
 .file-item-card span {
-    font-size: 8px;
+    font-size: 10px;
     color: var(--text-primary);
     max-width: 50px;
     white-space: nowrap;
@@ -66,7 +66,7 @@
     right: 4px;
     width: 20px;
     height: 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.5);
     color: white;
     display: flex;
@@ -77,7 +77,7 @@
     border: none;
     z-index: 10;
     opacity: 0.92;
-    transition: opacity 0.2s;
+    transition: opacity var(--duration-normal) var(--ease-standard);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -93,6 +93,6 @@
 
 .preview-remove-btn:hover,
 .preview-remove-btn:focus-visible {
-    background: #d93025;
+    background: var(--danger);
     opacity: 1;
 }

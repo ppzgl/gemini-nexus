@@ -23,7 +23,7 @@
 .settings-modal {
     display: flex;
     position: fixed;
-    z-index: 2100;
+    z-index: var(--z-settings-modal);
     left: 0;
     top: 0;
     width: 100%;
@@ -147,18 +147,6 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-}
-
-.settings-body::-webkit-scrollbar {
-    width: 10px;
-}
-
-.settings-body::-webkit-scrollbar-thumb {
-    background-color: rgba(128, 134, 139, 0.24);
-    border: 3px solid transparent;
-    border-radius: 999px;
-    background-clip: padding-box;
 }
 
 .settings-field-label {
@@ -253,7 +241,7 @@
 .app-update-status {
     margin-left: 8px;
     font-size: 13px;
-    font-weight: normal;
+    font-weight: 400;
 }
 
 .app-update-status.is-muted {
@@ -376,7 +364,7 @@
 .data-management-card-copy h5 {
     margin: 0;
     font-size: 14px;
-    font-weight: 650;
+    font-weight: 600;
     color: var(--text-primary);
 }
 
@@ -392,9 +380,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
+    gap: 6px;
     min-height: 34px;
-    padding: 7px 11px;
+    padding: 6px 12px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: transparent;
@@ -448,14 +436,6 @@
     font-size: 12px;
 }
 
-[data-theme='dark'] .settings-body::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='dark'] .settings-body::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
 .setting-group {
     margin-bottom: 16px;
     padding: 14px 14px 12px;
@@ -496,7 +476,7 @@
     text-decoration: none;
     color: var(--text-secondary);
     font-size: 13px;
-    transition: color 0.2s;
+    transition: color var(--duration-normal) var(--ease-standard);
 }
 
 .github-link:hover {
@@ -566,8 +546,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 10px;
-    border-radius: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
@@ -575,8 +555,8 @@
     position: relative;
     outline: none;
     transition:
-        background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-        color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        background var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1),
+        color var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .settings-tab:hover,

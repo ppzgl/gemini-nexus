@@ -10,12 +10,12 @@
     width: auto;
     height: auto;
     max-height: 400px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     margin-bottom: 12px;
     display: block;
     cursor: zoom-in;
     border: 1px solid var(--border-color);
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal) var(--ease-standard);
     object-fit: contain;
 }
 
@@ -41,7 +41,7 @@ img.chat-image.chat-image-compact {
     padding: 10px 12px;
     margin-bottom: 10px;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: color-mix(in srgb, var(--bg-input) 86%, transparent);
     box-sizing: border-box;
     white-space: normal;
@@ -54,10 +54,10 @@ img.chat-image.chat-image-compact {
     flex: 0 0 auto;
     width: 34px;
     height: 34px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-body);
     color: var(--text-secondary);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0;
 }
@@ -105,10 +105,10 @@ img.chat-image.chat-image-compact {
     max-width: 100%;
     height: auto;
     box-sizing: border-box;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     cursor: zoom-in;
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal) var(--ease-standard);
     object-fit: contain;
     background: var(--bg-input);
 }
@@ -116,11 +116,11 @@ img.chat-image.chat-image-compact {
 .generated-image.loading {
     display: block;
     min-height: 200px;
-    background: #f0f4f9;
+    background: var(--bg-sidebar);
 }
 
 .generated-image.load-error {
-    background: #ffebee;
+    background: var(--danger-soft);
 }
 
 .generated-image:hover {

@@ -14,9 +14,10 @@
     padding: 12px;
     background: var(--bg-input);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     scrollbar-width: thin;
-    transition: background var(--settings-transition-speed, 0.2s);
+    transition: background var(--settings-transition-speed, var(--duration-normal))
+        var(--ease-standard);
 }
 
 .mcp-tool-help-text {
@@ -39,10 +40,11 @@
     align-items: flex-start;
     gap: 10px;
     padding: 8px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     background: transparent;
-    transition: background var(--settings-transition-speed, 0.2s);
+    transition: background var(--settings-transition-speed, var(--duration-normal))
+        var(--ease-standard);
 }
 
 .mcp-tool-row:hover {
@@ -89,10 +91,11 @@
 /* Accordion Tool Groups */
 .mcp-tool-group {
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-setting-panel);
     overflow: hidden;
-    transition: background var(--settings-transition-speed, 0.2s) ease;
+    transition: background var(--settings-transition-speed, var(--duration-normal))
+        var(--ease-standard);
 }
 
 .mcp-tool-group[open] {
@@ -109,7 +112,8 @@
     cursor: pointer;
     list-style: none;
     user-select: none;
-    transition: background var(--settings-transition-speed, 0.2s);
+    transition: background var(--settings-transition-speed, var(--duration-normal))
+        var(--ease-standard);
 }
 
 .mcp-tool-group[open] .mcp-tool-group-summary {
@@ -144,7 +148,7 @@
     color: var(--text-secondary);
     background: var(--bg-body);
     padding: 2px 8px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     flex: 0 0 auto;
 }
 
@@ -161,10 +165,13 @@
     font-size: 12px;
     font-weight: 500;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     margin-top: 8px;
     display: none;
-    transition: all var(--settings-transition-speed, 0.2s) ease;
+    transition:
+        background-color var(--settings-transition-speed, var(--duration-normal))
+            var(--ease-standard),
+        color var(--settings-transition-speed, var(--duration-normal)) var(--ease-standard);
 }
 
 #mcp-test-status:not(:empty) {
@@ -175,14 +182,9 @@
 }
 
 #mcp-test-status.is-error {
-    background: rgba(176, 0, 32, 0.08);
-    color: #d93025;
+    background: var(--danger-soft);
+    color: var(--danger);
     border: none;
-}
-
-[data-theme='dark'] #mcp-test-status.is-error {
-    background: rgba(242, 139, 130, 0.12);
-    color: #f28b82;
 }
 
 .file-input-hidden {
