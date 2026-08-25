@@ -22,17 +22,17 @@
     background: var(--bg-input);
     transition:
         border-color var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .settings-input:focus {
     border-color: var(--primary);
     background: var(--bg-input-focus);
-    box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.15);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .shortcut-input {
@@ -50,13 +50,13 @@
     font-weight: 500;
     transition:
         border-color var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         transform var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
     /* physical Kbd key style: bottom shadow */
     box-shadow:
         0 2px 0 0 var(--border-color),
@@ -68,7 +68,7 @@
     border-color: var(--primary);
     box-shadow:
         0 2px 0 0 var(--primary),
-        0 4px 10px rgba(11, 87, 208, 0.1);
+        0 4px 10px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .shortcut-input:focus {
@@ -78,7 +78,7 @@
     transform: translateY(1px);
     box-shadow:
         0 1px 0 0 var(--primary),
-        0 0 0 3px rgba(11, 87, 208, 0.25);
+        0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
     animation: shortcut-pulse 1.5s infinite alternate ease-in-out;
 }
 
@@ -86,12 +86,12 @@
     0% {
         box-shadow:
             0 1px 0 0 var(--primary),
-            0 0 0 2px rgba(11, 87, 208, 0.2);
+            0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
     }
     100% {
         box-shadow:
             0 1px 0 0 var(--primary),
-            0 0 0 5px rgba(11, 87, 208, 0.4);
+            0 0 0 5px color-mix(in srgb, var(--primary) 40%, transparent);
     }
 }
 
@@ -215,7 +215,7 @@
 
 .setting-field-number .settings-input {
     text-align: center;
-    font-family: monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .setting-panel-small-input {
@@ -234,7 +234,7 @@
     cursor: pointer;
     transition:
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal)) var(--ease-standard);
     flex-shrink: 0;
     margin: 0;
@@ -265,7 +265,7 @@
     background: white;
     border-radius: 50%;
     transition:
-        transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform var(--duration-normal) var(--ease-spring),
         width var(--duration-normal) var(--ease-standard),
         left var(--duration-normal) var(--ease-standard);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
@@ -299,7 +299,7 @@
     padding: 0;
     font: inherit;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     cursor: help;
 }
@@ -337,9 +337,9 @@
     pointer-events: none;
     transition:
         opacity var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         transform var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .setting-help:hover::after,

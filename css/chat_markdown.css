@@ -81,7 +81,7 @@
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: calc(var(--radius-sm) - 2px);
     transition:
         background-color var(--duration-normal) var(--ease-standard),
         color var(--duration-normal) var(--ease-standard);
@@ -230,100 +230,30 @@
     background: transparent;
 }
 
-.msg.ai code {
+/* Code typography applies to every message role (model prose and tool
+ * output cards alike); the background neutralizer lets --code-bg on
+ * .code-block-wrapper win over the hljs theme's own background. */
+.msg code {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 0.9em;
 }
 
-.msg.ai pre code {
+.msg pre code {
     background: none;
     padding: 0;
     color: var(--code-text);
 }
 
-/* Highlight.js theme swap: dark theme uses atom-one-dark (default import),
- * light theme overrides with atom-one-light colors. The CSS classes are
- * identical; we just redefine the color variables per theme. */
-[data-theme='light'] .hljs {
-    background: #fafafa;
-    color: #383a42;
-}
+/* Highlight.js palette: the bundle ships atom-one-dark only (see boot/loader.js).
+ * Code blocks intentionally keep the dark --code-bg surface in light theme, so
+ * there are no per-theme token overrides here — do not reintroduce an
+ * atom-one-light import after atom-one-dark, it would win the cascade. */
 
-[data-theme='light'] .hljs-comment,
-[data-theme='light'] .hljs-quote {
-    color: #a0a1a7;
-    font-style: italic;
-}
-
-[data-theme='light'] .hljs-doctag,
-[data-theme='light'] .hljs-keyword,
-[data-theme='light'] .hljs-formula {
-    color: #a626a4;
-}
-
-[data-theme='light'] .hljs-section,
-[data-theme='light'] .hljs-name,
-[data-theme='light'] .hljs-selector-tag,
-[data-theme='light'] .hljs-deletion,
-[data-theme='light'] .hljs-subst {
-    color: #e45649;
-}
-
-[data-theme='light'] .hljs-literal {
-    color: #0184bb;
-}
-
-[data-theme='light'] .hljs-string,
-[data-theme='light'] .hljs-regexp,
-[data-theme='light'] .hljs-addition,
-[data-theme='light'] .hljs-attribute,
-[data-theme='light'] .hljs-meta .hljs-string {
-    color: #50a14f;
-}
-
-[data-theme='light'] .hljs-attr,
-[data-theme='light'] .hljs-variable,
-[data-theme='light'] .hljs-template-variable,
-[data-theme='light'] .hljs-type,
-[data-theme='light'] .hljs-selector-class,
-[data-theme='light'] .hljs-selector-attr,
-[data-theme='light'] .hljs-selector-pseudo,
-[data-theme='light'] .hljs-number {
-    color: #986801;
-}
-
-[data-theme='light'] .hljs-symbol,
-[data-theme='light'] .hljs-bullet,
-[data-theme='light'] .hljs-link,
-[data-theme='light'] .hljs-meta,
-[data-theme='light'] .hljs-selector-id,
-[data-theme='light'] .hljs-title {
-    color: #4078f2;
-}
-
-[data-theme='light'] .hljs-built_in,
-[data-theme='light'] .hljs-title.class_,
-[data-theme='light'] .hljs-class .hljs-title {
-    color: #c18401;
-}
-
-[data-theme='light'] .hljs-emphasis {
-    font-style: italic;
-}
-
-[data-theme='light'] .hljs-strong {
-    font-weight: bold;
-}
-
-[data-theme='light'] .hljs-link {
-    text-decoration: underline;
-}
-
-.msg.ai :not(pre) > code {
+.msg :not(pre) > code {
     background: var(--inline-code-bg);
     color: var(--text-primary);
     padding: 2px 6px;
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
     font-size: 0.9em;
     font-weight: 500;
 }

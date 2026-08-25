@@ -203,8 +203,7 @@ body.layout-wide .msg.ai {
      * if the animation is dropped (invalid timing token, reduced-motion UA
      * policy, frozen timeline), messages must stay visible.
      */
-    animation: fadeIn var(--duration-normal) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both
-        var(--ease-standard);
+    animation: fadeIn var(--duration-normal) var(--ease-standard) both;
 }
 
 .msg-row {
@@ -324,7 +323,7 @@ body.layout-wide .msg.ai {
     transform: translateY(0);
     pointer-events: auto;
     transition:
-        opacity var(--duration-normal),
+        opacity var(--duration-normal) var(--ease-standard),
         transform var(--duration-normal) var(--ease-standard);
 }
 
@@ -411,8 +410,7 @@ body.layout-wide .msg.ai {
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
-    animation: fadeIn var(--duration-normal) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both
-        var(--ease-standard);
+    animation: fadeIn var(--duration-normal) var(--ease-standard) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

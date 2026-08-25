@@ -1,6 +1,9 @@
 import 'katex/dist/katex.min.css';
+// Single hljs palette (atom-one-dark) for both themes: code blocks keep a dark
+// surface in light mode too (--code-bg), and one-dark tokens are the only
+// palette tuned for that surface. Import order matters — a later theme css
+// would win the bare `.hljs` cascade for the whole bundle.
 import 'highlight.js/styles/atom-one-dark.css';
-import 'highlight.js/styles/atom-one-light.css';
 import { debugLog } from '../../shared/logging/debug.js';
 import { configureMarkdown } from '../render/config.js';
 

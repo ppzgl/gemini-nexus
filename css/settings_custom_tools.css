@@ -15,9 +15,9 @@
     background: var(--bg-input);
     transition:
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .custom-selection-tool-row:hover {
@@ -66,7 +66,7 @@
     transition:
         opacity var(--settings-transition-speed, var(--duration-normal)) var(--ease-standard),
         transform var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .custom-selection-tool-remove:hover {

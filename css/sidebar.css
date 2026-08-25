@@ -141,7 +141,7 @@ body.layout-wide .sidebar-overlay {
 
 .collapsed-recent-popover {
     position: fixed;
-    left: 52px;
+    left: var(--sidebar-collapsed-width);
     top: 134px;
     width: min(320px, calc(100vw - 72px));
     max-height: min(420px, calc(100vh - 32px));
@@ -170,7 +170,7 @@ body.layout-wide .sidebar-overlay {
     min-height: 34px;
     padding: 0 8px;
     border: none;
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -219,7 +219,7 @@ body.layout-wide .sidebar-overlay {
     font: inherit;
     text-align: left;
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
 }
 
@@ -231,7 +231,7 @@ body.layout-wide .sidebar-overlay {
     width: 24px;
     height: 24px;
     flex: 0 0 auto;
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
 }
 
 .sidebar-header-title {
@@ -254,7 +254,7 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     justify-content: center;
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
 }
 
@@ -285,7 +285,7 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     gap: 12px;
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
     text-align: left;
 }
@@ -396,7 +396,7 @@ body.layout-wide .sidebar-overlay {
 .history-ungrouped-dropzone {
     border-radius: var(--radius-sm);
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         box-shadow var(--duration-fast) var(--ease-standard);
 }
 
@@ -426,7 +426,7 @@ body.layout-wide .sidebar-overlay {
     color: var(--text-secondary);
     list-style: none;
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
 }
 
@@ -477,7 +477,7 @@ body.layout-wide .sidebar-overlay {
     height: 26px;
     padding: 0 6px;
     border: 1px solid var(--border-focus);
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
     background: var(--bg-modal);
     color: var(--text-primary);
     font: inherit;
@@ -529,7 +529,7 @@ body.layout-wide .sidebar-overlay {
     gap: 10px;
     color: var(--text-secondary);
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
 }
 
@@ -610,8 +610,8 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     justify-content: center;
     transition:
-        opacity var(--duration-fast),
-        background-color var(--duration-fast),
+        opacity var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
 }
 
@@ -665,7 +665,7 @@ body.layout-wide .sidebar-overlay {
     height: 32px;
     padding: 0 8px;
     border: none;
-    border-radius: 6px;
+    border-radius: calc(var(--radius-sm) - 2px);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
@@ -727,7 +727,7 @@ body.layout-wide .sidebar-overlay {
     align-items: center;
     gap: 12px;
     transition:
-        background-color var(--duration-fast),
+        background-color var(--duration-fast) var(--ease-standard),
         color var(--duration-fast) var(--ease-standard);
     text-align: left;
 }

@@ -24,7 +24,6 @@ const loadMocks = vi.hoisted(() => {
 
 vi.mock('katex/dist/katex.min.css', () => ({}));
 vi.mock('highlight.js/styles/atom-one-dark.css', () => ({}));
-vi.mock('highlight.js/styles/atom-one-light.css', () => ({}));
 vi.mock('../../shared/logging/debug.js', () => ({
     debugLog: vi.fn(),
 }));

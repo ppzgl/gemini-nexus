@@ -18,11 +18,11 @@
     cursor: pointer;
     transition:
         border-color var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 [data-theme='dark'] .settings-input.settings-select {
@@ -53,9 +53,9 @@
     cursor: pointer;
     transition:
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .setting-radio-option:hover {
@@ -124,9 +124,9 @@
     background: var(--bg-input);
     transition:
         background var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1),
+            var(--settings-transition-easing-bezier),
         box-shadow var(--settings-transition-speed, var(--duration-normal))
-            cubic-bezier(0.16, 1, 0.3, 1);
+            var(--settings-transition-easing-bezier);
 }
 
 .setting-shortcut-row:hover {

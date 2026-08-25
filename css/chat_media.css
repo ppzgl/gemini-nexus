@@ -58,7 +58,7 @@ img.chat-image.chat-image-compact {
     background: var(--bg-body);
     color: var(--text-secondary);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0;
 }
 

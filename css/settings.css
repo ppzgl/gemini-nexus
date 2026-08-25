@@ -8,7 +8,6 @@
     --settings-shadow-depth-3: var(--shadow-lg);
     --bg-active-tab: color-mix(in srgb, var(--primary) 10%, transparent);
     --text-active-tab: var(--primary);
-    --bg-card-hover: rgba(0, 0, 0, 0.01);
     --border-card-hover: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
@@ -16,7 +15,6 @@
     --settings-shadow-depth-3: 0 24px 64px rgba(0, 0, 0, 0.45);
     --bg-active-tab: color-mix(in srgb, var(--primary) 16%, transparent);
     --text-active-tab: var(--primary);
-    --bg-card-hover: rgba(255, 255, 255, 0.02);
     --border-card-hover: color-mix(in srgb, var(--primary) 36%, transparent);
 }
 
@@ -90,7 +88,7 @@
     transform: translateY(20px);
     transition:
         transform var(--settings-transition-speed-slow) var(--settings-transition-easing-bezier),
-        background var(--settings-transition-speed);
+        background var(--settings-transition-speed) var(--settings-transition-easing);
     display: flex;
     flex-direction: column;
 }
@@ -113,7 +111,7 @@
     margin: 0;
     font-size: 18px;
     color: var(--text-primary);
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .settings-header-actions {
@@ -452,7 +450,7 @@
     margin: 0 0 12px;
     font-size: 12px;
     color: var(--text-tertiary);
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     display: inline-flex;
@@ -528,7 +526,7 @@
 .settings-sidebar-header h3 {
     margin: 0;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0;
     color: var(--text-primary);
 }
@@ -555,8 +553,8 @@
     position: relative;
     outline: none;
     transition:
-        background var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1),
-        color var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1);
+        background var(--duration-normal) var(--settings-transition-easing-bezier),
+        color var(--duration-normal) var(--settings-transition-easing-bezier);
 }
 
 .settings-tab:hover,
@@ -568,7 +566,7 @@
 .settings-tab.active {
     background: var(--bg-active-tab);
     color: var(--text-active-tab);
-    font-weight: 700;
+    font-weight: 600;
     box-shadow: none;
 }
 
@@ -609,7 +607,7 @@
 
 .settings-main .settings-header h3 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text-primary);
 }
 
@@ -622,7 +620,8 @@
 
 .settings-section {
     display: none;
-    animation: settingsSectionFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: settingsSectionFadeIn var(--settings-transition-speed-slow)
+        var(--settings-transition-easing-bezier);
 }
 
 .settings-section.active {

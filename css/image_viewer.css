@@ -48,7 +48,7 @@
     transform-origin: center;
     transition: transform 0.1s linear;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
+    border-radius: calc(var(--radius-sm) - 2px);
     user-select: none;
     pointer-events: none;
     will-change: transform;
@@ -71,7 +71,7 @@
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     transition:
         transform var(--duration-normal) var(--ease-standard),
-        opacity var(--duration-normal);
+        opacity var(--duration-normal) var(--ease-standard);
     opacity: 0;
 }
 
