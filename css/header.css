@@ -308,9 +308,11 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     min-height: 36px;
     max-width: min(220px, calc(100vw - 208px));
     padding: 0 12px;
-    border: 1px solid transparent;
+    border: 1px solid var(--icon-btn-border);
     border-radius: var(--radius-md);
-    background: transparent;
+    background: var(--icon-btn-bg);
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-sm);
     color: var(--text-primary);
     cursor: pointer;
     display: flex;
@@ -323,6 +325,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     transition:
         background-color var(--duration-normal) var(--ease-standard),
         border-color var(--duration-normal) var(--ease-standard),
+        box-shadow var(--duration-normal) var(--ease-standard),
         color var(--duration-normal) var(--ease-standard);
 }
 
@@ -330,9 +333,11 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     width: 36px;
     height: 36px;
     flex: 0 0 36px;
-    border: 1px solid transparent;
+    border: 1px solid var(--icon-btn-border);
     border-radius: var(--radius-md);
-    background: transparent;
+    background: var(--icon-btn-bg);
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-sm);
     color: var(--text-tertiary);
     cursor: pointer;
     display: inline-flex;
@@ -342,6 +347,7 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
     transition:
         background-color var(--duration-normal) var(--ease-standard),
         border-color var(--duration-normal) var(--ease-standard),
+        box-shadow var(--duration-normal) var(--ease-standard),
         color var(--duration-normal) var(--ease-standard);
 }
 
@@ -356,8 +362,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 }
 
 .web-thinking-toggle:hover {
-    background: var(--btn-hover);
-    border-color: var(--border-color);
+    background: var(--icon-btn-hover);
+    border-color: var(--icon-btn-border);
+    box-shadow: var(--shadow-md);
     color: var(--text-primary);
 }
 
@@ -377,8 +384,9 @@ body.layout-wide.sidebar-collapsed .browser-control-bar {
 
 .model-picker-trigger:hover,
 .model-picker-trigger[aria-expanded='true'] {
-    background: var(--btn-hover);
-    border-color: var(--border-color);
+    background: var(--icon-btn-hover);
+    border-color: var(--icon-btn-border);
+    box-shadow: var(--shadow-md);
 }
 
 .model-picker-trigger:focus-visible {

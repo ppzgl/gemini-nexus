@@ -54,7 +54,6 @@
     padding: 6px 12px;
     background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    font-family: sans-serif;
     user-select: none;
 }
 
@@ -68,7 +67,7 @@
     color: var(--text-tertiary);
     text-transform: uppercase;
     font-weight: 600;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .copy-code-btn {
@@ -162,7 +161,7 @@
     max-width: 8rem;
     overflow: hidden;
     color: var(--primary);
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -234,7 +233,7 @@
  * output cards alike); the background neutralizer lets --code-bg on
  * .code-block-wrapper win over the hljs theme's own background. */
 .msg code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.9em;
 }
 
@@ -274,4 +273,42 @@
     padding: 4px 16px;
     color: var(--text-secondary);
     background: transparent;
+}
+
+/* Markdown tables: quiet ruled style — header underline plus row hairlines.
+   Column alignment comes from the renderer's align attributes, so text-align
+   is only applied as a default via :not([align]). */
+.msg-content table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 16px 0;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+.msg-content th,
+.msg-content td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.msg-content th:not([align]),
+.msg-content td:not([align]) {
+    text-align: start;
+}
+
+.msg-content th {
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 40%, transparent);
+}
+
+.msg-content td {
+    color: var(--text-secondary);
+}
+
+.msg-content tbody tr:last-child td {
+    border-bottom: none;
 }
