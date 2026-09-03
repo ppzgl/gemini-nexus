@@ -86,4 +86,29 @@ describe('input layout styles', () => {
             /@media\s*\(max-width:\s*600px\)[\s\S]*\.tools-primary\s+\.tool-btn\s+span\s*,/s
         );
     });
+
+    it('matches AMC send button styles and generating states', async () => {
+        const inputCss = await readCss('input.css');
+        const statesCss = await readCss('input_states.css');
+
+        expect(inputCss).toMatch(/#send\s*{[^}]*width:\s*36px[^}]*height:\s*36px/is);
+        expect(inputCss).toMatch(/#send\s*{[^}]*background:\s*#3964fe/is);
+        expect(inputCss).toMatch(
+            /\[data-theme=['"]dark['"]\]\s+#send\s*{[^}]*background:\s*#679efe/is
+        );
+        expect(inputCss).toMatch(/#send:hover\s*{[^}]*background:\s*#3358e0/is);
+        expect(inputCss).toMatch(
+            /\[data-theme=['"]dark['"]\]\s+#send:hover\s*{[^}]*background:\s*#5a8de0/is
+        );
+        expect(inputCss).toMatch(/#send\.is-empty:not\(\.generating\)\s*{[^}]*opacity:\s*0\.4/s);
+        expect(inputCss).toMatch(/#send svg\s*{[^}]*width:\s*16px[^}]*height:\s*16px/s);
+
+        expect(statesCss).toMatch(
+            /#send\.generating\s*{[^}]*background:\s*#dc2626[^}]*color:\s*#ffffff/is
+        );
+        expect(statesCss).toMatch(
+            /\[data-theme=['"]dark['"]\]\s+#send\.generating\s*{[^}]*background:\s*#7f1d1d/is
+        );
+        expect(statesCss).toMatch(/#send\.generating::before\s*{[^}]*display:\s*none/s);
+    });
 });

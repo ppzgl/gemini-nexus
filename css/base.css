@@ -104,9 +104,12 @@
     --code-bg: #1e1e1e;
     --code-text: #e3e3e3;
     --inline-code-bg: #f0f4f9;
+    /* Code header label/copy button: ≥4.5:1 on the tinted light header strip. */
+    --code-header-text: #444746;
 
     /* Inputs */
-    --input-placeholder: #8e918f;
+    /* Placeholder meets AA (≥4.5:1) on --bg-input and --bg-input-focus. */
+    --input-placeholder: #6b6f73;
 
     /* Scrollbars */
     --scrollbar-thumb: rgba(0, 0, 0, 0.16);
@@ -170,8 +173,11 @@
     /* Code */
     --code-bg: #28292a;
     --inline-code-bg: #2d2e2f;
+    /* ≥4.5:1 on the veiled dark header (3% white over this --code-bg). */
+    --code-header-text: #9aa0a6;
 
-    --input-placeholder: #8e918f;
+    /* Distinct from the light value: AA-checked against the dark surfaces. */
+    --input-placeholder: #969996;
 
     --footer-gradient-start: #131314;
 }

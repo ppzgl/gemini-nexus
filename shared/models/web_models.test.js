@@ -11,7 +11,7 @@ describe('web model metadata', () => {
         expect(DEFAULT_WEB_MODEL).toBe('56fdd199312815e2');
 
         expect(createWebModelOptions()).toEqual([
-            { value: '56fdd199312815e2', label: '3.7 Flash' },
+            { value: '56fdd199312815e2', label: '3.8 Flash' },
             { value: 'cf41b0e0dd7d53e5', label: '3.5 Flash-Lite' },
             { value: 'e6fa609c3fa255c0', label: '3.1 Pro' },
         ]);
@@ -20,7 +20,7 @@ describe('web model metadata', () => {
     it('renders option markup from the same shared model list', () => {
         const markup = createWebModelOptionMarkup();
 
-        expect(markup).toContain('<option value="56fdd199312815e2">3.7 Flash</option>');
+        expect(markup).toContain('<option value="56fdd199312815e2">3.8 Flash</option>');
         expect(markup).toContain('<option value="cf41b0e0dd7d53e5">3.5 Flash-Lite</option>');
         expect(markup).toContain('<option value="e6fa609c3fa255c0">3.1 Pro</option>');
         expect(markup).not.toContain('8c46e95b1a07cecc');
@@ -34,6 +34,9 @@ describe('web model metadata', () => {
     });
 
     it('normalizes legacy model aliases through the public header lookup', () => {
+        expect(getWebModelHeaderConfig('gemini-3.8-flash')).toEqual(
+            getWebModelHeaderConfig('56fdd199312815e2')
+        );
         expect(getWebModelHeaderConfig('gemini-3.7-flash')).toEqual(
             getWebModelHeaderConfig('56fdd199312815e2')
         );

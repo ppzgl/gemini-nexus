@@ -363,8 +363,10 @@ export class ConnectionSection {
 
             const name = (server.name || '').trim();
             const label = name || server.url || t('defaultMcpServer');
-            const status = server.enabled === false ? '✗' : '✓';
-            optionElement.textContent = `${status} ${label}`;
+            optionElement.textContent = label;
+            // Expose enabled state for potential styling; no text prefix
+            optionElement.dataset.enabled = server.enabled === false ? 'false' : 'true';
+            if (server.enabled === false) optionElement.style.opacity = '0.6';
             mcpServerSelect.appendChild(optionElement);
         }
 
@@ -376,6 +378,11 @@ export class ConnectionSection {
         if (!mcpTestStatus) return;
         mcpTestStatus.textContent = text || '';
         mcpTestStatus.classList.toggle('is-error', isError);
+        const isLoading =
+            !!text &&
+            !isError &&
+            (text === t('mcpTestingConnection') || text === t('mcpFetchingTools'));
+        mcpTestStatus.classList.toggle('is-loading', isLoading);
     }
 
     setProviderModelListStatus(text, isError = false) {

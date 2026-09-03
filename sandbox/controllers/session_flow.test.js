@@ -105,6 +105,37 @@ describe('SessionFlowController', () => {
         );
     });
 
+    it('flags the history container as restoring while rebuilding messages', () => {
+        const { controller, sessionManager, ui } = createSessionFlowHarness();
+        sessionManager.setSessions([
+            realSession({
+                messages: [
+                    { role: 'user', text: 'Hello' },
+                    { role: 'ai', text: 'Hi there' },
+                ],
+            }),
+        ]);
+        let restoreFrame = null;
+        const originalRaf = globalThis.requestAnimationFrame;
+        globalThis.requestAnimationFrame = (callback) => {
+            restoreFrame = callback;
+            return 1;
+        };
+
+        try {
+            controller.switchToSession('session-1');
+
+            expect(appendMessage).toHaveBeenCalledTimes(2);
+            expect(ui.historyDiv.getAttribute('data-restoring')).toBe('');
+        } finally {
+            globalThis.requestAnimationFrame = originalRaf;
+        }
+
+        restoreFrame();
+
+        expect(ui.historyDiv.hasAttribute('data-restoring')).toBe(false);
+    });
+
     it('switches to a persisted session, renders messages, and saves the tab binding', () => {
         const { app, controller, sessionManager, ui } = createSessionFlowHarness();
         sessionManager.setSessions([

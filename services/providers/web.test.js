@@ -83,7 +83,7 @@ describe('sendWebMessage', () => {
         expect(modelHeader[7]).toBe(0);
     });
 
-    it('uses the captured Gemini 3.7 Flash Web model contract', async () => {
+    it('uses the captured Gemini 3.8 Flash Web model contract', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             body: makeStream(buildGeminiLine()),

@@ -67,11 +67,11 @@ describe('settings templates', () => {
 
         expect(options[0]).toEqual({
             value: 'streamable-http',
-            text: 'Streamable HTTP (official, http://.../mcp)',
+            text: 'Streamable HTTP',
         });
         expect(options).toContainEqual({
             value: 'ws',
-            text: 'Custom WebSocket (non-standard, ws://)',
+            text: 'WebSocket',
         });
         expect(document.getElementById('mcp-server-url').placeholder).toBe(
             'http://127.0.0.1:3006/mcp'

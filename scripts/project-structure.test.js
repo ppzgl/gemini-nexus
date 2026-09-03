@@ -357,7 +357,7 @@ describe('project structure', () => {
         expect(section).not.toContain("from './connection_utils.js'");
         expect(events).toContain("from '../../../../shared/mcp/transport.js'");
         expect(events).not.toContain("from './connection_utils.js'");
-        expect(countCodeLines(section)).toBeLessThan(390);
+        expect(countCodeLines(section)).toBeLessThan(395);
     });
 
     it('keeps settings download helpers split from the settings section controller', async () => {

@@ -13,7 +13,13 @@
     gap: 6px;
     min-width: 0;
     max-width: 100%;
-    padding: 0;
+    /* 13px text alone is an ~18px target — far under the 24px floor. Grow the
+     * hit area to 28px and cancel the extra box with negative margins so the
+     * surrounding rhythm is untouched. */
+    min-height: 28px;
+    padding: 5px 0;
+    margin-top: -5px;
+    margin-bottom: -5px;
     border: none;
     background: transparent;
     font-size: 13px;

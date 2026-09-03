@@ -48,48 +48,65 @@ export class SessionFlowController {
         if (!session) return;
 
         this.ui.clearChatHistory();
+        const historyDiv = this.ui.historyDiv;
+        // Suppress per-message entrance animation for the bulk rebuild; drop
+        // the flag on the next frame so live replies animate again.
+        if (historyDiv) historyDiv.setAttribute('data-restoring', '');
+        const finishRestore = () => {
+            if (!historyDiv) return;
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => historyDiv.removeAttribute('data-restoring'));
+            } else {
+                historyDiv.removeAttribute('data-restoring');
+            }
+        };
         const compressionNoticeIndex = this.getCompressionNoticeIndex(session);
-        session.messages.forEach((message, index) => {
-            if (this.shouldSkipRestoredMessage(message)) return;
+        try {
+            session.messages.forEach((message, index) => {
+                if (this.shouldSkipRestoredMessage(message)) return;
 
-            if (index === compressionNoticeIndex) {
+                if (index === compressionNoticeIndex) {
+                    this.appendRestoredCompressionNotice();
+                }
+
+                let attachment = null;
+                if (message.role === 'user') attachment = message.attachments || message.image;
+                if (message.role === 'ai') attachment = message.generatedImages;
+                appendMessage(
+                    this.ui.historyDiv,
+                    message.text,
+                    message.role,
+                    attachment,
+                    message.thoughts,
+                    message.sources,
+                    {
+                        kind: this.getMessageKind(message),
+                        toolName: this.getRestoredToolName(message),
+                        step: this.getRestoredToolStep(message),
+                        toolStatus: this.getRestoredToolStatus(message),
+                        toolCallText: this.getRestoredToolCallText(message),
+                        callIndex: this.getRestoredToolCallIndex(message),
+                        callCount: this.getRestoredToolCallCount(message),
+                        toolDurationMs: this.getRestoredToolDurationMs(message),
+                        toolStartedAt: message.toolStartedAt,
+                        toolCompletedAt: message.toolCompletedAt,
+                        suppressCopy: message.suppressCopy === true,
+                        isCollapsed: true,
+                        thoughtsDurationSeconds: message.thoughtsDurationSeconds,
+                        autoScroll: false,
+                        onEdit:
+                            message.role === 'user' &&
+                            this.getMessageKind(message) !== 'tool-output'
+                                ? this.app.prompt.getMessageEditOptions(index).onEdit
+                                : null,
+                    }
+                );
+            });
+            if (compressionNoticeIndex === session.messages.length) {
                 this.appendRestoredCompressionNotice();
             }
-
-            let attachment = null;
-            if (message.role === 'user') attachment = message.attachments || message.image;
-            if (message.role === 'ai') attachment = message.generatedImages;
-            appendMessage(
-                this.ui.historyDiv,
-                message.text,
-                message.role,
-                attachment,
-                message.thoughts,
-                message.sources,
-                {
-                    kind: this.getMessageKind(message),
-                    toolName: this.getRestoredToolName(message),
-                    step: this.getRestoredToolStep(message),
-                    toolStatus: this.getRestoredToolStatus(message),
-                    toolCallText: this.getRestoredToolCallText(message),
-                    callIndex: this.getRestoredToolCallIndex(message),
-                    callCount: this.getRestoredToolCallCount(message),
-                    toolDurationMs: this.getRestoredToolDurationMs(message),
-                    toolStartedAt: message.toolStartedAt,
-                    toolCompletedAt: message.toolCompletedAt,
-                    suppressCopy: message.suppressCopy === true,
-                    isCollapsed: true,
-                    thoughtsDurationSeconds: message.thoughtsDurationSeconds,
-                    autoScroll: false,
-                    onEdit:
-                        message.role === 'user' && this.getMessageKind(message) !== 'tool-output'
-                            ? this.app.prompt.getMessageEditOptions(index).onEdit
-                            : null,
-                }
-            );
-        });
-        if (compressionNoticeIndex === session.messages.length) {
-            this.appendRestoredCompressionNotice();
+        } finally {
+            finishRestore();
         }
         this.app.messageHandler.restoreStreamForSession(sessionId);
         if (options.restoreScrollState && this.ui.restoreChatScrollState) {

@@ -51,6 +51,7 @@ describe('web thinking helpers', () => {
     });
 
     it('only supports known Gemini Web reverse models', () => {
+        expect(supportsWebThinking('gemini-3.8-flash')).toBe(true);
         expect(supportsWebThinking('gemini-3.7-flash')).toBe(true);
         expect(supportsWebThinking('gemini-3.5-flash-lite')).toBe(true);
         expect(supportsWebThinking('gemini-3.6-flash')).toBe(false);

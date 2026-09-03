@@ -6,6 +6,13 @@
     margin-bottom: 0;
 }
 
+/* Trim the tail margin of whatever block ends a message so bottom rhythm is
+ * identical whether a message ends in prose, a list, a table, a quote, or a
+ * code block (otherwise code blocks add a stray 16px before the 24px gap). */
+.message-content-container .msg-content > :last-child {
+    margin-bottom: 0;
+}
+
 .message-content-container .msg-content {
     max-width: 100%;
     min-width: 0;
@@ -30,9 +37,18 @@
 .msg.ai h1,
 .msg.ai h2,
 .msg.ai h3 {
-    margin: 24px 0 12px 0;
+    margin: 20px 0 8px 0;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+/* Explicit rungs: UA defaults (32/24px) overwhelm a ~420px sidepanel column. */
+.msg.ai h1 {
+    font-size: 20px;
+}
+
+.msg.ai h2 {
+    font-size: 18px;
 }
 
 .msg.ai h3 {
@@ -57,14 +73,17 @@
     user-select: none;
 }
 
-[data-theme='light'] .code-header {
+/* Light theme is the attribute-less default (boot only sets data-theme="dark"),
+ * so scope overrides with :not([data-theme='dark']) instead of a selector that
+ * can never match. */
+html:not([data-theme='dark']) .code-header {
     background: #e9eef6;
     border-bottom: 1px solid #e1e3e1;
 }
 
 .code-lang {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: var(--code-header-text);
     text-transform: uppercase;
     font-weight: 600;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -73,12 +92,13 @@
 .copy-code-btn {
     background: transparent;
     border: none;
-    color: var(--text-tertiary);
+    color: var(--code-header-text);
     cursor: pointer;
     font-size: 11px;
     display: flex;
     align-items: center;
     gap: 4px;
+    min-height: 28px;
     padding: 4px 8px;
     border-radius: calc(var(--radius-sm) - 2px);
     transition:
@@ -91,7 +111,7 @@
     color: var(--text-primary);
 }
 
-[data-theme='light'] .copy-code-btn:hover {
+html:not([data-theme='dark']) .copy-code-btn:hover {
     background: rgba(0, 0, 0, 0.05);
 }
 
@@ -114,7 +134,7 @@
     background: color-mix(in srgb, var(--bg-body) 92%, var(--code-bg));
 }
 
-[data-theme='light'] .live-artifact-preview {
+html:not([data-theme='dark']) .live-artifact-preview {
     border-top-color: #d8dde6;
     background: #f8fafd;
 }
@@ -126,7 +146,7 @@
     overflow: visible;
 }
 
-[data-theme='light'] .live-artifact-preview[data-live-artifact-kind='html'] {
+html:not([data-theme='dark']) .live-artifact-preview[data-live-artifact-kind='html'] {
     border-top-color: transparent;
     background: transparent;
 }
@@ -144,7 +164,7 @@
     line-height: 1.2;
 }
 
-[data-theme='light'] .live-artifact-header {
+html:not([data-theme='dark']) .live-artifact-header {
     border-bottom-color: #e1e3e1;
 }
 
@@ -311,4 +331,20 @@
 
 .msg-content tbody tr:last-child td {
     border-bottom: none;
+}
+
+/* Markdown thematic breaks: quiet hairline instead of the UA's inset border. */
+.msg-content hr {
+    margin: 16px 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Display math can exceed the narrow sidepanel column; scroll it in place
+ * instead of stretching the message row. */
+.msg-content .katex-display {
+    margin: 12px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
 }

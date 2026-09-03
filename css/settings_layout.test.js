@@ -75,8 +75,8 @@ describe('settings layout styles', () => {
         );
         expect(formsCss).toMatch(/\.setting-radio-option\s*{[^}]*border:\s*none/s);
         expect(formsCss).toMatch(/\.setting-shortcut-row\s*{[^}]*border:\s*none/s);
-        expect(mcpCss).toMatch(/\.mcp-tool-list\s*{[^}]*border:\s*none/s);
-        expect(mcpCss).toMatch(/\.mcp-tool-group\s*{[^}]*border:\s*none/s);
+        expect(mcpCss).toMatch(/\.mcp-tool-list\s*{[^}]*border:\s*1px solid/s);
+        expect(mcpCss).toMatch(/\.mcp-tool-group\s*{[^}]*border:\s*1px solid/s);
         expect(customToolsCss).toMatch(/\.custom-selection-tool-row\s*{[^}]*border:\s*none/s);
     });
 

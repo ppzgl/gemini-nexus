@@ -33,6 +33,14 @@ img.chat-image.chat-image-compact {
     transform: scale(1.01);
 }
 
+/* Bare markdown images (![](url)) carry no viewer class; keep them inside
+ * the message column instead of blowing out the narrow panel. */
+.msg-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+}
+
 .chat-file-card {
     display: inline-flex;
     align-items: center;

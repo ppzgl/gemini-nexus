@@ -3,6 +3,103 @@ import { readFile } from 'node:fs/promises';
 
 const readCss = (file) => readFile(new URL(`./${file}`, import.meta.url), 'utf8');
 
+describe('center column readability and markdown rhythm', () => {
+    it('caps the wide-mode conversation column to the composer measure', async () => {
+        const chatCss = await readCss('chat.css');
+
+        // The legacy rule let AI prose run the full pane (~117 CPL at 1280px).
+        // Rows must mirror the centered composer instead: content shares its
+        // --composer-max-width measure, rows add rail(32px)+gap(16px) travel.
+        expect(chatCss).not.toMatch(
+            /body\.layout-wide \.msg\.user,\s*body\.layout-wide \.msg\.ai\s*{[^}]*max-width:\s*100%/s
+        );
+        expect(chatCss).toMatch(
+            /body\.layout-wide \.msg\.user,\s*body\.layout-wide \.msg\.ai\s*{[^}]*max-width:\s*calc\(var\(--composer-max-width\)\s*\+\s*48px\)/s
+        );
+        expect(chatCss).toMatch(
+            /body\.layout-wide \.msg\.user,\s*body\.layout-wide \.msg\.ai\s*{[^}]*margin-inline:\s*auto/s
+        );
+        expect(chatCss).toMatch(
+            /body\.layout-wide \.msg\.ai \.message-content-container\s*{[^}]*max-width:\s*min\(var\(--composer-max-width\),\s*100%\)/s
+        );
+    });
+
+    it('pins markdown headings to an explicit in-panel scale', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        // UA-default h1/h2 (32/24px) overwhelm a ~420px sidepanel column;
+        // every rung must be pinned, with tightened vertical rhythm.
+        expect(markdownCss).toMatch(/\.msg\.ai h1\s*{[^}]*font-size:\s*20px/s);
+        expect(markdownCss).toMatch(/\.msg\.ai h2\s*{[^}]*font-size:\s*18px/s);
+        expect(markdownCss).toMatch(/\.msg\.ai h3\s*{[^}]*font-size:\s*16px/s);
+        expect(markdownCss).toMatch(
+            /\.msg\.ai h1,\s*\.msg\.ai h2,\s*\.msg\.ai h3\s*{[^}]*margin:\s*20px 0 8px 0/s
+        );
+    });
+
+    it('trims the trailing margin of the final block in a message', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        // One universal last-child rule keeps bottom rhythm identical whether
+        // a message ends in prose, a list, a table, a quote, or code.
+        expect(markdownCss).toMatch(
+            /\.message-content-container \.msg-content > :last-child\s*{[^}]*margin-bottom:\s*0/s
+        );
+    });
+
+    it('constrains bare markdown images to the message column', async () => {
+        const mediaCss = await readCss('chat_media.css');
+
+        // Only .chat-image was constrained; raw ![](url) output had no rule.
+        expect(mediaCss).toMatch(/\.msg-content img\s*{[^}]*max-width:\s*100%/s);
+        expect(mediaCss).toMatch(/\.msg-content img\s*{[^}]*height:\s*auto/s);
+    });
+});
+
+describe('empty state styling', () => {
+    const tipDecls = async () => {
+        const chatCss = await readCss('chat.css');
+        return chatCss.match(/\.chat-empty-tip\s*{([^}]+(?:\{[^}]*\}[^}]*)*)}/s)?.[1] || '';
+    };
+
+    it('sizes tips as comfortable touch targets with icon+text layout', async () => {
+        const decls = await tipDecls();
+        expect(decls).toMatch(/min-height:\s*44px/);
+        expect(decls).toMatch(/display:\s*flex/);
+        expect(decls).toMatch(/align-items:\s*flex-start/);
+    });
+
+    it('replaces painted dots with real icon slots', async () => {
+        const chatCss = await readCss('chat.css');
+
+        // The old ::before dot carried no meaning; icons live in markup now.
+        expect(chatCss).not.toMatch(/\.chat-empty-tip::before/);
+        expect(chatCss).not.toMatch(/\.chat-empty-tip-star::before/);
+        expect(chatCss).toMatch(/\.chat-empty-tip-icon\s*{[^}]*flex:\s*0 0 auto/s);
+        expect(chatCss).toMatch(
+            /\.chat-empty-tip-icon\.chat-empty-tip-icon-star\s*{[^}]*--accent-gold/s
+        );
+    });
+
+    it('keeps the star tip note inline so all four rows stay 44px', async () => {
+        const chatCss = await readCss('chat.css');
+
+        // The note flows after the main copy one size step down; a block-level
+        // note pushed the star row to 55px and broke the four-row rhythm.
+        const subRule = chatCss.match(/\.chat-empty-tip-sub\s*{([^}]*)}/s)?.[1] || '';
+        expect(subRule).toMatch(/display:\s*inline/);
+        expect(subRule).toMatch(/font-size:\s*12px/);
+    });
+
+    it('unifies focus rings with the two-layer app language', async () => {
+        const chatCss = await readCss('chat.css');
+
+        const rule = chatCss.match(/\.chat-empty-tip:focus-visible\s*{([^}]*)}/s)?.[1] || '';
+        expect(rule).toContain('0 0 0 2px var(--bg-body)');
+        expect(rule).toContain('0 0 0 4px var(--border-focus)');
+    });
+});
+
 describe('chat message layout styles', () => {
     it('keeps message entrance animation from trapping opacity at 0', async () => {
         const chatCss = await readCss('chat.css');
@@ -64,6 +161,29 @@ describe('chat message layout styles', () => {
         );
     });
 
+    it('reads message body text at the composer size', async () => {
+        const chatCss = await readCss('chat.css');
+
+        // Message prose shares the textarea's 16px size so reading and writing
+        // feel like the same surface; line-height scales proportionally.
+        const msgRule = chatCss.match(/\.msg\s*{([^}]+(?:\{[^}]*\}[^}]*)*)}/s)?.[1] || '';
+        expect(msgRule).toMatch(/font-size:\s*16px/);
+        expect(msgRule).toMatch(/line-height:\s*1\.65/);
+    });
+
+    it('tokenizes empty-state tip motion', async () => {
+        const chatCss = await readCss('chat.css');
+
+        // Every duration in .chat-empty-tip must come from a motion token;
+        // raw second values drift out of sync with --duration-fast.
+        const tipRule =
+            chatCss.match(/\.chat-empty-tip\s*{([^}]+(?:\{[^}]*\}[^}]*)*)}/s)?.[1] || '';
+        const tipDecls = tipRule.replace(/\/\*[\s\S]*?\*\//g, '');
+        expect(tipDecls).toMatch(/transition:/);
+        expect(tipDecls).toMatch(/transform\s+var\(--duration-fast\)\s+var\(--ease-standard\)/);
+        expect(tipDecls).not.toMatch(/\b\d*\.?\d+m?s\b/);
+    });
+
     it('keeps generated images constrained to the message width', async () => {
         const mediaCss = await readCss('chat_media.css');
 
@@ -112,5 +232,64 @@ describe('chat message layout styles', () => {
         expect(markdownCss).toMatch(/\.live-artifact-body-error\s*{[^}]*min-height:\s*72px/s);
         expect(markdownCss).toMatch(/\.live-artifact-error\s*{[^}]*overflow-wrap:\s*anywhere/s);
         expect(markdownCss).toMatch(/\.live-artifact-error\s*{[^}]*white-space:\s*pre-wrap/s);
+    });
+});
+
+describe('code header theme scoping and targets', () => {
+    it('scopes light-theme code overrides without requiring data-theme="light"', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        // The sandbox boot only ever sets data-theme="dark"; light mode is the
+        // attribute-less default, so [data-theme='light'] selectors are dead.
+        expect(markdownCss).not.toMatch(/\[data-theme='light'\]/);
+        const lightScoped = markdownCss.match(/html:not\(\[data-theme='dark'\]\)/g) || [];
+        expect(lightScoped.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it('drives code header text from a shared readable token', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        expect(markdownCss).toMatch(/\.code-lang\s*{[^}]*color:\s*var\(--code-header-text\)/s);
+        expect(markdownCss).toMatch(/\.copy-code-btn\s*{[^}]*color:\s*var\(--code-header-text\)/s);
+    });
+
+    it('keeps the copy-code button at least 28px tall', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        expect(markdownCss).toMatch(/\.copy-code-btn\s*{[^}]*min-height:\s*28px/s);
+    });
+});
+
+describe('thoughts toggle ergonomics', () => {
+    it('gives the thoughts toggle a 28px minimum touch target', async () => {
+        const referencesCss = await readCss('chat_references.css');
+
+        expect(referencesCss).toMatch(/\.thoughts-toggle\s*{[^}]*min-height:\s*28px/s);
+    });
+});
+
+describe('markdown extras', () => {
+    it('themes horizontal rules with tokens', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        expect(markdownCss).toMatch(/\.msg-content hr\s*{[^}]*border:\s*none/s);
+        expect(markdownCss).toMatch(
+            /\.msg-content hr\s*{[^}]*border-top:\s*1px solid var\(--border-color\)/s
+        );
+    });
+
+    it('keeps display math from overflowing the column', async () => {
+        const markdownCss = await readCss('chat_markdown.css');
+
+        expect(markdownCss).toMatch(/\.msg-content \.katex-display\s*{[^}]*overflow-x:\s*auto/s);
+    });
+
+    it('suppresses entrance animations while history is restoring', async () => {
+        const chatCss = await readCss('chat.css');
+
+        expect(chatCss).toMatch(/#chat-history\[data-restoring\] \.msg\s*{[^}]*animation:\s*none/s);
+        expect(chatCss).toMatch(
+            /#chat-history\[data-restoring\] \.context-compression-notice\s*{[^}]*animation:\s*none/s
+        );
     });
 });

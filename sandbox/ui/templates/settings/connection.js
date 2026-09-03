@@ -146,10 +146,16 @@ export const ConnectionSettingsTemplate = `
             <div id="mcp-fields" class="settings-stack settings-section-offset" hidden>
                 <div class="setting-field">
                     <span data-i18n="mcpActiveServer">Active Server</span>
-                    <div class="settings-action-row">
+                    <div class="settings-action-row mcp-server-row">
                         <select id="mcp-server-select" class="settings-input settings-select settings-flex-fill"></select>
-                        <button id="mcp-add-server" class="btn-primary settings-small-button" type="button" data-i18n="mcpAddServer">Add</button>
-                        <button id="mcp-remove-server" class="btn-secondary settings-small-button" type="button" data-i18n="mcpRemoveServer">Del</button>
+                        <div class="mcp-server-actions">
+                            <button id="mcp-add-server" class="mcp-icon-btn" type="button" aria-label="Add server" data-i18n-title="mcpAddServer" title="Add">
+                                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.2v9.6M3.2 8h9.6" stroke-width="1.6" stroke-linecap="round"/></svg>
+                            </button>
+                            <button id="mcp-remove-server" class="mcp-icon-btn mcp-icon-btn--danger" type="button" aria-label="Remove server" data-i18n-title="mcpRemoveServer" title="Del">
+                                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.2h9M6 4.2V3h4v1.2M5 4.2l.4 7.6h5.2L11 4.2" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 7.2v4M9 7.2v4" stroke-width="1.3" stroke-linecap="round"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -160,48 +166,49 @@ export const ConnectionSettingsTemplate = `
                 <div class="setting-field">
                     <span data-i18n="mcpTransport">Transport</span>
                     <select id="mcp-transport" class="settings-input settings-select">
-                        <option value="streamable-http">Streamable HTTP (official, http://.../mcp)</option>
+                        <option value="streamable-http">Streamable HTTP</option>
                         <option value="sse">SSE</option>
-                        <option value="ws">Custom WebSocket (non-standard, ws://)</option>
+                        <option value="ws">WebSocket</option>
                     </select>
                 </div>
                 <div class="setting-field">
                     <span data-i18n="mcpServerUrl">URL</span>
-                    <input type="text" id="mcp-server-url" class="settings-input settings-full-input" placeholder="${DEFAULT_MCP_HTTP_URL}">
+                    <div class="mcp-url-row">
+                        <input type="text" id="mcp-server-url" class="settings-input settings-full-input" placeholder="${DEFAULT_MCP_HTTP_URL}">
+                        <button id="mcp-test-connection" class="btn-secondary mcp-test-btn" type="button" data-i18n="mcpTestConnection">Test</button>
+                    </div>
                 </div>
                 <div class="setting-field">
                     <span class="setting-field-label"><span data-i18n="mcpHeaders">Request Headers (JSON)</span>${createSettingsHelpButton('mcpHeadersDesc')}</span>
                     <textarea id="mcp-headers" class="settings-input settings-full-input settings-monospace-textarea" data-i18n-placeholder="mcpHeadersPlaceholder"></textarea>
                 </div>
 
-                <div class="setting-panel-row settings-section-offset">
+                <div class="mcp-enabled-row">
                     <div class="setting-panel-header">
                         <h5 data-i18n="enabled">Server Enabled</h5>
                     </div>
-                    <div class="settings-action-row">
-                        <button id="mcp-test-connection" class="btn-secondary settings-small-button" type="button" data-i18n="mcpTestConnection">Test</button>
-                        <input type="checkbox" id="mcp-server-enabled" class="setting-toggle" />
-                    </div>
+                    <input type="checkbox" id="mcp-server-enabled" class="setting-toggle" />
                 </div>
-                <div id="mcp-test-status" class="settings-muted-text"></div>
+                <div id="mcp-test-status" class="settings-muted-text" role="status" aria-live="polite"></div>
 
-                <div class="settings-stack compact settings-panel-fieldset">
-                    <div class="setting-field">
-                        <span data-i18n="mcpToolMode">Expose Tools</span>
-                        <select id="mcp-tool-mode" class="settings-input settings-select">
-                            <option value="all" data-i18n="mcpToolModeAll">All</option>
-                            <option value="selected" data-i18n="mcpToolModeSelected">Selected</option>
-                        </select>
-                    </div>
-
-                    <div class="mcp-action-row settings-action-row">
-                        <button id="mcp-refresh-tools" class="btn-secondary settings-small-button" type="button" data-i18n="mcpRefreshTools">Refresh</button>
-                        <button id="mcp-enable-all-tools" class="btn-secondary settings-small-button" type="button" data-i18n="mcpEnableAllTools">All</button>
-                        <button id="mcp-disable-all-tools" class="btn-secondary settings-small-button" type="button" data-i18n="mcpDisableAllTools">None</button>
+                <div class="mcp-tools-fieldset">
+                    <div class="mcp-tools-head">
+                        <label for="mcp-tool-mode" data-i18n="mcpToolMode">Expose Tools</label>
+                        <div class="mcp-tools-actions">
+                            <select id="mcp-tool-mode" class="settings-input settings-select mcp-tool-mode-select">
+                                <option value="all" data-i18n="mcpToolModeAll">All</option>
+                                <option value="selected" data-i18n="mcpToolModeSelected">Selected</option>
+                            </select>
+                            <button id="mcp-refresh-tools" class="btn-secondary mcp-refresh-btn" type="button" data-i18n="mcpRefreshTools">Refresh</button>
+                            <div class="mcp-segment" role="group" aria-label="Batch selection">
+                                <button id="mcp-enable-all-tools" type="button" data-i18n="mcpEnableAllTools">All</button>
+                                <button id="mcp-disable-all-tools" type="button" data-i18n="mcpDisableAllTools">None</button>
+                            </div>
+                        </div>
                     </div>
 
                     <input type="text" id="mcp-tool-search" class="settings-input settings-full-input" data-i18n-placeholder="mcpToolSearchPlaceholder">
-                    <div id="mcp-tools-summary" class="settings-muted-text"></div>
+                    <div id="mcp-tools-summary" class="settings-muted-text mcp-tools-summary"></div>
                     <div id="mcp-tool-list" class="mcp-tool-list"></div>
                 </div>
             </div>

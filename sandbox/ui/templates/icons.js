@@ -318,17 +318,16 @@ export const TemplateIcons = {
         </svg>
     `,
     SEND: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path
+                d="M8.3125 0.980183C8.66767 1.0531 8.97902 1.20418 9.2627 1.43233C9.48724 1.61297 9.73029 1.85793 9.97949 2.10714L14.707 6.83468L13.293 8.24874L9 3.95577V15.0417H7V3.95577L2.70703 8.24874L1.29297 6.83468L6.02051 2.10714C6.26971 1.85793 6.51277 1.61297 6.7373 1.43233C6.97662 1.23986 7.28445 1.04402 7.6875 0.980183C7.8973 0.947006 8.1031 0.95516 8.3125 0.980183Z"
+                fill="currentColor"
+            />
         </svg>
     `,
     STOP: icon`
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-            viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <rect x="7" y="7" width="10" height="10" rx="1"></rect>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <rect x="3" y="3" width="10" height="10" rx="3" fill="currentColor" />
         </svg>
     `,
     SUMMARY: icon`
@@ -382,6 +381,14 @@ export const TemplateIcons = {
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
             <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+        </svg>
+    `,
+    /* Five-point star: GitHub star call-to-action in the empty state. */
+    STAR: icon`
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path>
         </svg>
     `,
     /* Image frame: "capture selection as an image attachment". */
