@@ -91,4 +91,50 @@ describe('SelectionObserver', () => {
 
         observer.disconnect();
     });
+
+    it('marks isDrag as false when selection settles after a stationary click', () => {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = 'stationary click';
+        document.body.appendChild(paragraph);
+
+        const onSelection = vi.fn();
+        const observer = new window.GeminiSelectionObserver({ onSelection });
+
+        selectNodeContents(paragraph);
+        paragraph.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, clientX: 20, clientY: 20 })
+        );
+        paragraph.dispatchEvent(
+            new MouseEvent('mouseup', { bubbles: true, clientX: 20, clientY: 20 })
+        );
+        vi.advanceTimersByTime(20);
+
+        expect(onSelection).toHaveBeenCalledTimes(1);
+        expect(onSelection.mock.calls[0][0].isDrag).toBe(false);
+
+        observer.disconnect();
+    });
+
+    it('marks isDrag as true when pointer moves more than 3px before pointerup', () => {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = 'drag selection';
+        document.body.appendChild(paragraph);
+
+        const onSelection = vi.fn();
+        const observer = new window.GeminiSelectionObserver({ onSelection });
+
+        selectNodeContents(paragraph);
+        paragraph.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, clientX: 20, clientY: 20 })
+        );
+        paragraph.dispatchEvent(
+            new MouseEvent('mouseup', { bubbles: true, clientX: 50, clientY: 20 })
+        );
+        vi.advanceTimersByTime(20);
+
+        expect(onSelection).toHaveBeenCalledTimes(1);
+        expect(onSelection.mock.calls[0][0].isDrag).toBe(true);
+
+        observer.disconnect();
+    });
 });

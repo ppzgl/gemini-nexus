@@ -16,6 +16,11 @@ function installControllerDependencies() {
         showError: vi.fn(),
         setCustomSelectionTools: vi.fn(),
         restoreTranslationTargets: vi.fn(),
+        show: vi.fn(),
+        hide: vi.fn(),
+        isHost: vi.fn(() => false),
+        isWindowVisible: vi.fn(() => false),
+        showGrammarButton: vi.fn(),
     };
 
     window.GeminiToolbarUI = vi.fn(() => uiInstance);
@@ -325,5 +330,107 @@ describe('GeminiToolbarController model persistence', () => {
         controller.setCustomSelectionTools(tools);
 
         expect(ui.setCustomSelectionTools).toHaveBeenCalledWith(tools);
+    });
+
+    it('suppresses re-opening the toolbar for the same selection after clicking outside', () => {
+        const controller = new window.GeminiToolbarController();
+        controller.setSelectionEnabled(true);
+
+        const selectionData = {
+            text: '25509',
+            rect: { top: 100, left: 200, width: 40, height: 20 },
+            mousePoint: { x: 210, y: 110 },
+            isDrag: false,
+        };
+
+        // 1. Initial selection shows the toolbar
+        controller.handleSelection(selectionData);
+        expect(ui.show).toHaveBeenCalledTimes(1);
+
+        // 2. User clicks outside
+        controller.handleClick({ target: document.body });
+        expect(ui.hide).toHaveBeenCalledTimes(1);
+
+        // 3. Selection settle event reports the still-selected text without drag
+        ui.show.mockClear();
+        controller.handleSelection(selectionData);
+        // Toolbar should remain hidden!
+        expect(ui.show).not.toHaveBeenCalled();
+
+        // 4. User makes a different selection
+        const newSelectionData = {
+            text: 'SERVER_PORT',
+            rect: { top: 100, left: 260, width: 80, height: 20 },
+            mousePoint: { x: 270, y: 110 },
+            isDrag: false,
+        };
+        controller.handleSelection(newSelectionData);
+        expect(ui.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-shows the toolbar if the user actively drags to re-select the same text', () => {
+        const controller = new window.GeminiToolbarController();
+        controller.setSelectionEnabled(true);
+
+        const selectionData = {
+            text: '25509',
+            rect: { top: 100, left: 200, width: 40, height: 20 },
+            mousePoint: { x: 210, y: 110 },
+            isDrag: false,
+        };
+
+        controller.handleSelection(selectionData);
+        controller.handleClick({ target: document.body });
+
+        ui.show.mockClear();
+        // User actively drags to select the same text again
+        controller.handleSelection({ ...selectionData, isDrag: true });
+        expect(ui.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('resets selection suppression when selection is cleared', () => {
+        const controller = new window.GeminiToolbarController();
+        controller.setSelectionEnabled(true);
+
+        const selectionData = {
+            text: '25509',
+            rect: { top: 100, left: 200, width: 40, height: 20 },
+            mousePoint: { x: 210, y: 110 },
+            isDrag: false,
+        };
+
+        controller.handleSelection(selectionData);
+        controller.handleClick({ target: document.body });
+
+        // Selection is cleared
+        controller.handleSelectionClear();
+
+        ui.show.mockClear();
+        // Same text selected again
+        controller.handleSelection(selectionData);
+        expect(ui.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('suppresses re-opening for the same selection when hidden via onHide callback (e.g. Escape)', () => {
+        const controller = new window.GeminiToolbarController();
+        controller.setSelectionEnabled(true);
+
+        const selectionData = {
+            text: '25509',
+            rect: { top: 100, left: 200, width: 40, height: 20 },
+            mousePoint: { x: 210, y: 110 },
+            isDrag: false,
+        };
+
+        controller.handleSelection(selectionData);
+        expect(ui.show).toHaveBeenCalledTimes(1);
+
+        // Escape triggers onHide callback
+        const callbacks = ui.setCallbacks.mock.calls[0][0];
+        callbacks.onHide();
+
+        ui.show.mockClear();
+        controller.handleSelection(selectionData);
+        expect(ui.show).not.toHaveBeenCalled();
     });
 });

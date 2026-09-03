@@ -3,7 +3,10 @@
         constructor(callbacks) {
             this.callbacks = callbacks || {}; // { onSelection, onClear, onClick }
             this.selectionTimer = null;
+            this.clearDownPointTimer = null;
             this.pendingMousePoint = null;
+            this.pointerDownPoint = null;
+            this.pendingIsDrag = false;
             this.isPointerDown = false;
             this.onSelectionEnd = this.onSelectionEnd.bind(this);
             this.onMouseDown = this.onMouseDown.bind(this);
@@ -23,6 +26,10 @@
 
         onMouseDown(pointerEvent) {
             this.isPointerDown = true;
+            const point = this.getEventPoint(pointerEvent);
+            if (point) {
+                this.pointerDownPoint = point;
+            }
             if (this.callbacks.onClick) {
                 this.callbacks.onClick(pointerEvent);
             }
@@ -30,19 +37,35 @@
 
         onSelectionEnd(pointerEvent) {
             this.isPointerDown = false;
-            this.scheduleSelectionCheck(pointerEvent);
+            const pointerUpPoint = this.getEventPoint(pointerEvent);
+            const isDrag = Boolean(
+                this.pointerDownPoint &&
+                pointerUpPoint &&
+                (Math.abs(pointerUpPoint.x - this.pointerDownPoint.x) > 3 ||
+                    Math.abs(pointerUpPoint.y - this.pointerDownPoint.y) > 3)
+            );
+            if (this.clearDownPointTimer) {
+                clearTimeout(this.clearDownPointTimer);
+            }
+            this.clearDownPointTimer = setTimeout(() => {
+                this.pointerDownPoint = null;
+                this.clearDownPointTimer = null;
+            }, 50);
+
+            this.scheduleSelectionCheck(pointerEvent, isDrag);
         }
 
         onSelectionChange() {
             if (this.isPointerDown) return;
-            this.scheduleSelectionCheck(null);
+            this.scheduleSelectionCheck(null, false);
         }
 
-        scheduleSelectionCheck(pointerEvent) {
+        scheduleSelectionCheck(pointerEvent, isDrag = false) {
             const mousePoint = this.getEventPoint(pointerEvent);
             if (mousePoint || !this.pendingMousePoint) {
                 this.pendingMousePoint = mousePoint;
             }
+            this.pendingIsDrag = this.pendingIsDrag || isDrag;
 
             if (this.selectionTimer) {
                 clearTimeout(this.selectionTimer);
@@ -52,9 +75,12 @@
             this.selectionTimer = setTimeout(() => {
                 this.selectionTimer = null;
                 const selectionData = this.readSelection(this.pendingMousePoint);
+                const wasDrag = this.pendingIsDrag;
                 this.pendingMousePoint = null;
+                this.pendingIsDrag = false;
 
                 if (selectionData && selectionData.text.length > 0) {
+                    selectionData.isDrag = wasDrag;
                     if (this.callbacks.onSelection) {
                         this.callbacks.onSelection(selectionData);
                     }
@@ -175,7 +201,13 @@
                 clearTimeout(this.selectionTimer);
                 this.selectionTimer = null;
             }
+            if (this.clearDownPointTimer) {
+                clearTimeout(this.clearDownPointTimer);
+                this.clearDownPointTimer = null;
+            }
             this.pendingMousePoint = null;
+            this.pointerDownPoint = null;
+            this.pendingIsDrag = false;
 
             document.removeEventListener('mouseup', this.onSelectionEnd, true);
             document.removeEventListener('pointerup', this.onSelectionEnd, true);

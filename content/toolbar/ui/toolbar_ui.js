@@ -315,6 +315,8 @@
                 this.callbacks.onProviderChange(...args);
             } else if (type === 'onWebThinkingToggle' && this.callbacks.onWebThinkingToggle) {
                 this.callbacks.onWebThinkingToggle(...args);
+            } else if (type === 'onHide' && this.callbacks.onHide) {
+                this.callbacks.onHide(...args);
             } else if (this.callbacks.onAction) {
                 this.callbacks.onAction(...args);
             }
@@ -326,6 +328,7 @@
 
         hide() {
             this.view.hideToolbar();
+            this.fireCallback('onHide');
         }
 
         hideAll() {

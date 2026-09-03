@@ -101,6 +101,51 @@
         }
     }
 
+    function getSelectionSignature(data) {
+        if (!data || !data.text) return null;
+        const rect = data.rect || {};
+        const range = data.range;
+        if (range) {
+            return {
+                text: data.text,
+                startContainer: range.startContainer,
+                startOffset: range.startOffset,
+                endContainer: range.endContainer,
+                endOffset: range.endOffset,
+                top: Math.round(rect.top || 0),
+                left: Math.round(rect.left || 0),
+                width: Math.round(rect.width || 0),
+                height: Math.round(rect.height || 0),
+            };
+        }
+        return {
+            text: data.text,
+            top: Math.round(rect.top || 0),
+            left: Math.round(rect.left || 0),
+            width: Math.round(rect.width || 0),
+            height: Math.round(rect.height || 0),
+        };
+    }
+
+    function isSameSelectionSignature(sig1, sig2) {
+        if (!sig1 || !sig2) return false;
+        if (sig1.text !== sig2.text) return false;
+        if (sig1.startContainer && sig2.startContainer) {
+            return (
+                sig1.startContainer === sig2.startContainer &&
+                sig1.startOffset === sig2.startOffset &&
+                sig1.endContainer === sig2.endContainer &&
+                sig1.endOffset === sig2.endOffset
+            );
+        }
+        return (
+            Math.abs(sig1.top - sig2.top) <= 2 &&
+            Math.abs(sig1.left - sig2.left) <= 2 &&
+            Math.abs(sig1.width - sig2.width) <= 2 &&
+            Math.abs(sig1.height - sig2.height) <= 2
+        );
+    }
+
     class ToolbarController {
         constructor() {
             this.ui = new window.GeminiToolbarUI();
@@ -131,6 +176,8 @@
 
             this.visible = false;
             this.currentSelection = '';
+            this.currentSelectionSignature = null;
+            this.dismissedSelectionSignature = null;
             this.lastRect = null;
             this.lastMousePoint = null;
             this.lastSessionId = null;
@@ -159,6 +206,9 @@
                     } else {
                         this.imageDetector.scheduleHide();
                     }
+                },
+                onHide: () => {
+                    this.handleToolbarHide();
                 },
             });
 
@@ -322,14 +372,45 @@
             if (this.ui) this.ui.handleGeneratedImageResult(request);
         }
 
+        dismissCurrentSelection() {
+            this.dismissedSelectionSignature =
+                this.currentSelectionSignature ||
+                getSelectionSignature({
+                    text: this.currentSelection,
+                    rect: this.lastRect,
+                });
+        }
+
+        handleToolbarHide() {
+            if (this.visible && !this.ui.isWindowVisible()) {
+                this.dismissCurrentSelection();
+                this.visible = false;
+            }
+        }
+
         handleClick(event) {
             if (this.ui.isHost(event.target)) return;
+
+            if (this.visible && !this.ui.isWindowVisible()) {
+                this.dismissCurrentSelection();
+            }
 
             this.hide();
         }
 
         handleSelection(data) {
             if (!this.isSelectionEnabled) return;
+
+            const signature = getSelectionSignature(data);
+            if (
+                !data.isDrag &&
+                isSameSelectionSignature(signature, this.dismissedSelectionSignature)
+            ) {
+                return;
+            }
+
+            this.dismissedSelectionSignature = null;
+            this.currentSelectionSignature = signature;
 
             const { text, rect, mousePoint } = data;
             this.currentSelection = text;
@@ -346,6 +427,8 @@
         handleSelectionClear() {
             if (!this.ui.isWindowVisible()) {
                 this.currentSelection = '';
+                this.currentSelectionSignature = null;
+                this.dismissedSelectionSignature = null;
                 this.inputManager.reset();
                 this.hide();
             }
@@ -534,6 +617,9 @@
                 this.imageDetector.setEnabled(false);
             }
             this.imageDetector = null;
+
+            this.currentSelectionSignature = null;
+            this.dismissedSelectionSignature = null;
         }
     }
 
