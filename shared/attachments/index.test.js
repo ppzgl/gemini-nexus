@@ -115,4 +115,42 @@ describe('message attachment helpers', () => {
         expect(attachments.getImageAttachmentDataUrls([png])).toEqual([normalizedPng]);
         expect(attachments.countUserAttachmentsByType([png])).toEqual({ images: 1, files: 0 });
     });
+
+    it('caps normalized attachments at MAX_ATTACHMENTS_COUNT', () => {
+        const items = Array.from({ length: 12 }, (_, index) => ({
+            base64: 'data:image/png;base64,AAAA',
+            type: 'image/png',
+            name: `image-${index}.png`,
+        }));
+
+        const normalized = attachments.normalizeUserAttachments(items);
+
+        expect(normalized).toHaveLength(attachments.MAX_ATTACHMENTS_COUNT);
+        expect(normalized[0].name).toBe('image-0.png');
+    });
+
+    it('estimates data URL bytes from the base64 payload', () => {
+        expect(attachments.estimateDataUrlBytes('data:image/png;base64,' + 'A'.repeat(100))).toBe(
+            75
+        );
+        expect(attachments.estimateDataUrlBytes(null)).toBe(0);
+    });
+
+    it('rejects sends that exceed count or size limits', () => {
+        const items = Array.from({ length: 11 }, () => ({
+            base64: 'data:image/png;base64,AAAA',
+            type: 'image/png',
+        }));
+        expect(() => attachments.assertAttachmentsWithinLimits(items)).toThrow(/too many/i);
+
+        const oversized = `data:image/png;base64,${'A'.repeat(28_000_000)}`;
+        expect(() => attachments.assertAttachmentsWithinLimits(oversized)).toThrow(/too large/i);
+
+        expect(() =>
+            attachments.assertAttachmentsWithinLimits({
+                base64: 'data:image/png;base64,AAAA',
+                type: 'image/png',
+            })
+        ).not.toThrow();
+    });
 });

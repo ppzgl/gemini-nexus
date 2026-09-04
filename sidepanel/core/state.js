@@ -1,4 +1,5 @@
 import { CONNECTION_STORAGE_KEYS } from '../../shared/settings/connection.js';
+import { CUSTOM_SELECTION_TOOLS_STORAGE_KEY } from '../../shared/settings/selection_tools.js';
 import {
     createInitialRestoreMessages,
     createLocalStorageRestoreMessages,
@@ -119,6 +120,7 @@ export class StateManager {
                 'geminiSidePanelScope',
                 'geminiTextSelectionEnabled',
                 'geminiTextSelectionBlacklist',
+                CUSTOM_SELECTION_TOOLS_STORAGE_KEY,
                 'geminiImageToolsEnabled',
                 'geminiImageToolsBlacklist',
                 'geminiGeneratedImageWatermarkRemovalEnabled',
@@ -259,8 +261,14 @@ export class StateManager {
         this.frame.reveal();
 
         const restoreMessages = createInitialRestoreMessages(this.localStorageData, {
-            theme: localStorage.getItem('geminiTheme') || 'system',
-            language: localStorage.getItem('geminiLanguage') || 'system',
+            theme:
+                this.localStorageData.geminiTheme ||
+                localStorage.getItem('geminiTheme') ||
+                'system',
+            language:
+                this.localStorageData.geminiLanguage ||
+                localStorage.getItem('geminiLanguage') ||
+                'system',
             appVersion: `v${chrome.runtime.getManifest().version}`,
         });
         cacheSidebarExpandedPreference(this.localStorageData.geminiSidebarExpanded);

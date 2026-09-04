@@ -6,6 +6,7 @@ import {
 import { debugLog } from '../../shared/logging/debug.js';
 import { readErrorMessage } from './openai_response_extractors.js';
 import { readSseJson } from './sse.js';
+import { throwIfTruncated } from './shared/finish_reason.js';
 import {
     getMessageAttachments,
     assertCurrentAttachmentsSupported,
@@ -23,6 +24,7 @@ const ADAPTIVE_THINKING_MODEL_PATTERNS = Object.freeze([
     /^claude-jupiter(?:-|$)/i,
     /^claude-mythos(?:-|$)/i,
     /^claude-opus-4-(?:[7-9]|\d{2,})(?:-|$)/i,
+    /^claude-(?:[a-z0-9]+-)*5(?:-|\.|$)/i,
 ]);
 
 function buildUserContent(text, attachments) {
@@ -120,6 +122,10 @@ function applyAnthropicStreamEvent(streamEvent, state, onUpdate) {
     if (streamEvent.type === 'error' && streamEvent.error?.message) {
         state.error = streamEvent.error.message;
     }
+
+    if (streamEvent.type === 'message_delta' && streamEvent.delta?.stop_reason) {
+        state.stopReason = state.stopReason || streamEvent.delta.stop_reason;
+    }
 }
 
 export async function sendAnthropicMessage(
@@ -183,15 +189,22 @@ export async function sendAnthropicMessage(
         text: '',
         thoughts: '',
         error: null,
+        stopReason: null,
     };
 
-    await readSseJson(response, (streamEvent) => {
-        applyAnthropicStreamEvent(streamEvent, state, onUpdate);
-    });
+    await readSseJson(
+        response,
+        (streamEvent) => {
+            applyAnthropicStreamEvent(streamEvent, state, onUpdate);
+        },
+        signal
+    );
 
     if (state.error) {
         throw new Error(state.error);
     }
+
+    throwIfTruncated(state.stopReason);
 
     return {
         text: state.text,

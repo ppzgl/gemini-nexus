@@ -6,7 +6,20 @@ import {
     buildHistoryExportPayload,
     buildSettingsExportPayload,
 } from '../../shared/data_management/index.js';
-import { CUSTOM_SELECTION_TOOLS_STORAGE_KEY } from '../../shared/settings/selection_tools.js';
+import {
+    CUSTOM_SELECTION_TOOLS_STORAGE_KEY,
+    normalizeCustomSelectionTools,
+} from '../../shared/settings/selection_tools.js';
+import { normalizeShortcutDefaults } from '../../shared/config/constants.js';
+import {
+    normalizeAccountIndicesSetting,
+    normalizeBlacklistSetting,
+    normalizeLanguageSetting,
+    normalizeSidebarBehaviorSetting,
+    normalizeSidePanelScopeSetting,
+    normalizeThemeSetting,
+    normalizeToggleEnabled,
+} from '../../shared/settings/save_normalize.js';
 import { normalizeWebThinkingLevel } from '../../shared/models/web_thinking.js';
 import { publishHostContext } from './host_context.js';
 import {
@@ -15,6 +28,7 @@ import {
     restoreCustomSelectionTools,
     restoreGeneratedImageWatermarkRemoval,
     restoreImageTools,
+    restoreImageToolsBlacklist,
     restoreTextSelection,
     restoreTextSelectionBlacklist,
 } from './preferences.js';
@@ -101,7 +115,7 @@ const WINDOW_MESSAGE_HANDLERS = {
         bridge.state.save('geminiGroups', Array.isArray(payload) ? payload : []);
     },
     SAVE_SHORTCUTS(payload, bridge) {
-        bridge.state.save('geminiShortcuts', payload);
+        bridge.state.save('geminiShortcuts', normalizeShortcutDefaults(payload));
     },
     SAVE_MODEL(payload, bridge) {
         bridge.saveSelectedModel(payload);
@@ -110,46 +124,49 @@ const WINDOW_MESSAGE_HANDLERS = {
         bridge.state.save('geminiWebThinkingLevel', normalizeWebThinkingLevel(payload));
     },
     SAVE_THEME(payload, bridge) {
-        bridge.state.save('geminiTheme', payload);
+        bridge.state.save('geminiTheme', normalizeThemeSetting(payload));
     },
     SAVE_LANGUAGE(payload, bridge) {
-        bridge.state.save('geminiLanguage', payload);
+        bridge.state.save('geminiLanguage', normalizeLanguageSetting(payload));
     },
     SAVE_TEXT_SELECTION(payload, bridge) {
-        bridge.state.save('geminiTextSelectionEnabled', payload);
+        bridge.state.save('geminiTextSelectionEnabled', normalizeToggleEnabled(payload));
     },
     SAVE_TEXT_SELECTION_BLACKLIST(payload, bridge) {
-        bridge.state.save('geminiTextSelectionBlacklist', payload || '');
+        bridge.state.save('geminiTextSelectionBlacklist', normalizeBlacklistSetting(payload));
     },
     SAVE_CUSTOM_SELECTION_TOOLS(payload, bridge) {
         bridge.state.save(
             CUSTOM_SELECTION_TOOLS_STORAGE_KEY,
-            Array.isArray(payload) ? payload : []
+            normalizeCustomSelectionTools(payload)
         );
     },
     SAVE_IMAGE_TOOLS(payload, bridge) {
-        bridge.state.save('geminiImageToolsEnabled', payload);
+        bridge.state.save('geminiImageToolsEnabled', normalizeToggleEnabled(payload));
     },
     SAVE_IMAGE_TOOLS_BLACKLIST(payload, bridge) {
-        bridge.state.save('geminiImageToolsBlacklist', payload || '');
+        bridge.state.save('geminiImageToolsBlacklist', normalizeBlacklistSetting(payload));
     },
     SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL(payload, bridge) {
-        bridge.state.save('geminiGeneratedImageWatermarkRemovalEnabled', payload !== false);
+        bridge.state.save(
+            'geminiGeneratedImageWatermarkRemovalEnabled',
+            normalizeToggleEnabled(payload)
+        );
     },
     SAVE_SIDEBAR_BEHAVIOR(payload, bridge) {
-        bridge.state.save('geminiSidebarBehavior', payload);
+        bridge.state.save('geminiSidebarBehavior', normalizeSidebarBehaviorSetting(payload));
     },
     SAVE_SIDEBAR_EXPANDED(payload, bridge) {
         bridge.saveSidebarExpanded(payload);
     },
     SAVE_SIDE_PANEL_SCOPE(payload, bridge) {
-        bridge.state.save('geminiSidePanelScope', payload);
+        bridge.state.save('geminiSidePanelScope', normalizeSidePanelScopeSetting(payload));
     },
     SAVE_SIDE_PANEL_SESSION_BINDING(payload, bridge) {
         bridge.saveSidePanelSessionBinding(payload);
     },
     SAVE_ACCOUNT_INDICES(payload, bridge) {
-        bridge.state.save('geminiAccountIndices', payload);
+        bridge.state.save('geminiAccountIndices', normalizeAccountIndicesSetting(payload));
     },
     SAVE_CONTEXT_SETTINGS(payload, bridge) {
         bridge.saveContextSettings(payload);

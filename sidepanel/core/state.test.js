@@ -708,3 +708,15 @@ describe('StateManager tab ownership', () => {
         }
     });
 });
+
+describe('StateManager boot key coverage', () => {
+    it('loads custom selection tools during init', () => {
+        setupChrome(33);
+        const manager = new StateManager(createFrame());
+
+        manager.init();
+
+        const requestedKeys = chrome.storage.local.get.mock.calls[0][0];
+        expect(requestedKeys).toContain('geminiCustomSelectionTools');
+    });
+});

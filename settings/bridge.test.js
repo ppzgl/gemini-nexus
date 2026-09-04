@@ -208,7 +208,7 @@ describe('StandaloneSettingsBridge', () => {
 
         expect(chrome.storage.local.set).toHaveBeenCalledWith({
             geminiCustomSelectionTools: [
-                { id: 'formal', name: 'Formal', prompt: 'Rewrite: {text}' },
+                { id: 'formal', name: 'Formal', prompt: 'Rewrite: {text}', enabled: true },
             ],
         });
     });

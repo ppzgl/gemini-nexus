@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { transformMarkdown } from './pipeline.js';
 
 describe('transformMarkdown sanitization', () => {
@@ -33,5 +33,19 @@ describe('transformMarkdown sanitization', () => {
         const html = transformMarkdown('<img src=x onerror=alert(1)>');
 
         expect(html).toBe('&lt;img src=x onerror=alert(1)&gt;');
+    });
+
+    it('falls back to escaped text when Markdown parsing throws', () => {
+        globalThis.marked = {
+            parse() {
+                throw new Error('boom');
+            },
+        };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const html = transformMarkdown('<img src=x onerror=alert(1)>');
+
+        expect(html).toBe('&lt;img src=x onerror=alert(1)&gt;');
+        errorSpy.mockRestore();
     });
 });

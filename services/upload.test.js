@@ -147,4 +147,16 @@ describe('uploadFile', () => {
             expect.anything()
         );
     });
+
+    it('rejects too many attachments before any network request', async () => {
+        global.fetch = vi.fn();
+        const files = Array.from({ length: 11 }, (_, index) => ({
+            name: `image-${index}.png`,
+            base64: 'data:image/png;base64,AAAA',
+        }));
+
+        await expect(uploadFile(files, undefined, {})).rejects.toThrow(/too many/i);
+
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
 });

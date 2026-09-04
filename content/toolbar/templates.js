@@ -10,7 +10,7 @@
             .map(
                 (option) => `
                     <label class="translation-target-option">
-                        <input type="checkbox" name="translation-target" value="${option.value}" ${option.value === 'auto' ? 'checked' : ''}>
+                        <input type="radio" name="translation-target" value="${option.value}" ${option.value === 'auto' ? 'checked' : ''}>
                         <div class="selection-check">
                             ${ICONS.CHECK}
                         </div>

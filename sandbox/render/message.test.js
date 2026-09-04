@@ -186,3 +186,39 @@ describe('appendMessage copy button', () => {
         expect(secondUser.div.classList.contains('msg-grouped')).toBe(true);
     });
 });
+
+describe('appendMessage artifact cleanup', () => {
+    function plantFakeArtifact(messageDiv) {
+        const artifact = document.createElement('div');
+        artifact.setAttribute('data-live-artifact-enhanced', 'true');
+        const cleanup = vi.fn();
+        artifact.__liveArtifactCleanup = cleanup;
+        messageDiv.appendChild(artifact);
+        return cleanup;
+    }
+
+    it('releases artifact resources when the delete button removes the message', () => {
+        const container = document.createElement('div');
+        const controller = appendMessage(container, 'hello', 'ai', null, '', null, {
+            autoScroll: false,
+        });
+        const cleanup = plantFakeArtifact(controller.div);
+
+        container.querySelector('.delete-btn').click();
+
+        expect(cleanup).toHaveBeenCalledTimes(1);
+        expect(controller.div.isConnected).toBe(false);
+    });
+
+    it('releases artifact resources on dispose', () => {
+        const container = document.createElement('div');
+        const controller = appendMessage(container, 'hello', 'ai', null, '', null, {
+            autoScroll: false,
+        });
+        const cleanup = plantFakeArtifact(controller.div);
+
+        controller.dispose();
+
+        expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+});

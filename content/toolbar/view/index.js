@@ -139,6 +139,9 @@
         toggleTranslationTargetDropdown() {
             this.windowView.toggleTranslationTargetDropdown();
         }
+        closeTranslationTargetDropdown() {
+            this.windowView.closeTranslationTargetDropdown();
+        }
         getSelectedTranslationTargets() {
             return this.windowView.getSelectedTranslationTargets();
         }

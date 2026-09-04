@@ -1,5 +1,38 @@
 # Changelog
 
+## v5.4.0 - 2026-09-04
+
+### Models
+
+- **多渠道默认模型与思考适配全面更新**：
+    - OpenAI 官方渠道：默认模型升级为 `gpt-5.6-terra`，默认列表更新为 `gpt-5.6-terra, gpt-5.6-sol, gpt-5.6-luna, gpt-6-astra`。
+    - Anthropic 渠道：默认模型升级为 `claude-sonnet-5`，全系更新至 Generation 5（`claude-opus-5`, `claude-fable-5-1`），并适配 Claude 5 Adaptive Thinking 自适应思考协议。
+    - OpenRouter 渠道：默认模型升级为 `openai/gpt-5.6-terra`，模型列表更新为 `openai/gpt-5.6-terra, anthropic/claude-sonnet-5, google/gemini-3.1-pro, deepseek/deepseek-v4-flash`。
+    - 智谱 AI 渠道：全面升级至 GLM-5 系列（`glm-5.3, glm-5.2, glm-5.1, glm-5`），默认模型 `glm-5.3`。
+    - 通义千问渠道：纳入 Qwen 3.8 系列（`qwen3.8-max, qwen3.8-flash-next`），默认模型 `qwen3.8-max`。
+    - 官方 API 渠道：Pro 模型去除 `-preview` 预览后缀，统一映射规范 ID `gemini-3.1-pro`。
+
+### Reliability
+
+- 请求超时收口：上传（60s）、TTS（30s）加整体超时；SSE 流加 120s 空闲超时，stall 不再永久挂起。
+- 四家 provider 统一 finish/stop reason：截断与内容拦截转显式错误，不再把空回复当成功写入历史。
+- 附件上限：单次最多 10 个、单文件 20MB，超限发送前即失败并提示。
+- 启动队列：flush 失败重试一次后留痕；移除重复 Markdown 初始化。
+
+### Performance
+
+- 流式渲染加守卫跳过：无公式/无代码块的消息每 token 省掉 KaTeX 扫描与 artifact 全树扫描（同步语义不变）。
+- Graphviz 预览缓存 LRU（30 项）；消息删除/清空时释放 Live Artifact 监听器与 iframe。
+- Web 流读取器全路径释放；取消窗口按会话隔离。
+
+### Security
+
+- `sidePanelTabId` 交叉校验：带 tab 的发送方只能作用于自身 tab，声称其他 tab 的请求被纠正。
+
+### Chore
+
+- 版本号升级至 `5.4.0`。
+
 ## v5.3.0 - 2026-09-03
 
 ### Models

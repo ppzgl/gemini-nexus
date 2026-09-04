@@ -1,12 +1,13 @@
 import { ensureMarkdownDependencies } from './loader.js';
 import { transformMarkdown } from '../render/pipeline.js';
 import { createPrefixedId, getHighResImageUrl } from '../../shared/utils/index.js';
+import { escapeHtml } from '../../shared/utils/escape.js';
 import { t } from '../core/i18n.js';
 
 let rendererMessageHandler = null;
 
 function escapeAttribute(value) {
-    return String(value || '')
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
@@ -26,6 +27,11 @@ export function initRendererMode() {
     }
 
     rendererMessageHandler = async (event) => {
+        // Renderer mode is driven by the parent frame only; anything else
+        // (page scripts, nested preview iframes) is ignored. The reply goes
+        // back to the verified sender, never to a wildcard target.
+        if (!event || event.source == null || event.source !== window.parent) return;
+        const replyTarget = event.source;
         const message = event.data || {};
         if (!message || typeof message !== 'object') return;
 
@@ -85,14 +91,20 @@ export function initRendererMode() {
                     html += imageHtml;
                 }
 
-                event.source.postMessage(
+                replyTarget.postMessage(
                     { action: 'RENDER_RESULT', html, reqId, fetchTasks },
                     { targetOrigin: '*' }
                 );
             } catch (error) {
                 console.error('Render error', error);
-                event.source.postMessage(
-                    { action: 'RENDER_RESULT', html: text, reqId },
+                // Never reflect raw input as HTML: the caller injects `html`
+                // straight into the page, so fall back to escaped text.
+                replyTarget.postMessage(
+                    {
+                        action: 'RENDER_RESULT',
+                        html: escapeHtml(typeof text === 'string' ? text : ''),
+                        reqId,
+                    },
                     { targetOrigin: '*' }
                 );
             }

@@ -706,7 +706,9 @@ describe('MessageBridge model persistence', () => {
             },
         });
 
-        expect(state.save).toHaveBeenCalledWith('geminiCustomSelectionTools', tools);
+        expect(state.save).toHaveBeenCalledWith('geminiCustomSelectionTools', [
+            { id: 'formal', name: 'Formal', prompt: 'Rewrite: {text}', enabled: true },
+        ]);
 
         chrome.storage.local.get.mockImplementation((keys, callback) =>
             callback({ geminiCustomSelectionTools: tools })

@@ -348,4 +348,130 @@ describe('sendOpenAIMessage', () => {
         const payload = JSON.parse(init.body);
         expect(payload.store).toBe(false);
     });
+
+    it('ignores protected chat payload keys while keeping user extras', async () => {
+        await sendOpenAIMessage(
+            'Hello',
+            '',
+            [],
+            {
+                baseUrl: 'https://api.example.test/v1',
+                model: 'gpt-test',
+                chatPayload: {
+                    model: 'evil-model',
+                    messages: [{ role: 'user', content: 'evil' }],
+                    stream: false,
+                    temperature: 0.5,
+                },
+            },
+            [],
+            null,
+            vi.fn()
+        );
+
+        const [, init] = global.fetch.mock.calls[0];
+        const payload = JSON.parse(init.body);
+        expect(payload.model).toBe('gpt-test');
+        expect(payload.stream).toBe(true);
+        expect(payload.messages).not.toEqual([{ role: 'user', content: 'evil' }]);
+        expect(payload.temperature).toBe(0.5);
+    });
+
+    it('never lets user headers override authorization or content type', async () => {
+        await sendOpenAIMessage(
+            'Hello',
+            '',
+            [],
+            {
+                baseUrl: 'https://api.example.test/v1',
+                model: 'gpt-test',
+                apiKey: 'real-key',
+                headers: {
+                    Authorization: 'Bearer fake-key',
+                    'content-type': 'text/plain',
+                    'X-Title': 'Gemini Nexus',
+                },
+            },
+            [],
+            null,
+            vi.fn()
+        );
+
+        const [, init] = global.fetch.mock.calls[0];
+        expect(init.headers['Authorization']).toBe('Bearer real-key');
+        expect(init.headers['Content-Type']).toBe('application/json');
+        expect(init.headers['X-Title']).toBe('Gemini Nexus');
+    });
+
+    it('throws a truncation error instead of an empty success on max length', async () => {
+        const encoder = new TextEncoder();
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            body: {
+                getReader() {
+                    return {
+                        read: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                done: false,
+                                value: encoder.encode(
+                                    'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":"length"}]}\n\n'
+                                ),
+                            })
+                            .mockResolvedValueOnce({ done: true }),
+                    };
+                },
+            },
+        });
+
+        await expect(
+            sendOpenAIMessage(
+                'Hello',
+                '',
+                [],
+                { baseUrl: 'https://api.example.test/v1', model: 'gpt-test' },
+                [],
+                null,
+                vi.fn()
+            )
+        ).rejects.toThrow(/truncated/);
+    });
+
+    it('throws a blocked error on incomplete responses', async () => {
+        const encoder = new TextEncoder();
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            body: {
+                getReader() {
+                    return {
+                        read: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                done: false,
+                                value: encoder.encode(
+                                    'data: {"type":"response.completed","response":{"status":"incomplete","incomplete_details":{"reason":"content_filter"}}}\n\n'
+                                ),
+                            })
+                            .mockResolvedValueOnce({ done: true }),
+                    };
+                },
+            },
+        });
+
+        await expect(
+            sendOpenAIMessage(
+                'Hello',
+                '',
+                [],
+                {
+                    baseUrl: 'https://api.example.test/v1',
+                    model: 'gpt-test',
+                    useResponsesApi: true,
+                },
+                [],
+                null,
+                vi.fn()
+            )
+        ).rejects.toThrow(/blocked/);
+    });
 });

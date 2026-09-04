@@ -27,7 +27,7 @@ export function createPrefixedId(prefix) {
     return `${safePrefix || 'id'}_${generateUUID()}`;
 }
 
-export async function dataUrlToBlob(dataUrl) {
+export async function dataUrlToBlob(dataUrl, maxBytes = 20 * 1024 * 1024) {
     if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
         throw new Error('Invalid data URL: must be a string starting with "data:"');
     }
@@ -39,6 +39,15 @@ export async function dataUrlToBlob(dataUrl) {
 
     const header = dataUrl.slice(0, commaIndex);
     const base64Data = dataUrl.slice(commaIndex + 1);
+
+    // Estimate before decoding: atob materializes several copies of the input
+    // and an oversized payload would OOM the worker.
+    const estimatedBytes = Math.floor(base64Data.replace(/\s+/g, '').length * 0.75);
+    if (estimatedBytes > maxBytes) {
+        throw new Error(
+            `Data URL payload is too large (~${Math.round(estimatedBytes / 1048576)}MB); refusing to decode more than ${maxBytes / 1048576}MB.`
+        );
+    }
 
     const mimeMatch = header.match(/:(.*?);/);
     if (!mimeMatch || !mimeMatch[1]) {

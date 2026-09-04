@@ -24,7 +24,6 @@ export function createMcpConnectionState() {
         serverCapabilities: {},
         serverInfo: null,
         instructions: '',
-        _resolveSseEndpoint: null,
     };
 }
 

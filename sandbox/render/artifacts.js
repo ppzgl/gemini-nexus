@@ -12,6 +12,7 @@
 export { getArtifactKind } from './artifact_sanitize.js';
 export { sanitizeArtifactMarkup, buildArtifactSrcDoc } from './artifact_sanitize.js';
 export {
+    GRAPHVIZ_CACHE_LIMIT,
     createLiveArtifactPreview,
     cleanupLiveArtifacts,
     enhanceLiveArtifacts,

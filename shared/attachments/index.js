@@ -18,6 +18,16 @@ const IMAGE_SIGNATURES = [
     { signature: 'UklGR', type: 'image/webp' },
 ];
 
+export const MAX_ATTACHMENTS_COUNT = 10;
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+
+export function estimateDataUrlBytes(dataUrl) {
+    if (typeof dataUrl !== 'string') return 0;
+    const commaIndex = dataUrl.indexOf(',');
+    const payload = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : '';
+    return Math.floor(payload.replace(/\s+/g, '').length * 0.75);
+}
+
 function isPlainObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -76,6 +86,7 @@ export function normalizeUserAttachments(attachments) {
     const items = Array.isArray(attachments) ? attachments : attachments ? [attachments] : [];
 
     return items
+        .slice(0, MAX_ATTACHMENTS_COUNT)
         .map((item, index) => {
             if (typeof item === 'string') {
                 const declaredType = getDataUrlMime(item);
@@ -111,6 +122,30 @@ export function getImageAttachmentDataUrls(attachments) {
     return normalizeUserAttachments(attachments)
         .filter((attachment) => attachment.type.startsWith('image/'))
         .map((attachment) => attachment.base64);
+}
+
+/**
+ * Rejects oversized sends with a user-facing error. Normalization itself
+ * stays total (history restore must never throw), so send paths call this
+ * explicitly before converting or uploading attachments.
+ */
+export function assertAttachmentsWithinLimits(attachments) {
+    const items = Array.isArray(attachments) ? attachments : attachments ? [attachments] : [];
+    if (items.length > MAX_ATTACHMENTS_COUNT) {
+        throw new Error(
+            `Too many attachments (${items.length}); at most ${MAX_ATTACHMENTS_COUNT} are supported.`
+        );
+    }
+    for (const item of items) {
+        const base64 = typeof item === 'string' ? item : item?.base64;
+        const bytes = estimateDataUrlBytes(base64);
+        if (bytes > MAX_ATTACHMENT_BYTES) {
+            const name = (typeof item === 'object' && item?.name) || 'attachment';
+            throw new Error(
+                `Attachment "${name}" is too large (~${Math.round(bytes / 1048576)}MB); files must be under ${MAX_ATTACHMENT_BYTES / 1048576}MB.`
+            );
+        }
+    }
 }
 
 export function normalizeMessageImages(image) {

@@ -162,4 +162,18 @@ describe('ChatController streaming scroll following', () => {
 
         expect(historyDiv.scrollTo).not.toHaveBeenCalled();
     });
+
+    it('releases artifact resources when clearing history', () => {
+        const { controller, historyDiv } = createController();
+        const artifact = document.createElement('div');
+        artifact.setAttribute('data-live-artifact-enhanced', 'true');
+        const cleanup = vi.fn();
+        artifact.__liveArtifactCleanup = cleanup;
+        historyDiv.appendChild(artifact);
+
+        controller.clear();
+
+        expect(cleanup).toHaveBeenCalledTimes(1);
+        expect(historyDiv.innerHTML).toBe('');
+    });
 });

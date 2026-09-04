@@ -385,4 +385,16 @@ describe('MessageHandler.handleStreamUpdate', () => {
             })
         );
     });
+
+    it('scopes the cancellation check to the updating session', () => {
+        const { app, handler } = createMessageHandlerHarness();
+
+        handler.handleStreamUpdate({
+            action: 'GEMINI_STREAM_UPDATE',
+            sessionId: 'session-1',
+            text: 'fresh tokens',
+        });
+
+        expect(app.prompt.isCancellationRecent).toHaveBeenCalledWith('session-1');
+    });
 });

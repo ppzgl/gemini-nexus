@@ -1,9 +1,15 @@
 export function getTargetSidePanelTabId(request, sender) {
+    const senderTabId = sender?.tab?.id;
+    // A sender running inside a tab can only ever act for its own tab: a
+    // sender-supplied sidePanelTabId pointing elsewhere is never legitimate
+    // (no content flow sets the claim; the sidepanel attaches it with no
+    // sender tab), so the authenticated sender tab wins over the claim.
+    if (Number.isInteger(senderTabId) && senderTabId > 0) return senderTabId;
+
     const requestTabId = request?.sidePanelTabId;
     if (Number.isInteger(requestTabId) && requestTabId > 0) return requestTabId;
 
-    const senderTabId = sender?.tab?.id;
-    return Number.isInteger(senderTabId) && senderTabId > 0 ? senderTabId : null;
+    return null;
 }
 
 export function sendToRequestSource(sender, payload) {

@@ -9,6 +9,7 @@ import {
 } from '../../shared/attachments/index.js';
 import { debugLog } from '../../shared/logging/debug.js';
 import { readSseJson } from './sse.js';
+import { throwIfTruncated } from './shared/finish_reason.js';
 import { normalizeBaseUrl } from './shared/urls.js';
 import { normalizeOfficialModelId } from '../../shared/models/aliases.js';
 
@@ -149,7 +150,10 @@ function normalizeOfficialModel(model) {
 }
 
 function normalizeThinkingLevelForModel(targetModel, thinkingLevel) {
-    if (targetModel === 'gemini-3.1-pro-preview' && thinkingLevel === 'minimal') {
+    if (
+        (targetModel === 'gemini-3.1-pro' || targetModel === 'gemini-3.1-pro-preview') &&
+        thinkingLevel === 'minimal'
+    ) {
         return DEFAULT_THINKING_LEVEL;
     }
     return thinkingLevel;
@@ -316,40 +320,51 @@ export async function sendOfficialMessage(
     let fullText = '';
     let fullThoughts = '';
     let finalThoughtSignature = null;
+    let finishReason = null;
     const modelParts = [];
     const functionCalls = [];
     const sources = [];
     const seenSourceUrls = new Set();
 
-    await readSseJson(response, (streamEvent) => {
-        const candidate =
-            streamEvent.candidates && streamEvent.candidates[0] ? streamEvent.candidates[0] : null;
+    await readSseJson(
+        response,
+        (streamEvent) => {
+            const candidate =
+                streamEvent.candidates && streamEvent.candidates[0]
+                    ? streamEvent.candidates[0]
+                    : null;
 
-        if (candidate && candidate.groundingMetadata) {
-            extractGroundingSources(candidate.groundingMetadata).forEach((source) => {
-                if (!source.url || seenSourceUrls.has(source.url)) return;
-                seenSourceUrls.add(source.url);
-                sources.push(source);
-            });
-        }
+            if (candidate?.finishReason) {
+                finishReason = finishReason || candidate.finishReason;
+            }
 
-        if (candidate && candidate.content) {
-            const parsed = extractOfficialResponseData(candidate);
-            if (parsed.officialContent) {
-                modelParts.push(...parsed.officialContent.parts);
+            if (candidate && candidate.groundingMetadata) {
+                extractGroundingSources(candidate.groundingMetadata).forEach((source) => {
+                    if (!source.url || seenSourceUrls.has(source.url)) return;
+                    seenSourceUrls.add(source.url);
+                    sources.push(source);
+                });
             }
-            if (parsed.functionCalls.length > 0) {
-                functionCalls.push(...parsed.functionCalls);
-            }
-            if (parsed.text) fullText += parsed.text;
-            if (parsed.thoughts) fullThoughts += parsed.thoughts;
-            if (parsed.thoughtSignature) finalThoughtSignature = parsed.thoughtSignature;
 
-            if (fullText || fullThoughts) {
-                onUpdate(fullText, fullThoughts);
+            if (candidate && candidate.content) {
+                const parsed = extractOfficialResponseData(candidate);
+                if (parsed.officialContent) {
+                    modelParts.push(...parsed.officialContent.parts);
+                }
+                if (parsed.functionCalls.length > 0) {
+                    functionCalls.push(...parsed.functionCalls);
+                }
+                if (parsed.text) fullText += parsed.text;
+                if (parsed.thoughts) fullThoughts += parsed.thoughts;
+                if (parsed.thoughtSignature) finalThoughtSignature = parsed.thoughtSignature;
+
+                if (fullText || fullThoughts) {
+                    onUpdate(fullText, fullThoughts);
+                }
             }
-        }
-    });
+        },
+        signal
+    );
 
     const seenCallIds = new Set();
     const dedupedFunctionCalls = functionCalls.filter((call) => {
@@ -358,6 +373,8 @@ export async function sendOfficialMessage(
         seenCallIds.add(call.id);
         return true;
     });
+
+    throwIfTruncated(finishReason);
 
     return {
         text: fullText,

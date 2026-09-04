@@ -4,6 +4,7 @@ export class AppMessageBridge {
         this.ui = null;
         this.resizeCallback = null;
         this.queue = [];
+        this.failedActions = [];
 
         window.addEventListener('message', this.handleMessage.bind(this));
     }
@@ -23,6 +24,7 @@ export class AppMessageBridge {
     }
 
     handleMessage(event) {
+        if (!isParentMessage(event)) return;
         const { action, payload } = event.data || {};
         if (!action) return;
 
@@ -35,20 +37,41 @@ export class AppMessageBridge {
 
     flush() {
         if (this.app && this.ui) {
+            const deferred = [];
             while (this.queue.length > 0) {
-                const { action, payload, event } = this.queue.shift();
-                try {
-                    this.dispatch(action, payload, event);
-                } catch (error) {
-                    // A single bad restore message must not abort sandbox boot
-                    // (historically RESTORE_IMAGE_TOOLS threw on chrome.storage).
-                    console.error(
-                        '[Gemini Nexus] Failed to dispatch queued parent message:',
-                        action,
-                        error
-                    );
+                const item = this.queue.shift();
+                if (!this.tryDispatch(item) && !item.retried) {
+                    // One retry pass for transient failures (e.g. a
+                    // chrome.storage hiccup during boot).
+                    deferred.push({ ...item, retried: true });
                 }
             }
+            for (const item of deferred) {
+                this.tryDispatch(item);
+            }
+        }
+    }
+
+    tryDispatch({ action, payload, event, retried }) {
+        try {
+            this.dispatch(action, payload, event);
+            return true;
+        } catch (error) {
+            // A single bad restore message must not abort sandbox boot
+            // (historically RESTORE_IMAGE_TOOLS threw on chrome.storage).
+            // Only the final attempt is recorded and logged; the first
+            // failure is silently requeued for the retry pass below.
+            if (retried) {
+                // Persistently failing actions are recorded for telemetry
+                // instead of failing silently.
+                this.failedActions.push(action);
+                console.error(
+                    '[Gemini Nexus] Failed to dispatch queued parent message:',
+                    action,
+                    error
+                );
+            }
+            return false;
         }
     }
 
@@ -140,4 +163,18 @@ export class AppMessageBridge {
 
         this.app.handleIncomingMessage(event);
     }
+}
+
+/**
+ * The sandbox page is embedded by its parent (sidepanel/content) and must
+ * only accept driving messages from that parent frame. Anything else —
+ * page scripts, nested iframes such as srcdoc artifact previews (which
+ * report back with { channel, event } instead of actions) — is ignored.
+ */
+function isParentMessage(event) {
+    if (!event || event.source == null || event.source !== window.parent) return false;
+    const data = event.data;
+    if (!data || typeof data !== 'object') return false;
+    if ('channel' in data) return false;
+    return true;
 }

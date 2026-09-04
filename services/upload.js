@@ -1,7 +1,12 @@
 import { dataUrlToBlob } from '../shared/utils/index.js';
-import { normalizeUserAttachments } from '../shared/attachments/index.js';
+import {
+    assertAttachmentsWithinLimits,
+    normalizeUserAttachments,
+} from '../shared/attachments/index.js';
+import { withFetchTimeout } from './providers/shared/fetch_timeout.js';
 
 const CURRENT_UPLOAD_ENDPOINT = 'https://push.clients6.google.com/upload/';
+const UPLOAD_TIMEOUT_MS = 60000;
 
 function buildUploadRequest(uploadContext = {}) {
     if (uploadContext.uploadPushId && uploadContext.uploadClientPctx) {
@@ -75,14 +80,29 @@ async function finalizeResumableUpload(uploadUrl, blob, uploadRequest, signal) {
 
 // Upload file to the endpoint used by the current Gemini Web client.
 export async function uploadFile(fileObj, signal, uploadContext = {}) {
+    assertAttachmentsWithinLimits(fileObj);
     const [file] = normalizeUserAttachments(fileObj);
     const uploadFileObj = file || fileObj;
     const blob = await dataUrlToBlob(uploadFileObj.base64);
 
     const request = buildUploadRequest(uploadContext);
-    const uploadUrl = await startResumableUpload(uploadFileObj.name, request, signal);
-    const responseText = await finalizeResumableUpload(uploadUrl, blob, request, signal);
+    const requestTimeout = withFetchTimeout(signal, UPLOAD_TIMEOUT_MS);
+    try {
+        const uploadUrl = await startResumableUpload(
+            uploadFileObj.name,
+            request,
+            requestTimeout.signal
+        );
+        const responseText = await finalizeResumableUpload(
+            uploadUrl,
+            blob,
+            request,
+            requestTimeout.signal
+        );
 
-    // Returns the identifier (e.g. /contrib_service/ttl_1d/...)
-    return responseText;
+        // Returns the identifier (e.g. /contrib_service/ttl_1d/...)
+        return responseText;
+    } finally {
+        requestTimeout.dispose();
+    }
 }

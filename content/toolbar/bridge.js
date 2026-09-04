@@ -1,11 +1,16 @@
 (function () {
     const SANDBOX_CLEANUP_DELAY_MS = 250;
+    // A renderer that never answers must not leave the toolbar in a loading
+    // state forever: the single caller (ui/renderer.js) falls back to escaped
+    // plain text when render() rejects.
+    const RENDER_TIMEOUT_MS = 8000;
 
     class RendererBridge {
         constructor(hostElement) {
             this.host = hostElement;
             this.iframe = null;
             this.callbacksByRequestId = {};
+            this.renderTimeouts = {};
             this.requestIdCounter = 0;
             this.cleanupTimer = null;
             this.iframeLoaded = false;
@@ -27,11 +32,18 @@
                 clearTimeout(this.cleanupTimer);
                 this.cleanupTimer = null;
             }
+            // Settle pending renders so their awaiters never hang: rejection
+            // funnels into the caller's escaped-text fallback.
+            for (const requestId of Object.keys(this.callbacksByRequestId)) {
+                clearTimeout(this.renderTimeouts[requestId]);
+                this.callbacksByRequestId[requestId].reject(new Error('Renderer bridge destroyed'));
+            }
             this.iframe?.remove();
             this.iframe = null;
             this.iframeLoaded = false;
             this.iframeReady = null;
             this.callbacksByRequestId = {};
+            this.renderTimeouts = {};
         }
 
         ensureIframe() {
@@ -88,8 +100,11 @@
             if (event.data.action === 'RENDER_RESULT') {
                 const { html, reqId: requestId, fetchTasks } = event.data;
                 if (Object.prototype.hasOwnProperty.call(this.callbacksByRequestId, requestId)) {
-                    this.callbacksByRequestId[requestId]({ html, fetchTasks });
+                    const entry = this.callbacksByRequestId[requestId];
+                    clearTimeout(this.renderTimeouts[requestId]);
                     delete this.callbacksByRequestId[requestId];
+                    delete this.renderTimeouts[requestId];
+                    entry.resolve({ html, fetchTasks });
                     this.scheduleCleanup();
                 }
             }
@@ -119,21 +134,63 @@
             return `req_${this.requestIdCounter}`;
         }
 
+        withTimeout(promise, ms) {
+            let timer;
+            const guard = new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new Error(`Renderer timed out after ${ms}ms`)), ms);
+            });
+            return Promise.race([
+                Promise.resolve(promise).finally(() => clearTimeout(timer)),
+                guard,
+            ]);
+        }
+
         async render(text, images = []) {
             const requestId = this.createRequestId();
             const iframe = this.ensureIframe();
-            await this.waitForIframe(iframe);
-            return new Promise((resolve) => {
-                this.callbacksByRequestId[requestId] = resolve;
+            try {
+                await this.withTimeout(this.waitForIframe(iframe), RENDER_TIMEOUT_MS);
+            } catch {
+                this.scheduleCleanup();
+                throw new Error(`Renderer timed out after ${RENDER_TIMEOUT_MS}ms`);
+            }
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    if (
+                        Object.prototype.hasOwnProperty.call(this.callbacksByRequestId, requestId)
+                    ) {
+                        delete this.callbacksByRequestId[requestId];
+                        delete this.renderTimeouts[requestId];
+                        this.scheduleCleanup();
+                        reject(new Error(`Renderer timed out after ${RENDER_TIMEOUT_MS}ms`));
+                    }
+                }, RENDER_TIMEOUT_MS);
+                this.renderTimeouts[requestId] = timer;
+                this.callbacksByRequestId[requestId] = {
+                    resolve: (result) => {
+                        clearTimeout(this.renderTimeouts[requestId]);
+                        delete this.renderTimeouts[requestId];
+                        resolve(result);
+                    },
+                    reject: (error) => {
+                        clearTimeout(this.renderTimeouts[requestId]);
+                        delete this.renderTimeouts[requestId];
+                        reject(error);
+                    },
+                };
                 if (iframe === this.iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage(
                         { action: 'RENDER', text, images, reqId: requestId },
                         '*'
                     );
                 } else {
+                    // The bridge was torn down or recreated while waiting for
+                    // the iframe: reject so the caller shows its fallback.
+                    this.callbacksByRequestId[requestId].reject(
+                        new Error('Renderer iframe unavailable')
+                    );
                     delete this.callbacksByRequestId[requestId];
                     this.scheduleCleanup();
-                    resolve({ html: text, fetchTasks: [] });
                 }
             });
         }

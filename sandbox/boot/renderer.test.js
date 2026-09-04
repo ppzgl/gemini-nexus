@@ -32,7 +32,7 @@ describe('renderer mode', () => {
     }
 
     it('renders every generated image and returns a fetch task for each one', async () => {
-        const postMessage = vi.fn();
+        const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
         const event = new MessageEvent('message', {
             data: {
                 action: 'RENDER',
@@ -48,7 +48,7 @@ describe('renderer mode', () => {
             },
         });
         Object.defineProperty(event, 'source', {
-            value: { postMessage },
+            value: window.parent,
         });
 
         initRendererMode();
@@ -73,6 +73,7 @@ describe('renderer mode', () => {
                 url: 'https://example.test/two.png?highres=1',
             },
         ]);
+        postMessage.mockRestore();
     });
 
     it('ignores non-object renderer messages', () => {
@@ -93,7 +94,7 @@ describe('renderer mode', () => {
         globalThis.marked = {
             parse: vi.fn(() => '<h3>Rendered</h3>'),
         };
-        const postMessage = vi.fn();
+        const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
         const event = new MessageEvent('message', {
             data: {
                 action: 'RENDER',
@@ -102,7 +103,7 @@ describe('renderer mode', () => {
             },
         });
         Object.defineProperty(event, 'source', {
-            value: { postMessage },
+            value: window.parent,
         });
 
         initRendererMode();
@@ -122,6 +123,61 @@ describe('renderer mode', () => {
             reqId: 8,
         });
 
+        postMessage.mockRestore();
+        delete globalThis.marked;
+    });
+
+    it('ignores renderer messages from a foreign source', async () => {
+        const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
+        const event = new MessageEvent('message', {
+            data: { action: 'RENDER', reqId: 9, text: 'hello' },
+        });
+        Object.defineProperty(event, 'source', {
+            value: {},
+        });
+
+        initRendererMode();
+        window.dispatchEvent(event);
+        await flushRenderer();
+
+        expect(postMessage).not.toHaveBeenCalled();
+        postMessage.mockRestore();
+    });
+
+    it('returns escaped text when rendering fails instead of raw html', async () => {
+        globalThis.marked = {
+            parse: () => {
+                throw new Error('boom');
+            },
+        };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
+        const event = new MessageEvent('message', {
+            data: {
+                action: 'RENDER',
+                reqId: 10,
+                text: '<img src=x onerror="alert(1)">',
+            },
+        });
+        Object.defineProperty(event, 'source', {
+            value: window.parent,
+        });
+
+        initRendererMode();
+        window.dispatchEvent(event);
+        await flushRenderer();
+        await flushRenderer();
+
+        expect(postMessage).toHaveBeenCalledTimes(1);
+        const [payload] = postMessage.mock.calls[0];
+        expect(payload.reqId).toBe(10);
+        const html = document.createElement('div');
+        html.innerHTML = payload.html;
+        expect(html.querySelector('[onerror]')).toBeNull();
+        expect(payload.html).toContain('&lt;img');
+
+        postMessage.mockRestore();
+        errorSpy.mockRestore();
         delete globalThis.marked;
     });
 });

@@ -2,9 +2,11 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { renderContent } from './content.js';
+import { transformMarkdown } from './pipeline.js';
+import { enhanceLiveArtifacts } from './artifacts.js';
 
 vi.mock('./pipeline.js', () => ({
-    transformMarkdown: (text) => `<pre>${text}</pre>`,
+    transformMarkdown: vi.fn((text) => `<pre>${text}</pre>`),
 }));
 
 vi.mock('./artifacts.js', () => ({
@@ -117,5 +119,102 @@ describe('renderContent tool disclosure', () => {
 
         expect(searchDiv.querySelector('.tool-disclosure-icon')?.dataset.toolIcon).toBe('search');
         expect(unknownDiv.querySelector('.tool-disclosure-icon')?.dataset.toolIcon).toBe('tool');
+    });
+});
+
+describe('renderContent ai error boundaries', () => {
+    it('falls back to escaped text when Markdown rendering throws', () => {
+        vi.mocked(transformMarkdown).mockImplementationOnce(() => {
+            throw new Error('marked boom');
+        });
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const contentDiv = document.createElement('div');
+
+        expect(() => renderContent(contentDiv, '<img src=x onerror=alert(1)>', 'ai')).not.toThrow();
+        expect(contentDiv.querySelector('[onerror]')).toBeNull();
+        expect(contentDiv.innerHTML).toContain('&lt;img');
+
+        errorSpy.mockRestore();
+    });
+
+    it('keeps the rendered message when math rendering throws', () => {
+        globalThis.renderMathInElement = () => {
+            throw new Error('katex boom');
+        };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const contentDiv = document.createElement('div');
+
+        try {
+            expect(() => renderContent(contentDiv, 'hello $x$', 'ai')).not.toThrow();
+            expect(contentDiv.innerHTML).toContain('hello');
+        } finally {
+            delete globalThis.renderMathInElement;
+            errorSpy.mockRestore();
+        }
+    });
+
+    it('keeps the rendered message when artifact enhancement throws', () => {
+        vi.mocked(transformMarkdown).mockImplementationOnce(
+            () => '<div class="code-block-wrapper"><pre><code>graph TD</code></pre></div>'
+        );
+        vi.mocked(enhanceLiveArtifacts).mockImplementationOnce(() => {
+            throw new Error('artifact boom');
+        });
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const contentDiv = document.createElement('div');
+
+        expect(() => renderContent(contentDiv, '```mermaid\ngraph TD', 'ai')).not.toThrow();
+        expect(contentDiv.querySelector('.code-block-wrapper')).not.toBeNull();
+
+        errorSpy.mockRestore();
+    });
+});
+
+describe('renderContent post-pass guards', () => {
+    it('skips math rendering when the text cannot contain math', () => {
+        globalThis.renderMathInElement = vi.fn();
+        const contentDiv = document.createElement('div');
+
+        try {
+            renderContent(contentDiv, 'plain prose, no delimiters', 'ai');
+
+            expect(globalThis.renderMathInElement).not.toHaveBeenCalled();
+        } finally {
+            delete globalThis.renderMathInElement;
+        }
+    });
+
+    it('still runs math rendering when delimiters may be present', () => {
+        globalThis.renderMathInElement = vi.fn();
+        const contentDiv = document.createElement('div');
+
+        try {
+            renderContent(contentDiv, 'energy $E = mc^2$', 'ai');
+
+            expect(globalThis.renderMathInElement).toHaveBeenCalledTimes(1);
+        } finally {
+            delete globalThis.renderMathInElement;
+        }
+    });
+
+    it('skips artifact enhancement for prose without code blocks', () => {
+        vi.mocked(enhanceLiveArtifacts).mockClear();
+        const contentDiv = document.createElement('div');
+
+        renderContent(contentDiv, 'just some words', 'ai');
+
+        expect(enhanceLiveArtifacts).not.toHaveBeenCalled();
+    });
+
+    it('still enhances messages that contain code blocks', () => {
+        vi.mocked(transformMarkdown).mockImplementationOnce(
+            () => '<div class="code-block-wrapper"><pre><code>graph TD</code></pre></div>'
+        );
+        vi.mocked(enhanceLiveArtifacts).mockClear();
+        const contentDiv = document.createElement('div');
+
+        renderContent(contentDiv, '```mermaid\ngraph TD', 'ai');
+
+        expect(enhanceLiveArtifacts).toHaveBeenCalledTimes(1);
     });
 });

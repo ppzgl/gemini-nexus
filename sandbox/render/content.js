@@ -1,5 +1,6 @@
 import { transformMarkdown } from './pipeline.js';
 import { cleanupLiveArtifacts, enhanceLiveArtifacts } from './artifacts.js';
+import { escapeHtml } from '../../shared/utils/escape.js';
 import { formatT, t } from '../core/i18n.js';
 import { TemplateIcons } from '../ui/templates/icons.js';
 import { createPrefixedId } from '../../shared/utils/index.js';
@@ -169,13 +170,11 @@ function normalizeToolStatus(status) {
     return 'completed';
 }
 
-function getToolStatusCopy(status, displayName, hasOutput) {
+function getToolStatusCopy(status, displayName) {
     if (status === 'running') return formatT('toolStatusRunning', { name: displayName });
     if (status === 'failed') return formatT('toolStatusFailed', { name: displayName });
     if (status === 'cancelled') return formatT('toolStatusCancelled', { name: displayName });
-    return hasOutput
-        ? formatT('toolStatusUsed', { name: displayName })
-        : formatT('toolStatusUsed', { name: displayName });
+    return formatT('toolStatusUsed', { name: displayName });
 }
 
 function getToolBadgeText(status) {
@@ -358,7 +357,7 @@ function createToolDisclosure(contentDiv, text, options = {}) {
 
     const title = document.createElement('span');
     title.className = 'tool-disclosure-title';
-    title.textContent = getToolStatusCopy(status, displayName, hasOutput);
+    title.textContent = getToolStatusCopy(status, displayName);
 
     const badge = document.createElement('span');
     badge.className = 'tool-disclosure-badge';
@@ -450,26 +449,59 @@ export function renderContent(contentDiv, text, role, options = {}) {
     }
 
     if (role === 'ai') {
-        const html = transformMarkdown(text);
+        let html;
+        try {
+            html = transformMarkdown(text);
+        } catch (error) {
+            // transformMarkdown already falls back internally; this guards
+            // test doubles and future renderers that throw instead.
+            console.error('[Gemini Nexus] Markdown render failed, falling back to text', error);
+            html = escapeHtml(typeof text === 'string' ? text : '');
+        }
         contentDiv.innerHTML = html;
 
-        // This processes the specific DOM element after HTML insertion
-        if (typeof renderMathInElement !== 'undefined') {
-            renderMathInElement(contentDiv, {
-                delimiters: [
-                    { left: '$$', right: '$$', display: true },
-                    { left: '$', right: '$', display: false },
-                    { left: '\\(', right: '\\)', display: false },
-                    { left: '\\[', right: '\\]', display: true },
-                ],
-                throwOnError: false,
-            });
+        // Streaming re-renders the full text per token: skip the expensive
+        // post-passes when they cannot match anything. All four math
+        // delimiters ($$, $, \(, \[) contain '$' or '\', so rendered text
+        // without either cannot produce math (entities included, since we test
+        // the decoded textContent rather than the raw input).
+        if (
+            typeof renderMathInElement !== 'undefined' &&
+            /[$\\]/.test(contentDiv.textContent || '')
+        ) {
+            try {
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false },
+                        { left: '\\[', right: '\\]', display: true },
+                    ],
+                    throwOnError: false,
+                });
+            } catch (error) {
+                // Math is progressive enhancement; never let it take down
+                // the already-rendered message.
+                console.error('[Gemini Nexus] Math rendering failed', error);
+            }
         }
 
-        enhanceLiveArtifacts(contentDiv, {
-            deferMermaidErrors: options.isStreaming === true && options.isFinal !== true,
-            deferGraphvizErrors: options.isStreaming === true && options.isFinal !== true,
-        });
+        // enhanceLiveArtifacts only visits .code-block-wrapper nodes; a plain
+        // prose message pays for a full subtree scan otherwise, every token.
+        const hasCodeBlocks =
+            contentDiv.matches?.('.code-block-wrapper') === true ||
+            contentDiv.querySelector?.('.code-block-wrapper') !== null;
+        if (hasCodeBlocks) {
+            try {
+                enhanceLiveArtifacts(contentDiv, {
+                    deferMermaidErrors: options.isStreaming === true && options.isFinal !== true,
+                    deferGraphvizErrors: options.isStreaming === true && options.isFinal !== true,
+                });
+            } catch (error) {
+                // Artifact previews are additive; a bad fence must not blank the message.
+                console.error('[Gemini Nexus] Artifact enhancement failed', error);
+            }
+        }
     } else {
         // User message OR fallback if marked not loaded yet
         contentDiv.innerText = text;

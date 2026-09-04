@@ -125,6 +125,9 @@ describe('sendAnthropicMessage', () => {
             'claude-mythos-preview',
             'claude-opus-4-7',
             'claude-opus-4-8-20261201',
+            'claude-sonnet-5',
+            'claude-opus-5',
+            'claude-fable-5-1',
         ]) {
             global.fetch.mockClear();
 
@@ -148,5 +151,37 @@ describe('sendAnthropicMessage', () => {
             expect(payload.thinking).toEqual({ type: 'adaptive' });
             expect(payload.output_config).toEqual({ effort: 'medium' });
         }
+    });
+
+    it('throws a truncation error on max_tokens instead of an empty success', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            body: makeAnthropicSseStream([
+                {
+                    type: 'content_block_delta',
+                    delta: { type: 'text_delta', text: 'partial' },
+                },
+                {
+                    type: 'message_delta',
+                    delta: { stop_reason: 'max_tokens' },
+                },
+            ]),
+        });
+
+        await expect(
+            sendAnthropicMessage(
+                'Hello',
+                '',
+                [],
+                {
+                    baseUrl: 'https://api.anthropic.com/v1',
+                    apiKey: 'anthropic-key',
+                    model: 'claude-test',
+                },
+                [],
+                null,
+                vi.fn()
+            )
+        ).rejects.toThrow(/truncated/);
     });
 });

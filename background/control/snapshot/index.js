@@ -140,10 +140,6 @@ export class SnapshotManager {
         return this.uidToAxNode.get(uid);
     }
 
-    _getVal(prop) {
-        return prop && prop.value;
-    }
-
     /**
      * Traverses descendants of a node using the raw AX tree structure.
      */

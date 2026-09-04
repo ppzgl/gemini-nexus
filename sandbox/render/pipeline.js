@@ -189,19 +189,26 @@ function normalizePreviewableMarkdownContent(text) {
  * @returns {string} - HTML string
  */
 export function transformMarkdown(text) {
-    if (typeof marked === 'undefined') {
-        // Library loads asynchronously; app will rerender when ready.
-        // Return raw text in the meantime without polluting console.
+    try {
+        if (typeof marked === 'undefined') {
+            // Library loads asynchronously; app will rerender when ready.
+            // Return raw text in the meantime without polluting console.
+            return escapeHtml(text);
+        }
+
+        const mathHandler = new MathPlaceholderProtector();
+
+        let processedText = mathHandler.protect(normalizePreviewableMarkdownContent(text));
+
+        let html = marked.parse(processedText);
+
+        html = mathHandler.restore(html);
+
+        return sanitizeHtml(html);
+    } catch (error) {
+        // One bad input must not break the whole message update (notably
+        // streaming, where every token re-renders the full text).
+        console.error('[Gemini Nexus] Markdown transform failed, falling back to text', error);
         return escapeHtml(text);
     }
-
-    const mathHandler = new MathPlaceholderProtector();
-
-    let processedText = mathHandler.protect(normalizePreviewableMarkdownContent(text));
-
-    let html = marked.parse(processedText);
-
-    html = mathHandler.restore(html);
-
-    return sanitizeHtml(html);
 }

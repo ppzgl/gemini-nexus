@@ -174,4 +174,29 @@ describe('sidepanel window actions', () => {
 
         expect(bridge.state.save).toHaveBeenCalledWith('geminiWebThinkingLevel', 'minimal');
     });
+
+    it('validates theme, toggles, and enums on save', () => {
+        const bridge = {
+            state: {
+                save: vi.fn(),
+            },
+        };
+
+        handleWindowMessageAction('SAVE_THEME', 'neon', bridge);
+        handleWindowMessageAction('SAVE_TEXT_SELECTION', 'false', bridge);
+        handleWindowMessageAction('SAVE_IMAGE_TOOLS', true, bridge);
+        handleWindowMessageAction('SAVE_SIDEBAR_BEHAVIOR', 'turbo', bridge);
+        handleWindowMessageAction('SAVE_SIDE_PANEL_SCOPE', 'everything', bridge);
+        handleWindowMessageAction('SAVE_TEXT_SELECTION_BLACKLIST', 'x'.repeat(25000), bridge);
+
+        expect(bridge.state.save).toHaveBeenCalledWith('geminiTheme', 'system');
+        expect(bridge.state.save).toHaveBeenCalledWith('geminiTextSelectionEnabled', false);
+        expect(bridge.state.save).toHaveBeenCalledWith('geminiImageToolsEnabled', true);
+        expect(bridge.state.save).toHaveBeenCalledWith('geminiSidebarBehavior', 'auto');
+        expect(bridge.state.save).toHaveBeenCalledWith('geminiSidePanelScope', 'remembered_tabs');
+        const blacklistCall = bridge.state.save.mock.calls.find(
+            ([key]) => key === 'geminiTextSelectionBlacklist'
+        );
+        expect(blacklistCall[1]).toHaveLength(20000);
+    });
 });

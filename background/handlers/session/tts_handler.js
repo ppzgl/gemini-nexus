@@ -21,7 +21,13 @@ export class TtsHandler {
     handle(request, sendResponse) {
         if (request.action !== 'GEMINI_TTS') return false;
 
-        this.handleTts(request).then(sendResponse);
+        this.handleTts(request).then(sendResponse, (error) =>
+            sendResponse({
+                action: 'GEMINI_TTS_RESULT',
+                status: 'error',
+                error: error?.message || String(error),
+            })
+        );
         return true;
     }
 

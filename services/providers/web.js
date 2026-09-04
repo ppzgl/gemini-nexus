@@ -241,6 +241,15 @@ export async function sendWebMessage(
         // reply instead of treating it as a complete one.
         console.error('Stream reading error:', error);
         streamError = error;
+    } finally {
+        // Always release the reader lock and cancel the underlying fetch so
+        // an aborted or errored stream does not leak the connection.
+        try {
+            await reader.cancel?.()?.catch?.(() => {});
+        } catch {}
+        try {
+            reader.releaseLock?.();
+        } catch {}
     }
 
     if (buffer.length > 0) {

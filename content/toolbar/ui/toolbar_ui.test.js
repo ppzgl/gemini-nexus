@@ -151,4 +151,44 @@ describe('ToolbarUI renderer bridge lifecycle', () => {
         expect(ui.bridge).toBe(bridgeInstances[1]);
         expect(ui.renderer.bridge).toBe(bridgeInstances[1]);
     });
+
+    it('coalesces rapid window-size saves into one trailing write', () => {
+        vi.useFakeTimers();
+        const set = vi.fn(() => Promise.resolve());
+        globalThis.chrome = { storage: { local: { set } } };
+        try {
+            const ui = new window.GeminiToolbarUI();
+
+            ui.saveWindowDimensions(100, 100);
+            ui.saveWindowDimensions(200, 200);
+            ui.saveWindowDimensions(640, 520);
+            expect(set).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(300);
+
+            expect(set).toHaveBeenCalledTimes(1);
+            expect(set).toHaveBeenCalledWith({ gemini_nexus_window_size: { w: 640, h: 520 } });
+        } finally {
+            vi.useRealTimers();
+            delete globalThis.chrome;
+        }
+    });
+
+    it('flushes the pending window size on dispose', () => {
+        const set = vi.fn(() => Promise.resolve());
+        globalThis.chrome = { storage: { local: { set } } };
+        try {
+            const ui = new window.GeminiToolbarUI();
+
+            ui.saveWindowDimensions(640, 520);
+            expect(set).not.toHaveBeenCalled();
+
+            ui.flushWindowDimensions();
+
+            expect(set).toHaveBeenCalledTimes(1);
+            expect(set).toHaveBeenCalledWith({ gemini_nexus_window_size: { w: 640, h: 520 } });
+        } finally {
+            delete globalThis.chrome;
+        }
+    });
 });

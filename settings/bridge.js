@@ -9,7 +9,19 @@ import {
     createConnectionSettingsPayload,
     createConnectionStorageUpdate,
 } from '../shared/settings/connection.js';
-import { CUSTOM_SELECTION_TOOLS_STORAGE_KEY } from '../shared/settings/selection_tools.js';
+import {
+    CUSTOM_SELECTION_TOOLS_STORAGE_KEY,
+    normalizeCustomSelectionTools,
+} from '../shared/settings/selection_tools.js';
+import {
+    normalizeAccountIndicesSetting,
+    normalizeBlacklistSetting,
+    normalizeLanguageSetting,
+    normalizeSidebarBehaviorSetting,
+    normalizeSidePanelScopeSetting,
+    normalizeThemeSetting,
+    normalizeToggleEnabled,
+} from '../shared/settings/save_normalize.js';
 import {
     HISTORY_STORAGE_KEYS,
     SETTINGS_STORAGE_KEYS,
@@ -163,46 +175,62 @@ export class StandaloneSettingsBridge {
                 this.forwardToBackground(payload);
                 return;
             case 'SAVE_SHORTCUTS':
-                setLocalStorageData({ geminiShortcuts: payload || {} });
+                setLocalStorageData({ geminiShortcuts: normalizeShortcutDefaults(payload) });
                 return;
-            case 'SAVE_THEME':
-                localStorage.setItem('geminiTheme', payload || 'system');
-                setLocalStorageData({ geminiTheme: payload || 'system' });
+            case 'SAVE_THEME': {
+                const theme = normalizeThemeSetting(payload);
+                localStorage.setItem('geminiTheme', theme);
+                setLocalStorageData({ geminiTheme: theme });
                 return;
-            case 'SAVE_LANGUAGE':
-                localStorage.setItem('geminiLanguage', payload || 'system');
-                setLocalStorageData({ geminiLanguage: payload || 'system' });
+            }
+            case 'SAVE_LANGUAGE': {
+                const language = normalizeLanguageSetting(payload);
+                localStorage.setItem('geminiLanguage', language);
+                setLocalStorageData({ geminiLanguage: language });
                 return;
+            }
             case 'SAVE_TEXT_SELECTION':
-                setLocalStorageData({ geminiTextSelectionEnabled: payload !== false });
+                setLocalStorageData({
+                    geminiTextSelectionEnabled: normalizeToggleEnabled(payload),
+                });
                 return;
             case 'SAVE_TEXT_SELECTION_BLACKLIST':
-                setLocalStorageData({ geminiTextSelectionBlacklist: payload || '' });
+                setLocalStorageData({
+                    geminiTextSelectionBlacklist: normalizeBlacklistSetting(payload),
+                });
                 return;
             case 'SAVE_CUSTOM_SELECTION_TOOLS':
                 setLocalStorageData({
-                    [CUSTOM_SELECTION_TOOLS_STORAGE_KEY]: Array.isArray(payload) ? payload : [],
+                    [CUSTOM_SELECTION_TOOLS_STORAGE_KEY]: normalizeCustomSelectionTools(payload),
                 });
                 return;
             case 'SAVE_IMAGE_TOOLS':
-                setLocalStorageData({ geminiImageToolsEnabled: payload !== false });
+                setLocalStorageData({ geminiImageToolsEnabled: normalizeToggleEnabled(payload) });
                 return;
             case 'SAVE_IMAGE_TOOLS_BLACKLIST':
-                setLocalStorageData({ geminiImageToolsBlacklist: payload || '' });
+                setLocalStorageData({
+                    geminiImageToolsBlacklist: normalizeBlacklistSetting(payload),
+                });
                 return;
             case 'SAVE_GENERATED_IMAGE_WATERMARK_REMOVAL':
                 setLocalStorageData({
-                    geminiGeneratedImageWatermarkRemovalEnabled: payload !== false,
+                    geminiGeneratedImageWatermarkRemovalEnabled: normalizeToggleEnabled(payload),
                 });
                 return;
             case 'SAVE_SIDEBAR_BEHAVIOR':
-                setLocalStorageData({ geminiSidebarBehavior: payload || 'auto' });
+                setLocalStorageData({
+                    geminiSidebarBehavior: normalizeSidebarBehaviorSetting(payload),
+                });
                 return;
             case 'SAVE_SIDE_PANEL_SCOPE':
-                setLocalStorageData({ geminiSidePanelScope: payload || DEFAULT_SIDE_PANEL_SCOPE });
+                setLocalStorageData({
+                    geminiSidePanelScope: normalizeSidePanelScopeSetting(payload),
+                });
                 return;
             case 'SAVE_ACCOUNT_INDICES':
-                setLocalStorageData({ geminiAccountIndices: payload || '0' });
+                setLocalStorageData({
+                    geminiAccountIndices: normalizeAccountIndicesSetting(payload),
+                });
                 return;
             case 'SAVE_CONTEXT_SETTINGS':
                 {

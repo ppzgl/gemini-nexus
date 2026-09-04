@@ -1,4 +1,5 @@
 import { renderContent } from './content.js';
+import { cleanupLiveArtifacts } from './artifacts.js';
 import { createCopyButton } from './copy_button.js';
 import { createMessageEditControl } from './message_edit.js';
 import { createGeneratedImagesGrid, createUserImagesGrid } from './message_media.js';
@@ -217,6 +218,9 @@ export function appendMessage(
                 if (typeof options.onDelete === 'function') {
                     options.onDelete(messageElement);
                 } else {
+                    // Release Live Artifact listeners/iframes before dropping
+                    // the node: remove() alone would leak them.
+                    cleanupLiveArtifacts(messageElement);
                     messageElement.remove();
                     const prev = messageElement.previousElementSibling;
                     const next = messageElement.nextElementSibling;
@@ -359,6 +363,7 @@ export function appendMessage(
         dispose: () => {
             thoughtsController?.dispose();
             editController?.cancel();
+            cleanupLiveArtifacts(messageElement);
         },
         addImages: (images) => {
             if (
@@ -409,19 +414,6 @@ function createToolMessageRail() {
     rail.className = 'message-action-rail tool-message-rail';
     rail.setAttribute('aria-hidden', 'true');
     return rail;
-}
-
-function createActionButton({ iconHtml, title, ariaLabel, onClick, extraClass = '' }) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `copy-btn ${extraClass}`.trim();
-    btn.title = title;
-    btn.setAttribute('aria-label', ariaLabel || title);
-    btn.innerHTML = iconHtml;
-    if (typeof onClick === 'function') {
-        btn.addEventListener('click', onClick);
-    }
-    return btn;
 }
 
 function createMessageActionRail(role, { onEdit } = {}) {

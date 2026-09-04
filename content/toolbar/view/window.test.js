@@ -152,6 +152,24 @@ describe('WindowView', () => {
         expect(elements.translationTargetTrigger.getAttribute('aria-expanded')).toBe('true');
     });
 
+    it('collapses the translation target dropdown after a language is picked', () => {
+        const elements = createElements();
+        elements.translationTargetMenu.classList.add('hidden');
+        elements.translationTargetOptions.innerHTML = `
+            <label><input type="radio" name="translation-target" value="auto"><span>Auto</span></label>
+            <label><input type="radio" name="translation-target" value="zh-Hans"><span>Chinese</span></label>
+        `;
+        const view = new window.GeminiViewWindow(elements);
+
+        view.toggleTranslationTargetDropdown();
+        expect(elements.translationTargetMenu.classList.contains('hidden')).toBe(false);
+
+        view.closeTranslationTargetDropdown();
+
+        expect(elements.translationTargetMenu.classList.contains('hidden')).toBe(true);
+        expect(elements.translationTargetTrigger.getAttribute('aria-expanded')).toBe('false');
+    });
+
     it('opens generated result images in a zoomable preview', () => {
         const elements = createElements();
         document.body.appendChild(elements.askWindow);

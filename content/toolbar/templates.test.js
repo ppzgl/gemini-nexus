@@ -151,7 +151,7 @@ describe('GeminiToolbarTemplates', () => {
         expect(button.querySelector('[data-icon="ZAP"]')).not.toBeNull();
     });
 
-    it('renders a hidden multi-language translation target dropdown in the ask window', () => {
+    it('renders a hidden single-choice translation target dropdown in the ask window', () => {
         const wrapper = document.createElement('div');
         wrapper.innerHTML = window.GeminiToolbarTemplates.mainStructure;
 
@@ -173,6 +173,10 @@ describe('GeminiToolbarTemplates', () => {
         expect(menu).not.toBeNull();
         expect(menu.classList.contains('hidden')).toBe(true);
         expect(options.map((option) => option.value)).toEqual(['auto', 'zh-Hans', 'ja']);
+        expect(options.every((option) => option.type === 'radio')).toBe(true);
+        expect(options.filter((option) => option.checked).map((option) => option.value)).toEqual([
+            'auto',
+        ]);
     });
 
     it('includes a custom selection tools mount point in the text toolbar', () => {

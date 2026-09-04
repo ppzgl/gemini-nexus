@@ -272,6 +272,10 @@
             this.translationTargets.toggleDropdown();
         }
 
+        closeTranslationTargetDropdown() {
+            this.translationTargets.closeDropdown();
+        }
+
         getSelectedTranslationTargets() {
             return this.translationTargets.getSelected();
         }

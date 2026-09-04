@@ -74,6 +74,12 @@ export function createInitialRestoreMessages(localStorageData, { theme, language
                 payload: localStorageData.geminiTextSelectionBlacklist || '',
             },
             {
+                action: 'RESTORE_CUSTOM_SELECTION_TOOLS',
+                payload: Array.isArray(localStorageData[CUSTOM_SELECTION_TOOLS_STORAGE_KEY])
+                    ? localStorageData[CUSTOM_SELECTION_TOOLS_STORAGE_KEY]
+                    : [],
+            },
+            {
                 action: 'RESTORE_IMAGE_TOOLS',
                 payload: localStorageData.geminiImageToolsEnabled !== false,
             },

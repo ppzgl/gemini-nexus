@@ -16,6 +16,7 @@ export const SETTINGS_STORAGE_KEYS = [
     'geminiTextSelectionBlacklist',
     CUSTOM_SELECTION_TOOLS_STORAGE_KEY,
     'geminiImageToolsEnabled',
+    'geminiImageToolsBlacklist',
     'geminiGeneratedImageWatermarkRemovalEnabled',
     'geminiSidebarBehavior',
     'geminiSidePanelScope',

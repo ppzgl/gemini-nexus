@@ -1,5 +1,6 @@
 import { t } from '../core/i18n.js';
 import { copyToClipboard } from '../render/clipboard.js';
+import { cleanupLiveArtifacts } from '../render/artifacts.js';
 import { TemplateIcons } from './templates/icons.js';
 import '../../shared/ui/copy_feedback.js';
 
@@ -153,7 +154,12 @@ export class ChatController {
     }
 
     clear() {
-        if (this.historyDiv) this.historyDiv.innerHTML = '';
+        // Release Live Artifact listeners/iframes first: blanking innerHTML
+        // alone would orphan them.
+        if (this.historyDiv) {
+            cleanupLiveArtifacts(this.historyDiv);
+            this.historyDiv.innerHTML = '';
+        }
     }
 
     isNearBottom(threshold = 120) {

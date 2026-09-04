@@ -28,8 +28,11 @@ describe('RendererBridge message origin', () => {
         const promise = bridge.render(text);
         const iframe = host.querySelector('iframe');
         iframe.dispatchEvent(new Event('load'));
-        await Promise.resolve();
-        await Promise.resolve();
+        // Flush the full microtask chain (load -> ready -> wait -> register);
+        // the exact hop count is an implementation detail, so flush generously.
+        for (let i = 0; i < 10; i++) {
+            await Promise.resolve();
+        }
         return {
             promise,
             iframeWindow: iframe.contentWindow,
@@ -120,8 +123,9 @@ describe('RendererBridge message origin', () => {
         const second = bridge.render('second');
         const iframe = host.querySelector('iframe');
         iframe.dispatchEvent(new Event('load'));
-        await Promise.resolve();
-        await Promise.resolve();
+        for (let i = 0; i < 10; i++) {
+            await Promise.resolve();
+        }
         const iframeWindow = iframe.contentWindow;
         const [firstRequestId, secondRequestId] = Object.keys(bridge.callbacksByRequestId);
 
@@ -184,5 +188,57 @@ describe('RendererBridge message origin', () => {
             value: originalCrypto,
             configurable: true,
         });
+    });
+
+    it('rejects the render when the sandbox never answers', async () => {
+        vi.useFakeTimers();
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        const bridge = new window.GeminiRendererBridge(host);
+
+        const promise = bridge.render('stuck');
+        const iframe = host.querySelector('iframe');
+        iframe.dispatchEvent(new Event('load'));
+        await vi.advanceTimersByTimeAsync(0);
+
+        const assertion = expect(promise).rejects.toThrow(/timed out/);
+        await vi.advanceTimersByTimeAsync(8000);
+        await assertion;
+
+        expect(Object.keys(bridge.callbacksByRequestId)).toHaveLength(0);
+    });
+
+    it('rejects the render when the sandbox iframe never loads', async () => {
+        vi.useFakeTimers();
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        const bridge = new window.GeminiRendererBridge(host);
+
+        const promise = bridge.render('stuck');
+
+        const assertion = expect(promise).rejects.toThrow(/timed out/);
+        await vi.advanceTimersByTimeAsync(8000);
+        await assertion;
+
+        expect(Object.keys(bridge.callbacksByRequestId)).toHaveLength(0);
+    });
+
+    it('settles pending renders when the bridge is destroyed', async () => {
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        const bridge = new window.GeminiRendererBridge(host);
+
+        const promise = bridge.render('stuck');
+        const iframe = host.querySelector('iframe');
+        iframe.dispatchEvent(new Event('load'));
+        for (let i = 0; i < 10; i++) {
+            await Promise.resolve();
+        }
+        expect(Object.keys(bridge.callbacksByRequestId)).toHaveLength(1);
+
+        bridge.destroy();
+
+        await expect(promise).rejects.toThrow(/destroyed/);
+        expect(Object.keys(bridge.callbacksByRequestId)).toHaveLength(0);
     });
 });

@@ -28,4 +28,10 @@ describe('escapeHtml', () => {
     it('coerces non-string values to string before escaping', () => {
         expect(escapeHtml(42)).toBe('42');
     });
+
+    it('preserves falsy non-nullish values instead of swallowing them', () => {
+        expect(escapeHtml(0)).toBe('0');
+        expect(escapeHtml(false)).toBe('false');
+        expect(escapeHtml(NaN)).toBe('NaN');
+    });
 });

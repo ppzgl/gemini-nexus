@@ -46,6 +46,9 @@ export default defineConfig(() => {
         test: {
             setupFiles: ['./test/setup.js'],
             exclude: ['**/node_modules/**', '**/dist/**', '**/artifacts/**'],
+            // Deliberately no global test.environment: background logic tests
+            // run in node while DOM tests opt in per file via
+            // `// @vitest-environment jsdom`. New DOM tests must add the pragma.
         },
     };
 });

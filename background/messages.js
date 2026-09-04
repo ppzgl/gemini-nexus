@@ -39,6 +39,13 @@ export function setupMessageListener(
     });
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        // Malformed requests must not reach the handlers: property access on
+        // null/non-object throws inside the listener, the runtime swallows
+        // the exception, and the sender hangs forever awaiting a response.
+        if (!request || typeof request !== 'object' || typeof request.action !== 'string') {
+            return false;
+        }
+
         if (request.action === 'GET_LOGS') {
             sendResponse({ logs: logManager.getLogs() });
             return true;

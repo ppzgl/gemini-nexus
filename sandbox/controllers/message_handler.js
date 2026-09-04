@@ -141,8 +141,10 @@ export class MessageHandler {
 
     handleStreamUpdate(request) {
         if (!this.isGeneratingSessionMessage(request)) return;
-        // Check cancellation before caching to avoid polluting streamState with stale data
-        if (this.app.prompt.isCancellationRecent()) {
+        // Check cancellation before caching to avoid polluting streamState with stale data.
+        // Scoped to the update's session so a new run started right after a
+        // cancel does not lose its early tokens to the previous run's window.
+        if (this.app.prompt.isCancellationRecent(this.getRequestSessionId(request))) {
             this.clearStreamState(this.getRequestSessionId(request));
             return;
         }

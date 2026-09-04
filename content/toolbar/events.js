@@ -109,6 +109,8 @@
                     .filter((input) => input.checked)
                     .map((input) => input.value);
                 this.controller.handleTranslationTargetsChange(selected);
+                // Single-choice menu: collapse once a language is picked.
+                this.controller.closeTranslationTargetDropdown?.();
                 event.stopPropagation();
             });
 

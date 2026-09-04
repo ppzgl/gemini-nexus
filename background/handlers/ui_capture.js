@@ -126,9 +126,18 @@ export function handleProcessCropInSidePanel(context, request, sender, sendRespo
     respondWithUiTask(
         sendResponse,
         async () => {
+            // Never rebroadcast the sender-supplied object: spreading
+            // request.payload would let any message sender re-emit an
+            // arbitrary action under the background's identity. The action is
+            // fixed and only the crop fields are forwarded.
+            const payload = request.payload || {};
             await chrome.runtime.sendMessage({
-                ...request.payload,
-                tabId: request.payload?.tabId || context.getTargetSidePanelTabId(request, sender),
+                action: 'CROP_SCREENSHOT',
+                area: payload.area,
+                image: payload.image,
+                mode: payload.mode,
+                imageType: payload.imageType,
+                tabId: payload.tabId || context.getTargetSidePanelTabId(request, sender),
             });
 
             return { status: 'forwarded' };

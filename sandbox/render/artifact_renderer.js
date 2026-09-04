@@ -13,6 +13,7 @@ let mermaidLoader = () => import('mermaid');
 let mermaidModulePromise = null;
 let graphvizLoader = () => import('@viz-js/viz');
 let graphvizInstancePromise = null;
+export const GRAPHVIZ_CACHE_LIMIT = 30;
 const graphvizCache = new Map();
 
 async function loadMermaidModule() {
@@ -132,7 +133,13 @@ async function renderGraphvizToSvg(code) {
 
     const prepared = prepareGraphvizCode(source);
     const cacheKey = `${prepared.theme}::${prepared.layout}::${source}`;
-    if (graphvizCache.has(cacheKey)) return graphvizCache.get(cacheKey);
+    if (graphvizCache.has(cacheKey)) {
+        // Refresh recency so frequently viewed diagrams survive eviction.
+        const cached = graphvizCache.get(cacheKey);
+        graphvizCache.delete(cacheKey);
+        graphvizCache.set(cacheKey, cached);
+        return cached;
+    }
 
     const vizInstance = await loadGraphvizInstance();
     const svgElement = await vizInstance.renderSVGElement(prepared.code);
@@ -142,6 +149,10 @@ async function renderGraphvizToSvg(code) {
 
     const svg = svgElement.outerHTML;
     graphvizCache.set(cacheKey, svg);
+    while (graphvizCache.size > GRAPHVIZ_CACHE_LIMIT) {
+        // Maps iterate in insertion order: the first key is the stalest.
+        graphvizCache.delete(graphvizCache.keys().next().value);
+    }
     return svg;
 }
 

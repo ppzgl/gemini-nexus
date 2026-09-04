@@ -97,6 +97,8 @@
             this.startY = 0;
             this.onCancelCallback = null;
 
+            this.cleanupTimer = null;
+
             this.onMouseDown = this.onMouseDown.bind(this);
             this.onMouseMove = this.onMouseMove.bind(this);
             this.onMouseUp = this.onMouseUp.bind(this);
@@ -154,6 +156,12 @@
         }
 
         attachListeners() {
+            // A restart within the delayed-removal window below must not let
+            // the previous session's timer strip the new session's listeners.
+            if (this.cleanupTimer) {
+                clearTimeout(this.cleanupTimer);
+                this.cleanupTimer = null;
+            }
             this.overlay.addEventListener('mousedown', this.onMouseDown);
             window.addEventListener('mousemove', this.onMouseMove, { capture: true });
             window.addEventListener('mouseup', this.onMouseUp, { capture: true });
@@ -164,6 +172,10 @@
         }
 
         cleanup() {
+            if (this.cleanupTimer) {
+                clearTimeout(this.cleanupTimer);
+                this.cleanupTimer = null;
+            }
             if (this.overlay && this.overlay.parentNode) {
                 this.overlay.parentNode.removeChild(this.overlay);
             }
@@ -171,7 +183,8 @@
             window.removeEventListener('mouseup', this.onMouseUp, true);
             window.removeEventListener('keydown', this.onKeyDown, true);
 
-            setTimeout(() => {
+            this.cleanupTimer = setTimeout(() => {
+                this.cleanupTimer = null;
                 window.removeEventListener('click', this.onClick, true);
                 window.removeEventListener('contextmenu', this.onClick, true);
             }, 100);

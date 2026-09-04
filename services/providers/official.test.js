@@ -153,7 +153,7 @@ describe('extractOfficialResponseData', () => {
         );
 
         const [url] = global.fetch.mock.calls[0];
-        expect(url).toContain('/models/gemini-3.1-pro-preview:streamGenerateContent');
+        expect(url).toContain('/models/gemini-3.1-pro:streamGenerateContent');
     });
 
     it('does not send unsupported minimal thinking level to Gemini Pro models', async () => {
@@ -181,5 +181,45 @@ describe('extractOfficialResponseData', () => {
         const [, init] = global.fetch.mock.calls[0];
         const payload = JSON.parse(init.body);
         expect(payload.generationConfig.thinkingConfig.thinkingLevel).toBe('low');
+    });
+
+    it('throws a blocked error on SAFETY finish instead of an empty success', async () => {
+        const encoder = new TextEncoder();
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            body: {
+                getReader() {
+                    return {
+                        read: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                done: false,
+                                value: encoder.encode(
+                                    'data: {"candidates":[{"finishReason":"SAFETY"}]}\n\n'
+                                ),
+                            })
+                            .mockResolvedValueOnce({ done: true }),
+                    };
+                },
+            },
+        });
+
+        await expect(
+            sendOfficialMessage(
+                'Hello',
+                '',
+                [],
+                {
+                    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+                    apiKey: 'key',
+                    model: 'gemini-3-pro',
+                },
+                'minimal',
+                [],
+                false,
+                null,
+                vi.fn()
+            )
+        ).rejects.toThrow(/blocked/);
     });
 });

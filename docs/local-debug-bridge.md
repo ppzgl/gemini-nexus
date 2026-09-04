@@ -14,6 +14,8 @@ native-logger host (Node)
 
 ## 安装
 
+> 仅支持 macOS Chrome（安装路径硬编码 `~/Library/Application Support/Google/Chrome/NativeMessagingHosts`；Linux/Windows 需手动适配后使用）。
+
 在项目根目录：
 
 ```bash

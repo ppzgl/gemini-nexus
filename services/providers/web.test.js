@@ -462,4 +462,77 @@ describe('sendWebMessage', () => {
         expect(classifyEmptyWebResponseBuffer('rate limit exceeded')).toMatch(/rate-limited/i);
         expect(classifyEmptyWebResponseBuffer(')]}\'\n12\n[["wrb.fr"]]')).toMatch(/RPC metadata/);
     });
+
+    it('releases the reader after a successful stream', async () => {
+        const cancel = vi.fn(async () => {});
+        const releaseLock = vi.fn();
+        const encoder = new TextEncoder();
+        const chunk = encoder.encode(buildGeminiLine());
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            body: {
+                getReader: () => ({
+                    read: vi
+                        .fn()
+                        .mockResolvedValueOnce({ done: false, value: chunk })
+                        .mockResolvedValueOnce({ done: true }),
+                    cancel,
+                    releaseLock,
+                }),
+            },
+        });
+
+        const response = await sendWebMessage(
+            'hi',
+            {
+                atValue: 'at-token',
+                blValue: 'boq_assistant-bard-web-server_20260511.16_p5',
+                fSid: '3956664217185504700',
+                locale: 'zh-CN',
+                authUser: '0',
+            },
+            '56fdd199312815e2',
+            [],
+            undefined
+        );
+
+        expect(response.text).toBe('PROJECT_OK');
+        expect(cancel).toHaveBeenCalledTimes(1);
+        expect(releaseLock).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels the reader when the stream aborts mid-flight', async () => {
+        const cancel = vi.fn(async () => {});
+        const releaseLock = vi.fn();
+        const abortError = new Error('aborted');
+        abortError.name = 'AbortError';
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            body: {
+                getReader: () => ({
+                    read: vi.fn().mockRejectedValueOnce(abortError),
+                    cancel,
+                    releaseLock,
+                }),
+            },
+        });
+
+        await expect(
+            sendWebMessage(
+                'hi',
+                {
+                    atValue: 'at-token',
+                    blValue: 'boq_assistant-bard-web-server_20260511.16_p5',
+                    fSid: '3956664217185504700',
+                    locale: 'zh-CN',
+                    authUser: '0',
+                },
+                '56fdd199312815e2',
+                [],
+                undefined
+            )
+        ).rejects.toMatchObject({ name: 'AbortError' });
+        expect(cancel).toHaveBeenCalledTimes(1);
+        expect(releaseLock).toHaveBeenCalledTimes(1);
+    });
 });

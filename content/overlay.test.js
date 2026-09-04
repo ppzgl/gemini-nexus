@@ -116,4 +116,20 @@ describe('SelectionOverlay capture lifecycle', () => {
             warnSpy.mockRestore();
         }
     });
+
+    it('keeps the new session listeners when restarting inside the cleanup window', async () => {
+        const Overlay = await installOverlay();
+        const overlay = new Overlay();
+
+        overlay.start(null, {});
+        overlay.cancel();
+        overlay.start(null, {});
+        await vi.advanceTimersByTimeAsync(150);
+
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        window.dispatchEvent(click);
+
+        expect(click.defaultPrevented).toBe(true);
+        expect(document.getElementById('gemini-nexus-overlay')).not.toBeNull();
+    });
 });

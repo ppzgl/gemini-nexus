@@ -1,18 +1,63 @@
 import { respondWithUiTask } from './ui_async.js';
 
+// Transports understood downstream (see inferMcpTransport in
+// shared/mcp/transport.js). Anything else is rejected before any fetch.
+const MCP_TRANSPORTS = new Set(['sse', 'streamable-http', 'streamablehttp', 'ws', 'websocket']);
+
+// Header names that would pollute the merged object instead of sending a header.
+const UNSAFE_MCP_HEADER_NAMES = new Set(['__proto__', 'constructor', 'prototype']);
+
+function sanitizeMcpUrl(rawUrl) {
+    const url = String(rawUrl ?? '').trim();
+    if (!url) throw new Error('Server URL is empty');
+    let parsed;
+    try {
+        parsed = new URL(url);
+    } catch {
+        throw new Error('Server URL is invalid');
+    }
+    // Loopback is allowed on purpose (the default local bridge runs on
+    // 127.0.0.1); anything non-http(s) — file://, chrome://, etc. — is not.
+    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || !parsed.hostname) {
+        throw new Error('Server URL must use http(s)');
+    }
+    return url;
+}
+
+function sanitizeMcpTransport(rawTransport) {
+    const transport = String(rawTransport || 'sse').toLowerCase();
+    if (!MCP_TRANSPORTS.has(transport)) {
+        throw new Error(`Unsupported MCP transport: ${rawTransport}`);
+    }
+    return transport;
+}
+
+function sanitizeMcpHeaders(headers) {
+    if (!headers || typeof headers !== 'object' || Array.isArray(headers)) return undefined;
+    const result = {};
+    for (const [name, value] of Object.entries(headers)) {
+        const key = String(name || '').trim();
+        if (!key || value === undefined || value === null) continue;
+        if (UNSAFE_MCP_HEADER_NAMES.has(key.toLowerCase())) continue;
+        const text = String(value).trim();
+        if (!text) continue;
+        result[key] = text;
+    }
+    return result;
+}
+
 async function loadMcpTools(mcpManager, request, fallbackServerId) {
     if (!mcpManager) throw new Error('MCP manager not available');
 
-    const url = (request.url || '').trim();
-    const transport = (request.transport || 'sse').toLowerCase();
-    if (!url) throw new Error('Server URL is empty');
+    const url = sanitizeMcpUrl(request.url);
+    const transport = sanitizeMcpTransport(request.transport);
 
     const tools = await mcpManager.listTools({
         enableMcpTools: true,
         mcpTransport: transport,
         mcpServerUrl: url,
         mcpServerId: request.serverId || fallbackServerId,
-        mcpHeaders: request.headers,
+        mcpHeaders: sanitizeMcpHeaders(request.headers),
     });
 
     return { tools, transport, url };

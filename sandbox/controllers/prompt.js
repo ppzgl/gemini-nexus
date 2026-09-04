@@ -11,6 +11,9 @@ import { getLiveArtifactsSystemInstruction } from '../core/live_artifacts.js';
 // Browser-control tool loops may legitimately run longer between model turns.
 const WATCHDOG_DEFAULT_MS = 90 * 1000;
 const WATCHDOG_BROWSER_CONTROL_MS = 3 * 60 * 1000;
+// Late updates from a cancelled run are dropped inside this window so they
+// cannot clobber a new run started right after cancelling.
+const CANCELLATION_RECENT_MS = 2000;
 // If the stop button is stuck with no stream activity, a second click may
 // force-clear and send instead of only cancelling forever.
 // Measured from last activity only — NOT from generation start (a healthy
@@ -24,6 +27,7 @@ export class PromptController {
         this.imageManager = imageManager;
         this.app = appController;
         this.cancellationTimestamp = 0;
+        this.cancelledSessionTimestamps = new Map();
         this.generationStartedAt = 0;
         this.lastGenerationActivityAt = 0;
     }
@@ -224,7 +228,7 @@ export class PromptController {
             );
             // Cancel the SW run so late tool outputs / replies cannot race a
             // new send. forceClear alone only unlocks UI and drops messages.
-            this.cancellationTimestamp = Date.now();
+            this.recordCancellation();
             sendToBackground({ action: 'CANCEL_PROMPT' });
             this.forceClearGenerating({ status: t('requestTimedOut'), keepStatusMs: 4000 });
         }, timeoutMs);
@@ -404,7 +408,7 @@ export class PromptController {
         // (isGenerating true without a live SW run). Previously we returned
         // early when !isGenerating, leaving a stuck Stop button with no way out.
         const wasGenerating = this.app.isGenerating === true;
-        this.cancellationTimestamp = Date.now();
+        this.recordCancellation();
         if (wasGenerating) {
             sendToBackground({ action: 'CANCEL_PROMPT' });
         }
@@ -414,7 +418,26 @@ export class PromptController {
         });
     }
 
-    isCancellationRecent() {
-        return Date.now() - this.cancellationTimestamp < 2000; // 2s window
+    recordCancellation(sessionId = null) {
+        const now = Date.now();
+        this.cancellationTimestamp = now;
+        const key = sessionId ?? this.app?.generatingSessionId ?? null;
+        if (key != null) {
+            this.cancelledSessionTimestamps.set(key, now);
+            // Bounded: a session id is only relevant inside the recent window.
+            for (const [id, timestamp] of this.cancelledSessionTimestamps) {
+                if (now - timestamp >= CANCELLATION_RECENT_MS) {
+                    this.cancelledSessionTimestamps.delete(id);
+                }
+            }
+        }
+    }
+
+    isCancellationRecent(sessionId = null) {
+        if (sessionId == null) {
+            return Date.now() - this.cancellationTimestamp < CANCELLATION_RECENT_MS;
+        }
+        const timestamp = this.cancelledSessionTimestamps.get(sessionId);
+        return timestamp !== undefined && Date.now() - timestamp < CANCELLATION_RECENT_MS;
     }
 }

@@ -92,7 +92,7 @@ describe('AppMessageBridge settings restore', () => {
 
         bridge.setUI({ settings: {} });
         bridge.setApp(app);
-        bridge.handleMessage({ data: null });
+        bridge.handleMessage({ data: null, source: window.parent });
 
         expect(app.handleIncomingMessage).not.toHaveBeenCalled();
     });
@@ -131,13 +131,110 @@ describe('AppMessageBridge settings restore', () => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         // Queue before app/ui are ready.
-        bridge.handleMessage({ data: { action: 'RESTORE_IMAGE_TOOLS', payload: true } });
-        bridge.handleMessage({ data: { action: 'RESTORE_TEXT_SELECTION', payload: false } });
+        bridge.handleMessage({
+            data: { action: 'RESTORE_IMAGE_TOOLS', payload: true },
+            source: window.parent,
+        });
+        bridge.handleMessage({
+            data: { action: 'RESTORE_TEXT_SELECTION', payload: false },
+            source: window.parent,
+        });
         bridge.setUI(ui);
         bridge.setApp(app);
 
         expect(ui.settings.updateImageTools).toHaveBeenCalled();
         expect(ui.settings.updateTextSelection).toHaveBeenCalledWith(false);
         errorSpy.mockRestore();
+    });
+
+    it('recovers a transiently failing restore on the retry pass', () => {
+        const bridge = new AppMessageBridge();
+        const ui = {
+            settings: {
+                updateImageTools: vi
+                    .fn()
+                    .mockImplementationOnce(() => {
+                        throw new Error('transient storage hiccup');
+                    })
+                    .mockImplementation(() => {}),
+                updateTextSelection: vi.fn(),
+            },
+        };
+        const app = { handleIncomingMessage: vi.fn() };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        bridge.handleMessage({
+            data: { action: 'RESTORE_IMAGE_TOOLS', payload: true },
+            source: window.parent,
+        });
+        bridge.setUI(ui);
+        bridge.setApp(app);
+
+        expect(ui.settings.updateImageTools).toHaveBeenCalledTimes(2);
+        expect(bridge.failedActions).toEqual([]);
+        expect(errorSpy).not.toHaveBeenCalled();
+        errorSpy.mockRestore();
+    });
+
+    it('records persistently failing restores for telemetry', () => {
+        const bridge = new AppMessageBridge();
+        const ui = {
+            settings: {
+                updateImageTools: vi.fn(() => {
+                    throw new Error('permanent failure');
+                }),
+            },
+        };
+        const app = { handleIncomingMessage: vi.fn() };
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        bridge.handleMessage({
+            data: { action: 'RESTORE_IMAGE_TOOLS', payload: true },
+            source: window.parent,
+        });
+        bridge.setUI(ui);
+        bridge.setApp(app);
+
+        expect(ui.settings.updateImageTools).toHaveBeenCalledTimes(2);
+        expect(bridge.failedActions).toEqual(['RESTORE_IMAGE_TOOLS']);
+        expect(errorSpy).toHaveBeenCalledTimes(1);
+        errorSpy.mockRestore();
+    });
+
+    it('ignores messages that do not come from the parent frame', () => {
+        const bridge = new AppMessageBridge();
+        const ui = {
+            updateTheme: vi.fn(),
+            settings: {},
+        };
+        const app = { handleIncomingMessage: vi.fn() };
+
+        bridge.setUI(ui);
+        bridge.setApp(app);
+        bridge.handleMessage({
+            data: { action: 'RESTORE_THEME', payload: 'dark' },
+            source: {},
+        });
+        bridge.handleMessage({
+            data: { action: 'RESTORE_THEME', payload: 'dark' },
+            source: null,
+        });
+
+        expect(ui.updateTheme).not.toHaveBeenCalled();
+        expect(app.handleIncomingMessage).not.toHaveBeenCalled();
+    });
+
+    it('ignores live-artifact channel messages from nested preview iframes', () => {
+        const bridge = new AppMessageBridge();
+        const app = { handleIncomingMessage: vi.fn() };
+
+        bridge.setUI({ settings: {} });
+        bridge.setApp(app);
+        bridge.handleMessage({
+            data: { channel: 'artifact', event: 'ready' },
+            source: window.parent,
+        });
+
+        expect(app.handleIncomingMessage).not.toHaveBeenCalled();
     });
 });

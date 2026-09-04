@@ -15,6 +15,7 @@
         "shared/media/**/*.js",
         "vendor/gemini-watermark-remover/**/*.js",
         "scripts/*.mjs",
+        "scripts/**/*.js",
         "scripts/*.test.js"
     ],
     "project": ["**/*.{js,mjs,ts}"],

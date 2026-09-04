@@ -10,6 +10,9 @@
     const CustomSelectionToolsUI = window.GeminiCustomSelectionToolsUI;
     const TranslationTargetStore = window.GeminiTranslationTargetStore;
 
+    // Trailing debounce for ResizeObserver-driven window-size persistence.
+    const WINDOW_DIMENSIONS_SAVE_DELAY_MS = 300;
+
     function getStrings() {
         return window.GeminiToolbarStrings || {};
     }
@@ -119,6 +122,8 @@
             this.domBuilder = new DOMBuilder();
             this.callbacks = {};
             this.isBuilt = false;
+            this.pendingWindowDimensions = null;
+            this.saveDimensionsTimer = null;
             this.provider = getConfig().DEFAULT_PROVIDER || 'web';
             this.webThinkingLevel = getDefaultWebThinkingLevel();
             this.translationTargetStore = new TranslationTargetStore();
@@ -136,6 +141,8 @@
         }
 
         _disposeRuntimeComponents() {
+            // Persist the latest debounced window size before tearing down.
+            this.flushWindowDimensions();
             // Disconnect the previous Events instance (capture-phase keydown +
             // ResizeObserver + submenu handlers) so rebuildForLanguageChange()
             // does not stack a second set on document.
@@ -301,9 +308,29 @@
         }
 
         saveWindowDimensions(width, height) {
+            // ResizeObserver fires continuously while dragging: coalesce into
+            // one trailing write so storage is not hammered per frame.
+            this.pendingWindowDimensions = { width, height };
+            if (this.saveDimensionsTimer) clearTimeout(this.saveDimensionsTimer);
+            this.saveDimensionsTimer = setTimeout(() => {
+                this.saveDimensionsTimer = null;
+                this.flushWindowDimensions();
+            }, WINDOW_DIMENSIONS_SAVE_DELAY_MS);
+        }
+
+        flushWindowDimensions() {
+            if (this.saveDimensionsTimer) {
+                clearTimeout(this.saveDimensionsTimer);
+                this.saveDimensionsTimer = null;
+            }
+            const pending = this.pendingWindowDimensions;
+            this.pendingWindowDimensions = null;
+            if (!pending) return;
             const storage = globalThis.chrome?.storage?.local;
             if (!storage || typeof storage.set !== 'function') return;
-            storage.set({ gemini_nexus_window_size: { w: width, h: height } }).catch?.(() => {});
+            storage
+                .set({ gemini_nexus_window_size: { w: pending.width, h: pending.height } })
+                .catch?.(() => {});
         }
 
         fireCallback(type, ...args) {
@@ -408,6 +435,10 @@
 
         toggleTranslationTargetDropdown() {
             this.view.toggleTranslationTargetDropdown();
+        }
+
+        closeTranslationTargetDropdown() {
+            this.view.closeTranslationTargetDropdown();
         }
 
         getSelectedTranslationTargets() {

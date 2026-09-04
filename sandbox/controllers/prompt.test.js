@@ -315,3 +315,50 @@ describe('PromptController.send', () => {
         );
     });
 });
+
+describe('PromptController cancellation window', () => {
+    it('scopes recent cancellation to the cancelled session', () => {
+        const { app, controller } = createPromptHarness();
+        app.isGenerating = true;
+        app.generatingSessionId = 's1';
+
+        controller.cancel();
+
+        expect(controller.isCancellationRecent('s1')).toBe(true);
+        expect(controller.isCancellationRecent('s2')).toBe(false);
+    });
+
+    it('expires the cancellation window', () => {
+        vi.useFakeTimers();
+        try {
+            const { app, controller } = createPromptHarness();
+            app.isGenerating = true;
+            app.generatingSessionId = 's1';
+
+            controller.cancel();
+            expect(controller.isCancellationRecent('s1')).toBe(true);
+
+            vi.setSystemTime(Date.now() + 2001);
+            expect(controller.isCancellationRecent('s1')).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps the legacy session-less check time-based', () => {
+        vi.useFakeTimers();
+        try {
+            const { app, controller } = createPromptHarness();
+            app.isGenerating = true;
+            app.generatingSessionId = 's1';
+
+            controller.cancel();
+            expect(controller.isCancellationRecent()).toBe(true);
+
+            vi.setSystemTime(Date.now() + 2001);
+            expect(controller.isCancellationRecent()).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+});

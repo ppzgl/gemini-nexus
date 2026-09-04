@@ -281,11 +281,12 @@ describe('ToolbarEvents', () => {
         const resultText = document.createElement('div');
         const translationTargets = document.createElement('div');
         const handleTranslationTargetsChange = vi.fn();
+        const closeTranslationTargetDropdown = vi.fn();
 
         translationTargets.innerHTML = `
-            <label><input type="checkbox" name="translation-target" value="auto"></label>
-            <label><input type="checkbox" name="translation-target" value="zh-Hans" checked></label>
-            <label><input type="checkbox" name="translation-target" value="ja" checked></label>
+            <label><input type="radio" name="translation-target" value="auto"></label>
+            <label><input type="radio" name="translation-target" value="zh-Hans" checked></label>
+            <label><input type="radio" name="translation-target" value="ja"></label>
         `;
 
         const events = new window.GeminiToolbarEvents({
@@ -298,6 +299,7 @@ describe('ToolbarEvents', () => {
             handleImageHover: vi.fn(),
             handleModelChange: vi.fn(),
             handleTranslationTargetsChange,
+            closeTranslationTargetDropdown,
             isWindowVisible: vi.fn(() => false),
             isVisible: vi.fn(() => false),
             hide: vi.fn(),
@@ -320,11 +322,14 @@ describe('ToolbarEvents', () => {
             askWindow
         );
 
+        // Simulate picking Japanese: the radio group unchecks the rest.
+        translationTargets.querySelector('[value="ja"]').checked = true;
         translationTargets
             .querySelector('[value="ja"]')
             .dispatchEvent(new Event('change', { bubbles: true }));
 
-        expect(handleTranslationTargetsChange).toHaveBeenCalledWith(['zh-Hans', 'ja']);
+        expect(handleTranslationTargetsChange).toHaveBeenCalledWith(['ja']);
+        expect(closeTranslationTargetDropdown).toHaveBeenCalledTimes(1);
         events.disconnect();
     });
 

@@ -1,6 +1,5 @@
 import { renderLayout } from '../ui/layout.js';
 import { applyTranslations, t } from '../core/i18n.js';
-import { configureMarkdown } from '../render/config.js';
 import { sendToBackground } from '../../shared/messaging/index.js';
 import { loadLibs, MARKDOWN_READY_EVENT } from './loader.js';
 import { AppMessageBridge } from './messaging.js';
@@ -77,15 +76,17 @@ export function initAppMode() {
             bridge.setApp(app);
 
             // Re-render restored sessions exactly when Markdown becomes available.
+            // Gated on sessionsRestored: before RESTORE_SESSIONS arrives there
+            // is no current session, so an early event would only no-op.
             window.addEventListener(MARKDOWN_READY_EVENT, () => {
-                if (app) app.rerender();
+                if (app && app.sessionsRestored) app.rerender();
             });
 
-            // Trigger dependency load in parallel.
+            // Trigger dependency load in parallel. Markdown configuration
+            // happens inside the loader when marked arrives; no direct
+            // configureMarkdown() call here (marked is not loaded yet).
             loadLibs();
 
-            // Initial pass may be skipped until marked is loaded.
-            configureMarkdown();
             console.info('[Gemini Nexus] Sandbox app controllers ready');
         } catch (error) {
             // A failed dynamic import previously left a painted shell with dead buttons.

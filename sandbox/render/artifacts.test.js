@@ -2,6 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+    GRAPHVIZ_CACHE_LIMIT,
     buildArtifactSrcDoc,
     cleanupLiveArtifacts,
     createLiveArtifactPreview,
@@ -346,6 +347,40 @@ describe('Live Artifact previews', () => {
             expect.stringContaining('graph [bgcolor="transparent" fontcolor="#374151" margin="0"];')
         );
         expect(preview.textContent).toContain('Loaded');
+    });
+
+    it('evicts the stalest cached Graphviz render beyond the cache limit', async () => {
+        const renderSVGElement = vi.fn((source) => {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.innerHTML = `<text>${source.slice(0, 24)}</text>`;
+            return svg;
+        });
+
+        setGraphvizLoaderForTest(async () => ({
+            instance: async () => ({ renderSVGElement }),
+        }));
+
+        const codes = Array.from(
+            { length: GRAPHVIZ_CACHE_LIMIT + 1 },
+            (_, index) => `digraph G${index} { A -> B${index}; }`
+        );
+        for (const code of codes) {
+            document.body.appendChild(createLiveArtifactPreview('graphviz', code));
+        }
+        await flushMicrotasks();
+        expect(renderSVGElement).toHaveBeenCalledTimes(GRAPHVIZ_CACHE_LIMIT + 1);
+
+        // The first graph was evicted: rendering it again re-invokes viz.
+        document.body.appendChild(createLiveArtifactPreview('graphviz', codes[0]));
+        await flushMicrotasks();
+        expect(renderSVGElement).toHaveBeenCalledTimes(GRAPHVIZ_CACHE_LIMIT + 2);
+
+        // The most recent graph is still cached: no new render.
+        document.body.appendChild(
+            createLiveArtifactPreview('graphviz', codes[GRAPHVIZ_CACHE_LIMIT])
+        );
+        await flushMicrotasks();
+        expect(renderSVGElement).toHaveBeenCalledTimes(GRAPHVIZ_CACHE_LIMIT + 2);
     });
 
     it('does not duplicate previews when the same node is enhanced again', () => {
