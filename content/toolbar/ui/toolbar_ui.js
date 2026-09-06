@@ -298,8 +298,18 @@
         }
 
         handleTranslationTargetsChange(targets) {
+            const previous = [...(this.translationTargetStore.getTargets() || [])];
             const storedTargets = this.translationTargetStore.setTargets(targets);
             this.view.setSelectedTranslationTargets(storedTargets);
+            // 重新选择了翻译语言时通知 controller 自动重新生成；
+            // 归一化后无变化时不触发，避免重复请求。
+            const previousSet = new Set(previous);
+            const changed =
+                previous.length !== storedTargets.length ||
+                storedTargets.some((value) => !previousSet.has(value));
+            if (changed) {
+                this.fireCallback('onTranslationTargetsChange', storedTargets);
+            }
         }
 
         async restoreTranslationTargets() {
@@ -344,6 +354,11 @@
                 this.callbacks.onWebThinkingToggle(...args);
             } else if (type === 'onHide' && this.callbacks.onHide) {
                 this.callbacks.onHide(...args);
+            } else if (type === 'onTranslationTargetsChange') {
+                // 翻译语言切换是独立回调，不能落到 onAction（否则会被当成 action 分发）。
+                if (this.callbacks.onTranslationTargetsChange) {
+                    this.callbacks.onTranslationTargetsChange(...args);
+                }
             } else if (this.callbacks.onAction) {
                 this.callbacks.onAction(...args);
             }

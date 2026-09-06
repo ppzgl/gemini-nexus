@@ -199,6 +199,7 @@
                 onAction: this.handleAction,
                 onProviderChange: (provider) => this.handleProviderChange(provider),
                 onModelChange: (model) => this.handleModelChange(model),
+                onTranslationTargetsChange: () => this.handleTranslationTargetsChange(),
                 onWebThinkingToggle: () => this.handleWebThinkingToggle(),
                 onImageBtnHover: (isHovering) => {
                     if (isHovering) {
@@ -462,6 +463,16 @@
                 });
             }
             saveToolbarSettings({ [TOOLBAR_PROVIDER_STORAGE_KEY]: provider });
+        }
+
+        handleTranslationTargetsChange() {
+            // 重新选择翻译语言时，如果当前正处在一次翻译会话（文本/截图翻译），
+            // 自动用新语言重新生成翻译结果，其他模式（总结/解释/提问等）不受影响。
+            if (!this.actions?.lastTranslationRequest) return;
+            if (this.ui && typeof this.ui.isWindowVisible === 'function') {
+                if (!this.ui.isWindowVisible()) return;
+            }
+            this.actions.handleRetry();
         }
 
         syncWebThinkingForModel(
